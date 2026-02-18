@@ -1,5 +1,5 @@
 CXX      := g++
-CXXFLAGS := -std=c++14 -Wall -Wextra -pedantic -Isrc
+CXXFLAGS := -std=c++14 -Wall -Wextra -pedantic -Werror -Isrc
 SRCDIR   := src
 BINDIR   := bin
 

@@ -25,3 +25,8 @@ Test commands: testing tbd later
 This is the very start. First i would like to see just something.
 Then you might start singing "you ain't seen nothing yet!", and
 I will be more specific then.
+
+I've added some more basic tests to demo.cpp and got compile errors
+and warnings. Please fix/refactor.
+I've also added the "-Werror" compiler option in the Makefile.
+
