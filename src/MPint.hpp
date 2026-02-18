@@ -1,7 +1,6 @@
 #pragma once
 
 #include <iosfwd>
-#include <stdexcept>
 
 // MPint: a drop-in replacement for signed long int.
 // All arithmetic, comparison, bitwise, increment/decrement, and stream
@@ -73,6 +72,8 @@ public:
     // --- compound assignment: shift -----------------------------------------
     MPint& operator<<=(int n) noexcept { mVal <<= n; return *this; }
     MPint& operator>>=(int n) noexcept { mVal >>= n; return *this; }
+    MPint& operator<<=(const MPint& rhs) noexcept { mVal <<= rhs.mVal; return *this; }
+    MPint& operator>>=(const MPint& rhs) noexcept { mVal >>= rhs.mVal; return *this; }
 
     // --- binary arithmetic (defined via compound assignment) ----------------
     friend MPint operator+(MPint lhs, const MPint& rhs) noexcept { return lhs += rhs; }
@@ -87,8 +88,10 @@ public:
     friend MPint operator^(MPint lhs, const MPint& rhs) noexcept { return lhs ^= rhs; }
 
     // --- shift --------------------------------------------------------------
-    friend MPint operator<<(MPint lhs, int n) noexcept { return lhs <<= n; }
-    friend MPint operator>>(MPint lhs, int n) noexcept { return lhs >>= n; }
+    friend MPint operator<<(MPint lhs, int n)          noexcept { return lhs <<= n; }
+    friend MPint operator>>(MPint lhs, int n)          noexcept { return lhs >>= n; }
+    friend MPint operator<<(MPint lhs, const MPint& rhs) noexcept { return lhs <<= rhs; }
+    friend MPint operator>>(MPint lhs, const MPint& rhs) noexcept { return lhs >>= rhs; }
 
     // --- comparison ---------------------------------------------------------
     friend bool operator==(const MPint& a, const MPint& b) noexcept { return a.mVal == b.mVal; }

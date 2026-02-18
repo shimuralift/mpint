@@ -1,0 +1,641 @@
+
+[claudeuser@gondwana:mpint]$ claude
+
+ ▐▛███▜▌   Claude Code v2.1.44
+▝▜█████▛▘  Opus 4.6 · Claude Pro
+  ▘▘ ▝▝    ~/work/mpint
+
+❯ see instructions at the end of CLAUDE.md
+
+● Let me look at the current state of the code.
+
+● Searched for 1 pattern, read 6 files (ctrl+o to expand)
+
+● Let me build to see the errors.
+
+● Bash(make 2>&1)
+  ⎿  Error: Exit code 2
+     g++ -std=c++14 -Wall -Wextra -pedantic -Werror -Isrc -o bin/demo src/MPint.cpp src/demo.cpp
+     src/demo.cpp: In function ‘int basicexpr()’:
+     src/demo.cpp:149:101: error: no match for ‘operator<<=’ (operand types are ‘MPint’ and ‘const MPint’)
+       149 |   std::cout << "<<=(MPint&)  :: " << ncMP_nc_____i << " <<= " << cMPelf << " :: " << (ncMP_nc_____i <<= cMPelf) << " :: " << ncMP_nc_____i << std::endl;
+           |                                                                                       ~~~~~~~~~~~~~~^~~~~~~~~~
+     In file included from src/demo.cpp:1:
+     src/MPint.hpp:74:12: note: candidate: ‘MPint& MPint::operator<<=(int)’
+        74 |     MPint& operator<<=(int n) noexcept { mVal <<= n; return *this; }
+           |            ^~~~~~~~
+     … +102 lines (ctrl+o to see all)
+
+● Two categories of issues:
+
+  1. Shift operators only accept int as the shift amount, but demo.cpp passes MPint (lines 149-152). Need to add MPint-accepting overloads.
+  2. Narrowing warnings from assigning negative literals to unsigned types (lines 69-70, 74) will become errors with -Werror.
+
+  Let me fix both.
+
+● Update(src/MPint.hpp)
+  ⎿  Added 2 lines
+      73      // --- compound assignment: shift -----------------------------------------
+      74      MPint& operator<<=(int n) noexcept { mVal <<= n; return *this; }
+      75      MPint& operator>>=(int n) noexcept { mVal >>= n; return *this; }
+      76 +    MPint& operator<<=(const MPint& rhs) noexcept { mVal <<= rhs.mVal; return *this; }
+      77 +    MPint& operator>>=(const MPint& rhs) noexcept { mVal >>= rhs.mVal; return *this; }
+      78
+      79      // --- binary arithmetic (defined via compound assignment) ----------------
+      80      friend MPint operator+(MPint lhs, const MPint& rhs) noexcept { return lhs += rhs; }
+
+● Update(src/MPint.hpp)
+  ⎿  Added 4 lines, removed 2 lines
+      89      friend MPint operator^(MPint lhs, const MPint& rhs) noexcept { return lhs ^= rhs; }
+      90
+      91      // --- shift --------------------------------------------------------------
+      92 -    friend MPint operator<<(MPint lhs, int n) noexcept { return lhs <<= n; }
+      93 -    friend MPint operator>>(MPint lhs, int n) noexcept { return lhs >>= n; }
+      92 +    friend MPint operator<<(MPint lhs, int n)          noexcept { return lhs <<= n; }
+      93 +    friend MPint operator>>(MPint lhs, int n)          noexcept { return lhs >>= n; }
+      94 +    friend MPint operator<<(MPint lhs, const MPint& rhs) noexcept { return lhs <<= rhs; }
+      95 +    friend MPint operator>>(MPint lhs, const MPint& rhs) noexcept { return lhs >>= rhs; }
+      96
+      97      // --- comparison ---------------------------------------------------------
+      98      friend bool operator==(const MPint& a, const MPint& b) noexcept { return a.mVal == b.mVal; }
+  ⎿  Found 1 new diagnostic issue in 1 file (ctrl+o to expand)
+
+● Now fix the unsigned-from-negative warnings in demo.cpp.
+
+● Update(src/demo.cpp)
+  ⎿  Added 2 lines, removed 2 lines
+      66    const          short int  c___s_i = -12;
+      67    const          long  int  c___l_i = 13;
+      68    const unsigned       int  c_u___i = 21;
+      69 -  const unsigned short int  c_u_s_i = -22;
+      70 -  const unsigned long  int  c_u_l_i = -23;
+      69 +  const unsigned short int  c_u_s_i = static_cast<unsigned short>(-22);
+      70 +  const unsigned long  int  c_u_l_i = static_cast<unsigned long>(-23);
+      71                         int nc_____i = 31;
+      72                   short int nc___s_i = 32;
+      73                   long  int nc___l_i = -33;
+
+● Update(src/demo.cpp)
+  ⎿  Added 1 line, removed 1 line
+      71                         int nc_____i = 31;
+      72                   short int nc___s_i = 32;
+      73                   long  int nc___l_i = -33;
+      74 -        unsigned       int nc_u___i = -41;
+      74 +        unsigned       int nc_u___i = static_cast<unsigned int>(-41);
+      75          unsigned short int nc_u_s_i = 42;
+      76          unsigned long  int nc_u_l_i = 43;
+      77
+
+● Bash(make 2>&1)
+  ⎿  Error: Exit code 2
+     g++ -std=c++14 -Wall -Wextra -pedantic -Werror -Isrc -o bin/demo src/MPint.cpp src/demo.cpp
+     src/demo.cpp: In function ‘int basicexpr()’:
+     src/demo.cpp:80:15: error: variable ‘cMP__c_____i’ set but not used [-Werror=unused-but-set-variable]
+        80 |   const MPint cMP__c_____i = MPint( c_____i);
+           |               ^~~~~~~~~~~~
+     src/demo.cpp:82:15: error: variable ‘cMP__c___l_i’ set but not used [-Werror=unused-but-set-variable]
+        82 |   const MPint cMP__c___l_i = MPint( c___l_i);
+           |               ^~~~~~~~~~~~
+     src/demo.cpp:86:15: error: variable ‘cMP_nc_____i’ set but not used [-Werror=unused-but-set-variable]
+     … +16 lines (ctrl+o to see all)
+
+● Several unused variables. The simplest fix is to use them in output statements, but since these are test variables that exist for completeness, I'll add a helper to suppress the warnings without cluttering the test code.
+
+● Update(src/demo.cpp)
+  ⎿  Added 1 line, removed 1 line
+      77
+      78    const MPint cMP_________;
+      79    const MPint cMP__c______ = MPint(1);
+      80 -  const MPint cMP__c_____i = MPint( c_____i);
+      80 +  const MPint cMP__c_____i = MPint( c_____i);  (void)cMP__c_____i;
+      81    const MPint cMP__c___s_i = MPint( c___s_i);
+      82    const MPint cMP__c___l_i = MPint( c___l_i);
+      83    const MPint cMP__c_u___i = MPint( c_u___i);
+
+● Update(src/demo.cpp)
+  ⎿  Added 1 line, removed 1 line
+      79    const MPint cMP__c______ = MPint(1);
+      80    const MPint cMP__c_____i = MPint( c_____i);  (void)cMP__c_____i;
+      81    const MPint cMP__c___s_i = MPint( c___s_i);
+      82 -  const MPint cMP__c___l_i = MPint( c___l_i);
+      82 +  const MPint cMP__c___l_i = MPint( c___l_i);  (void)cMP__c___l_i;
+      83    const MPint cMP__c_u___i = MPint( c_u___i);
+      84    const MPint cMP__c_u_s_i = MPint( c_u_s_i);
+      85    const MPint cMP__c_u_l_i = MPint( c_u_l_i);
+
+● Update(src/demo.cpp)
+  ⎿  Added 1 line, removed 1 line
+      83    const MPint cMP__c_u___i = MPint( c_u___i);
+      84    const MPint cMP__c_u_s_i = MPint( c_u_s_i);
+      85    const MPint cMP__c_u_l_i = MPint( c_u_l_i);
+      86 -  const MPint cMP_nc_____i = MPint(nc_____i);
+      86 +  const MPint cMP_nc_____i = MPint(nc_____i);  (void)cMP_nc_____i;
+      87    const MPint cMP_nc___s_i = MPint(nc___s_i);
+      88    const MPint cMP_nc___l_i = MPint(nc___l_i);
+      89    const MPint cMP_nc_u___i = MPint(nc_u___i);
+
+● Update(src/demo.cpp)
+  ⎿  Added 1 line, removed 1 line
+      85    const MPint cMP__c_u_l_i = MPint( c_u_l_i);
+      86    const MPint cMP_nc_____i = MPint(nc_____i);  (void)cMP_nc_____i;
+      87    const MPint cMP_nc___s_i = MPint(nc___s_i);
+      88 -  const MPint cMP_nc___l_i = MPint(nc___l_i);
+      88 +  const MPint cMP_nc___l_i = MPint(nc___l_i);  (void)cMP_nc___l_i;
+      89    const MPint cMP_nc_u___i = MPint(nc_u___i);
+      90    const MPint cMP_nc_u_s_i = MPint(nc_u_s_i);
+      91    const MPint cMP_nc_u_l_i = MPint(nc_u_l_i);
+
+● Update(src/demo.cpp)
+  ⎿  Added 1 line, removed 1 line
+      87    const MPint cMP_nc___s_i = MPint(nc___s_i);
+      88    const MPint cMP_nc___l_i = MPint(nc___l_i);  (void)cMP_nc___l_i;
+      89    const MPint cMP_nc_u___i = MPint(nc_u___i);
+      90 -  const MPint cMP_nc_u_s_i = MPint(nc_u_s_i);
+      90 +  const MPint cMP_nc_u_s_i = MPint(nc_u_s_i);  (void)cMP_nc_u_s_i;
+      91    const MPint cMP_nc_u_l_i = MPint(nc_u_l_i);
+      92    MPint ncMP_________;
+      93    MPint ncMP__c______ = MPint(1);
+
+● Update(src/demo.cpp)
+  ⎿  Added 1 line, removed 1 line
+       98    MPint ncMP__c_u_s_i = MPint( c_u_s_i);
+       99    MPint ncMP__c_u_l_i = MPint( c_u_l_i);
+      100    MPint ncMP_nc_____i = MPint(nc_____i);
+      101 -  MPint ncMP_nc___s_i = MPint(nc___s_i);
+      101 +  MPint ncMP_nc___s_i = MPint(nc___s_i);  (void)ncMP_nc___s_i;
+      102    MPint ncMP_nc___l_i = MPint(nc___l_i);
+      103    MPint ncMP_nc_u___i = MPint(nc_u___i);
+      104    MPint ncMP_nc_u_s_i = MPint(nc_u_s_i);
+
+● Update(src/demo.cpp)
+  ⎿  Added 1 line, removed 1 line
+      102    MPint ncMP_nc___l_i = MPint(nc___l_i);
+      103    MPint ncMP_nc_u___i = MPint(nc_u___i);
+      104    MPint ncMP_nc_u_s_i = MPint(nc_u_s_i);
+      105 -  MPint ncMP_nc_u_l_i = MPint(nc_u_l_i);
+      105 +  MPint ncMP_nc_u_l_i = MPint(nc_u_l_i);  (void)ncMP_nc_u_l_i;
+      106
+      107
+      108    const MPint cMPnul = MPint();
+
+● Bash(make 2>&1)
+  ⎿  g++ -std=c++14 -Wall -Wextra -pedantic -Werror -Isrc -o bin/demo src/MPint.cpp src/demo.cpp
+
+● Clean build. Let me run it to verify.
+
+● Bash(bin/demo 2>&1)
+  ⎿  MPint: claude's elementary operator expressions
+
+     a        = 6
+     … +87 lines (ctrl+o to expand)
+
+● Builds cleanly and runs. Here's a summary of the fixes:
+
+  MPint.hpp — added shift operator overloads that accept MPint as the shift amount (not just int):
+  - operator<<=(const MPint&) and operator>>=(const MPint&) compound assignment
+  - operator<<(MPint, const MPint&) and operator>>(MPint, const MPint&) binary
+
+  demo.cpp — fixed -Werror violations:
+  - Lines 69-70, 74: wrapped negative-to-unsigned assignments with static_cast to suppress implicit sign conversion warnings
+  - Lines 80, 82, 86, 88, 90, 101, 105: added (void)varname; casts on 7 variables that were declared but never read
+
+✻ Crunched for 1m 30s
+
+❯ now also remove the unused stdexcept include
+
+● Update(src/MPint.hpp)
+  ⎿  Removed 1 line
+      1  #pragma once
+      2
+      3  #include <iosfwd>
+      4 -#include <stdexcept>
+      4
+      5  // MPint: a drop-in replacement for signed long int.
+      6  // All arithmetic, comparison, bitwise, increment/decrement, and stream
+
+● Bash(make 2>&1)
+  ⎿  g++ -std=c++14 -Wall -Wextra -pedantic -Werror -Isrc -o bin/demo src/MPint.cpp src/demo.cpp
+
+● Done — #include <stdexcept> removed, still builds cleanly.
+
+❯ commit this
+
+● Bash(git status)
+  ⎿  Error: Exit code 128
+     fatal: not a git repository (or any of the parent directories): .git
+
+● Bash(git diff)
+  ⎿  Error: Sibling tool call errored
+
+● Bash(git log --oneline -5)
+  ⎿  Error: Sibling tool call errored
+
+● Not a git repository yet. Let me initialize one first.
+
+● Bash(git init && git add Makefile CLAUDE.md src/MPint.hpp src/MPint.cpp src/demo.cpp && git commit -m "Add MPint shift overloads for MPint operands, fix -Werror warn…)
+  ⎿  Interrupted · What should Claude do instead?
+
+❯ btw, why do you run on opus 4.6 now? my subscription came with sonnett.
+
+● The model is configured in your Claude Code settings, not tied to your subscription tier. You can switch models with the /model command. If you're seeing Opus 4.6, it was likely selected at some point (or set as default in your config).
+   You can switch back to Sonnet with:
+
+  /model sonnet
+
+
+  Shall I proceed with the commit? Since there's no git repo yet, I'll need to git init first — want me to go ahead?
+
+❯ no lets go without git for a while.
+
+● Understood, no git for now. Let me know what's next for MPint.
+
+❯ add more tests to demo.cpp
+
+● Let me check what's already covered to identify gaps.
+
+● Read 1 file (ctrl+o to expand)
+
+● Already covered: construction from various types, unary ops, compound assignment, binary arithmetic/bitwise/shift, comparisons with mixed types. Not yet covered: copy construction, explicit conversion operators, int-on-left-side
+  arithmetic, chained expressions, assignment from plain ints, and long long construction.
+
+● Update(src/demo.cpp)
+  ⎿  Added 104 lines
+      204    return 0;
+      205  }
+      206
+      207 +int moreexpr() {
+      208 +  std::cout << "--- copy construction & assignment from int ---" << std::endl;
+      209 +  MPint orig = 42;
+      210 +  MPint copy(orig);
+      211 +  MPint assigned;
+      212 +  assigned = orig;
+      213 +  std::cout << "orig     = " << orig     << std::endl;  // 42
+      214 +  std::cout << "copy     = " << copy     << std::endl;  // 42
+      215 +  std::cout << "assigned = " << assigned << std::endl;  // 42
+      216 +
+      217 +  std::cout << std::endl << "--- assign from plain int types ---" << std::endl;
+      218 +  MPint m;
+      219 +  m = 100;
+      220 +  std::cout << "m = 100  :: " << m << std::endl;        // 100
+      221 +  m = static_cast<short>(7);
+      222 +  std::cout << "m = (short)7 :: " << m << std::endl;    // 7
+      223 +  m = 99L;
+      224 +  std::cout << "m = 99L  :: " << m << std::endl;        // 99
+      225 +
+      226 +  std::cout << std::endl << "--- long long construction ---" << std::endl;
+      227 +  long long big = 1234567890LL;
+      228 +  MPint fromLL(big);
+      229 +  std::cout << "from long long :: " << fromLL << std::endl;  // 1234567890
+      230 +
+      231 +  std::cout << std::endl << "--- explicit conversion operators ---" << std::endl;
+      232 +  MPint v = 257;
+      233 +  std::cout << "v                         = " << v << std::endl;
+      234 +  std::cout << "static_cast<long>(v)      = " << static_cast<long>(v)           << std::endl;  // 257
+      235 +  std::cout << "static_cast<int>(v)       = " << static_cast<int>(v)            << std::endl;  // 257
+      236 +  std::cout << "static_cast<short>(v)     = " << static_cast<short>(v)          << std::endl;  // 257
+      237 +  std::cout << "static_cast<signed char>  = " << static_cast<int>(static_cast<signed char>(v))  << std::endl;  // 1 (truncated)
+      238 +  std::cout << "static_cast<unsigned long>= " << static_cast<unsigned long>(v)  << std::endl;  // 257
+      239 +  std::cout << "static_cast<unsigned int> = " << static_cast<unsigned int>(v)   << std::endl;  // 257
+      240 +  std::cout << "static_cast<bool>(v)      = " << static_cast<bool>(v)           << std::endl;  // 1
+      241 +  std::cout << "static_cast<bool>(MPint())= " << static_cast<bool>(MPint())     << std::endl;  // 0
+      242 +
+      243 +  std::cout << std::endl << "--- int on left side (implicit MPint construction) ---" << std::endl;
+      244 +  MPint rhs = 5;
+      245 +  std::cout << "10 + MPint(5) = " << (10 + rhs)  << std::endl;  // 15
+      246 +  std::cout << "10 - MPint(5) = " << (10 - rhs)  << std::endl;  // 5
+      247 +  std::cout << "10 * MPint(5) = " << (10 * rhs)  << std::endl;  // 50
+      248 +  std::cout << "10 / MPint(5) = " << (10 / rhs)  << std::endl;  // 2
+      249 +  std::cout << "10 % MPint(5) = " << (10 % rhs)  << std::endl;  // 0
+      250 +  std::cout << "12 & MPint(5) = " << (12 & rhs)  << std::endl;  // 4
+      251 +  std::cout << "12 | MPint(5) = " << (12 | rhs)  << std::endl;  // 13
+      252 +  std::cout << "12 ^ MPint(5) = " << (12 ^ rhs)  << std::endl;  // 9
+      253 +
+      254 +  std::cout << std::endl << "--- chained expressions ---" << std::endl;
+      255 +  MPint a = 2, b = 3, c = 4;
+      256 +  std::cout << "2 + 3 + 4     = " << (a + b + c)     << std::endl;  // 9
+      257 +  std::cout << "2 * 3 + 4     = " << (a * b + c)     << std::endl;  // 10
+      258 +  std::cout << "2 + 3 * 4     = " << (a + b * c)     << std::endl;  // 14
+      259 +  std::cout << "(2+3) * 4     = " << ((a + b) * c)   << std::endl;  // 20
+      260 +  std::cout << "2 * 3 * 4     = " << (a * b * c)     << std::endl;  // 24
+      261 +  MPint chain = 1;
+      262 +  chain += 2;
+      263 +  chain *= 3;
+      264 +  chain -= 1;
+      265 +  std::cout << "((1+2)*3)-1   = " << chain << std::endl;  // 8
+      266 +
+      267 +  std::cout << std::endl << "--- comparison edge cases ---" << std::endl;
+      268 +  MPint z1 = 0, z2 = 0;
+      269 +  std::cout << "0 == 0 :: " << (z1 == z2) << std::endl;  // 1
+      270 +  std::cout << "0 != 0 :: " << (z1 != z2) << std::endl;  // 0
+      271 +  std::cout << "0 <  0 :: " << (z1 <  z2) << std::endl;  // 0
+      272 +  std::cout << "0 <= 0 :: " << (z1 <= z2) << std::endl;  // 1
+      273 +  std::cout << "0 >  0 :: " << (z1 >  z2) << std::endl;  // 0
+      274 +  std::cout << "0 >= 0 :: " << (z1 >= z2) << std::endl;  // 1
+      275 +  MPint neg = -1, pos = 1;
+      276 +  std::cout << "-1 < 1  :: " << (neg < pos)  << std::endl;  // 1
+      277 +  std::cout << "-1 > 1  :: " << (neg > pos)  << std::endl;  // 0
+      278 +  std::cout << "-1 == 1 :: " << (neg == pos) << std::endl;  // 0
+      279 +  std::cout << "-1 != 1 :: " << (neg != pos) << std::endl;  // 1
+      280 +
+      281 +  std::cout << std::endl << "--- bool / logical contexts ---" << std::endl;
+      282 +  MPint t = 1, f = 0;
+      283 +  std::cout << "bool(1)  = " << (t ? "true" : "false") << std::endl;   // true
+      284 +  std::cout << "bool(0)  = " << (f ? "true" : "false") << std::endl;   // false
+      285 +  std::cout << "!1       = " << !t << std::endl;  // 0
+      286 +  std::cout << "!0       = " << !f << std::endl;  // 1
+      287 +  std::cout << "!!42     = " << !!MPint(42) << std::endl;  // 1
+      288 +
+      289 +  std::cout << std::endl << "--- negation and double negation ---" << std::endl;
+      290 +  MPint p = 77;
+      291 +  std::cout << "-77      = " << -p      << std::endl;   // -77
+      292 +  std::cout << "-(-77)   = " << -(-p)   << std::endl;   // 77
+      293 +  std::cout << "~~77     = " << ~~p     << std::endl;   // 77
+      294 +  std::cout << "+(-77)   = " << +(-p)   << std::endl;   // -77
+      295 +
+      296 +  std::cout << std::endl << "--- self-operations ---" << std::endl;
+      297 +  MPint s = 10;
+      298 +  std::cout << "s + s    = " << (s + s) << std::endl;  // 20
+      299 +  std::cout << "s - s    = " << (s - s) << std::endl;  // 0
+      300 +  std::cout << "s * s    = " << (s * s) << std::endl;  // 100
+      301 +  std::cout << "s / s    = " << (s / s) << std::endl;  // 1
+      302 +  std::cout << "s % s    = " << (s % s) << std::endl;  // 0
+      303 +  s += s;
+      304 +  std::cout << "s += s (10) :: " << s   << std::endl;  // 20
+      305 +
+      306 +  return 0;
+      307 +}
+      308 +
+      309  int main() {
+      310    std::cout << "MPint: claude's elementary operator expressions" << std::endl << std::endl;
+      311    claude_main();
+      312    std::cout << "MPint: my elementary operator expressions" << std::endl << std::endl;
+      313    basicexpr();
+      314 +  std::cout << std::endl << "MPint: more operator expressions" << std::endl << std::endl;
+      315 +  moreexpr();
+      316    return 0;
+      317  }
+
+● Bash(make 2>&1)
+  ⎿  g++ -std=c++14 -Wall -Wextra -pedantic -Werror -Isrc -o bin/demo src/MPint.cpp src/demo.cpp
+
+● Bash(bin/demo 2>&1 | tail -n +68)
+  ⎿  ==(MPint&, long int )  :: -1 == 13 :: 0
+     ==(int,       MPint&)  :: -11 == -1 :: 0
+     ==(short int, MPint&)  :: -12 == -1 :: 0
+     … +88 lines (ctrl+o to expand)
+
+● Builds clean and all tests pass. Added moreexpr() covering:
+
+  - Copy construction & assignment from another MPint
+  - Assignment from plain int types (int, short, long)
+  - long long construction
+  - Explicit conversion operators (long, int, short, signed char, unsigned long, unsigned int, bool)
+  - Int on left side — 10 + MPint(5) etc. for all arithmetic and bitwise ops
+  - Chained expressions with operator precedence (a + b * c, (a+b) * c, compound chains)
+  - Comparison edge cases (0 vs 0, -1 vs 1)
+  - Bool/logical contexts (ternary, !, !!)
+  - Double negation/complement (-(-x), ~~x, +(-x))
+  - Self-operations (s + s, s - s, s += s, etc.)
+
+✻ Churned for 57s
+
+❯ no commit, since there is no git. I'll tell you when this is the case.
+
+● Got it, no git until you say so.
+
+❯ add more tests
+
+● Read 1 file (ctrl+o to expand)
+
+● Update(src/demo.cpp)
+  ⎿  Added 173 lines
+      306    return 0;
+      307  }
+      308
+      309 +int extraexpr() {
+      310 +  std::cout << "--- construction from signed/unsigned char ---" << std::endl;
+      311 +  signed char   sc = -5;
+      312 +  unsigned char uc = 200;
+      313 +  MPint fromSC(sc);
+      314 +  MPint fromUC(uc);
+      315 +  std::cout << "from signed char(-5)    = " << fromSC << std::endl;   // -5
+      316 +  std::cout << "from unsigned char(200) = " << fromUC << std::endl;   // 200
+      317 +
+      318 +  std::cout << std::endl << "--- compound assignment with plain ints ---" << std::endl;
+      319 +  MPint m = 100;
+      320 +  m += 10;
+      321 +  std::cout << "100 += 10  :: " << m << std::endl;   // 110
+      322 +  m -= 20;
+      323 +  std::cout << "110 -= 20  :: " << m << std::endl;   // 90
+      324 +  m *= 3;
+      325 +  std::cout << "90  *= 3   :: " << m << std::endl;   // 270
+      326 +  m /= 9;
+      327 +  std::cout << "270 /= 9   :: " << m << std::endl;   // 30
+      328 +  m %= 7;
+      329 +  std::cout << "30  %= 7   :: " << m << std::endl;   // 2
+      330 +  m = 0xFF;
+      331 +  m &= 0x0F;
+      332 +  std::cout << "0xFF &= 0x0F :: " << m << std::endl; // 15
+      333 +  m |= 0xF0;
+      334 +  std::cout << "15   |= 0xF0 :: " << m << std::endl; // 255
+      335 +  m ^= 0xAA;
+      336 +  std::cout << "255  ^= 0xAA :: " << m << std::endl; // 85
+      337 +  m = 1;
+      338 +  m <<= 8;
+      339 +  std::cout << "1  <<= 8   :: " << m << std::endl;   // 256
+      340 +  m >>= 4;
+      341 +  std::cout << "256 >>= 4  :: " << m << std::endl;   // 16
+      342 +
+      343 +  std::cout << std::endl << "--- arithmetic identities ---" << std::endl;
+      344 +  MPint x = 42;
+      345 +  assert(x + 0 == x);       std::cout << "x + 0 == x      ok" << std::endl;
+      346 +  assert(x - 0 == x);       std::cout << "x - 0 == x      ok" << std::endl;
+      347 +  assert(x * 1 == x);       std::cout << "x * 1 == x      ok" << std::endl;
+      348 +  assert(x / 1 == x);       std::cout << "x / 1 == x      ok" << std::endl;
+      349 +  assert(x * 0 == MPint(0)); std::cout << "x * 0 == 0      ok" << std::endl;
+      350 +  assert(x - x == MPint(0)); std::cout << "x - x == 0      ok" << std::endl;
+      351 +  assert(x / x == MPint(1)); std::cout << "x / x == 1      ok" << std::endl;
+      352 +  assert(x % x == MPint(0)); std::cout << "x %% x == 0     ok" << std::endl;
+      353 +
+      354 +  std::cout << std::endl << "--- commutativity ---" << std::endl;
+      355 +  MPint a = 7, b = 13;
+      356 +  assert(a + b == b + a);   std::cout << "a + b == b + a   ok" << std::endl;
+      357 +  assert(a * b == b * a);   std::cout << "a * b == b * a   ok" << std::endl;
+      358 +  assert((a & b) == (b & a)); std::cout << "a & b == b & a   ok" << std::endl;
+      359 +  assert((a | b) == (b | a)); std::cout << "a | b == b | a   ok" << std::endl;
+      360 +  assert((a ^ b) == (b ^ a)); std::cout << "a ^ b == b ^ a   ok" << std::endl;
+      361 +
+      362 +  std::cout << std::endl << "--- associativity ---" << std::endl;
+      363 +  MPint c = 5;
+      364 +  assert((a + b) + c == a + (b + c)); std::cout << "(a+b)+c == a+(b+c)  ok" << std::endl;
+      365 +  assert((a * b) * c == a * (b * c)); std::cout << "(a*b)*c == a*(b*c)  ok" << std::endl;
+      366 +
+      367 +  std::cout << std::endl << "--- distributivity ---" << std::endl;
+      368 +  assert(a * (b + c) == a * b + a * c); std::cout << "a*(b+c) == a*b+a*c  ok" << std::endl;
+      369 +  assert(a * (b - c) == a * b - a * c); std::cout << "a*(b-c) == a*b-a*c  ok" << std::endl;
+      370 +
+      371 +  std::cout << std::endl << "--- negative arithmetic ---" << std::endl;
+      372 +  MPint n1 = -10, n2 = -3;
+      373 +  std::cout << "-10 + -3   = " << (n1 + n2) << std::endl;   // -13
+      374 +  std::cout << "-10 - -3   = " << (n1 - n2) << std::endl;   // -7
+      375 +  std::cout << "-10 * -3   = " << (n1 * n2) << std::endl;   // 30
+      376 +  std::cout << "-10 / -3   = " << (n1 / n2) << std::endl;   // 3
+      377 +  std::cout << "-10 % -3   = " << (n1 % n2) << std::endl;   // -1
+      378 +  std::cout << "-10 / 3    = " << (n1 / MPint(3)) << std::endl;   // -3
+      379 +  std::cout << "-10 % 3    = " << (n1 % MPint(3)) << std::endl;   // -1
+      380 +  std::cout << "10 / -3    = " << (MPint(10) / n2) << std::endl;  // -3
+      381 +  std::cout << "10 % -3    = " << (MPint(10) % n2) << std::endl;  // 1
+      382 +
+      383 +  std::cout << std::endl << "--- MPint in a loop ---" << std::endl;
+      384 +  MPint sum = 0;
+      385 +  for (MPint i = 1; i <= 10; ++i) {
+      386 +    sum += i;
+      387 +  }
+      388 +  std::cout << "sum(1..10) = " << sum << std::endl;  // 55
+      389 +  assert(sum == MPint(55));
+      390 +
+      391 +  MPint factorial = 1;
+      392 +  for (MPint i = 2; i <= 10; ++i) {
+      393 +    factorial *= i;
+      394 +  }
+      395 +  std::cout << "10!        = " << factorial << std::endl;  // 3628800
+      396 +  assert(factorial == MPint(3628800));
+      397 +
+      398 +  std::cout << std::endl << "--- MPint as array index (explicit cast) ---" << std::endl;
+      399 +  int arr[] = {10, 20, 30, 40, 50};
+      400 +  MPint idx = 3;
+      401 +  std::cout << "arr[MPint(3)] = " << arr[static_cast<int>(idx)] << std::endl;  // 40
+      402 +
+      403 +  std::cout << std::endl << "--- bitwise shift patterns ---" << std::endl;
+      404 +  MPint one = 1;
+      405 +  std::cout << "1 << 0  = " << (one << 0) << std::endl;   // 1
+      406 +  std::cout << "1 << 1  = " << (one << 1) << std::endl;   // 2
+      407 +  std::cout << "1 << 4  = " << (one << 4) << std::endl;   // 16
+      408 +  std::cout << "1 << 10 = " << (one << 10) << std::endl;  // 1024
+      409 +  MPint big = 1024;
+      410 +  std::cout << "1024 >> 10 = " << (big >> 10) << std::endl;  // 1
+      411 +  std::cout << "1024 >> 5  = " << (big >> 5) << std::endl;   // 32
+      412 +  assert((one << 10) == big);
+      413 +  std::cout << "(1<<10) == 1024  ok" << std::endl;
+      414 +
+      415 +  std::cout << std::endl << "--- bitwise identity properties ---" << std::endl;
+      416 +  MPint val = 0xABCD;
+      417 +  assert((val & val) == val);        std::cout << "x & x == x       ok" << std::endl;
+      418 +  assert((val | val) == val);        std::cout << "x | x == x       ok" << std::endl;
+      419 +  assert((val ^ val) == MPint(0));   std::cout << "x ^ x == 0       ok" << std::endl;
+      420 +  assert((val & MPint(0)) == MPint(0)); std::cout << "x & 0 == 0       ok" << std::endl;
+      421 +  assert((val | MPint(0)) == val);     std::cout << "x | 0 == x       ok" << std::endl;
+      422 +  assert((val ^ MPint(0)) == val);     std::cout << "x ^ 0 == x       ok" << std::endl;
+      423 +
+      424 +  std::cout << std::endl << "--- swap via XOR ---" << std::endl;
+      425 +  MPint sa = 123, sb = 456;
+      426 +  std::cout << "before: sa=" << sa << " sb=" << sb << std::endl;
+      427 +  sa ^= sb;
+      428 +  sb ^= sa;
+      429 +  sa ^= sb;
+      430 +  std::cout << "after:  sa=" << sa << " sb=" << sb << std::endl;
+      431 +  assert(sa == MPint(456));
+      432 +  assert(sb == MPint(123));
+      433 +
+      434 +  std::cout << std::endl << "--- compound assignment chaining ---" << std::endl;
+      435 +  MPint ch = 2;
+      436 +  (ch += 3) *= 4;
+      437 +  std::cout << "(2 += 3) *= 4  = " << ch << std::endl;  // 20
+      438 +  (ch -= 5) /= 3;
+      439 +  std::cout << "(20 -= 5) /= 3 = " << ch << std::endl;  // 5
+      440 +
+      441 +  std::cout << std::endl << "--- comparison with implicit construction ---" << std::endl;
+      442 +  MPint v = 42;
+      443 +  assert(v == 42);     std::cout << "MPint(42) == 42     ok" << std::endl;
+      444 +  assert(42 == v);     std::cout << "42 == MPint(42)     ok" << std::endl;
+      445 +  assert(v != 99);     std::cout << "MPint(42) != 99     ok" << std::endl;
+      446 +  assert(v < 100);     std::cout << "MPint(42) < 100     ok" << std::endl;
+      447 +  assert(v > 0);       std::cout << "MPint(42) > 0       ok" << std::endl;
+      448 +  assert(v <= 42);     std::cout << "MPint(42) <= 42     ok" << std::endl;
+      449 +  assert(v >= 42);     std::cout << "MPint(42) >= 42     ok" << std::endl;
+      450 +  assert(0 < v);       std::cout << "0 < MPint(42)       ok" << std::endl;
+      451 +  assert(100 > v);     std::cout << "100 > MPint(42)     ok" << std::endl;
+      452 +
+      453 +  std::cout << std::endl << "--- GCD (Euclidean algorithm) ---" << std::endl;
+      454 +  MPint ga = 48, gb = 18;
+      455 +  MPint ta = ga, tb = gb;
+      456 +  while (tb != 0) {
+      457 +    MPint tmp = tb;
+      458 +    tb = ta % tb;
+      459 +    ta = tmp;
+      460 +  }
+      461 +  std::cout << "gcd(48, 18) = " << ta << std::endl;  // 6
+      462 +  assert(ta == MPint(6));
+      463 +
+      464 +  std::cout << std::endl << "--- power by repeated squaring ---" << std::endl;
+      465 +  MPint base = 3, exp = 7, result = 1;
+      466 +  MPint b2 = base;
+      467 +  MPint e2 = exp;
+      468 +  while (e2 > 0) {
+      469 +    if (e2 % 2 != 0)
+      470 +      result *= b2;
+      471 +    b2 *= b2;
+      472 +    e2 /= 2;
+      473 +  }
+      474 +  std::cout << "3^7 = " << result << std::endl;  // 2187
+      475 +  assert(result == MPint(2187));
+      476 +
+      477 +  return 0;
+      478 +}
+      479 +
+      480  int main() {
+      481    std::cout << "MPint: claude's elementary operator expressions" << std::endl << std::endl;
+      482    claude_main();
+     ...
+      484    basicexpr();
+      485    std::cout << std::endl << "MPint: more operator expressions" << std::endl << std::endl;
+      486    moreexpr();
+      487 +  std::cout << std::endl << "MPint: extra operator expressions" << std::endl << std::endl;
+      488 +  extraexpr();
+      489    return 0;
+      490  }
+
+● Bash(make 2>&1)
+  ⎿  g++ -std=c++14 -Wall -Wextra -pedantic -Werror -Isrc -o bin/demo src/MPint.cpp src/demo.cpp
+
+● Bash(bin/demo 2>&1 | sed -n '/extra operator/,$p')
+  ⎿  MPint: extra operator expressions
+
+     --- construction from signed/unsigned char ---
+     … +99 lines (ctrl+o to expand)
+
+● Builds clean, all assertions pass. Added extraexpr() covering:
+
+  - signed char / unsigned char construction
+  - Compound assignment with plain int literals (all 10 compound ops)
+  - Arithmetic identities (x+0=x, x1=x, x0=0, x-x=0, x/x=1, x%x=0)
+  - Commutativity (+, *, &, |, ^)
+  - Associativity (+, *)
+  - Distributivity (a*(b+c), a*(b-c))
+  - Negative arithmetic (all sign combinations for /, %)
+  - MPint in loops (sum 1..10, factorial 10!)
+  - MPint as array index via explicit cast
+  - Bitwise shift patterns (powers of 2, round-trip)
+  - Bitwise identity properties (x&x=x, x|x=x, x^x=0, etc.)
+  - XOR swap idiom
+  - Compound assignment chaining ((ch += 3) *= 4)
+  - Comparison with implicit construction (both sides)
+  - GCD (Euclidean algorithm using MPint)
+  - Exponentiation by repeated squaring
+
+✻ Crunched for 1m 5s
+
+❯ /status
+  ⎿  Status dialog dismissed
+
+❯ /exit
+  ⎿  Bye!
+
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ 
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ⏵⏵ accept edits on (shift+tab to cycle)
+
+Resume this session with:
+claude --resume a72b6308-e7d1-4b21-8c59-3d3c9f7dcaf4
+[claudeuser@gondwana:mpint]$
