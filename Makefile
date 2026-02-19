@@ -14,4 +14,4 @@ $(TARGET): $(SRCS) $(SRCDIR)/MPint.hpp
 	$(CXX) $(CXXFLAGS) -o $@ $(SRCS)
 
 clean:
-	rm $(TARGET)
+	$(RM) $(TARGET)
