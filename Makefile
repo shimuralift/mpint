@@ -10,11 +10,8 @@ TARGET   := $(BINDIR)/demo
 
 all: $(TARGET)
 
-$(BINDIR):
-	mkdir -p $(BINDIR)
-
-$(TARGET): $(SRCS) $(SRCDIR)/MPint.hpp | $(BINDIR)
+$(TARGET): $(SRCS) $(SRCDIR)/MPint.hpp
 	$(CXX) $(CXXFLAGS) -o $@ $(SRCS)
 
 clean:
-	rm -rf $(BINDIR)
+	rm $(TARGET)

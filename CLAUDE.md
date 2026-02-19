@@ -10,7 +10,7 @@ by an instance of some multi precision integer type from e.g. GMP, PARI, etc.
 The point is to provide overloaded operators, so that the delicate
 arithmetic expressions in the legacy stuff (from 1990ies math research)
 do not have be rewritten in terms of methods like "c=add(a,b)" instead of
-"c=a+b)", whis is extremely error prone, and even harder to read and maintain than
+"c=a+b", whis is extremely error prone, and even harder to read and maintain than
 what currently exists.
 
 ## Development Guidelines
@@ -22,11 +22,9 @@ Testing approaches: no prefs so far, tbd later
 Build commands: come up with a sensible Makefile
 Test commands: testing tbd later
 
-This is the very start. First i would like to see just something.
-Then you might start singing "you ain't seen nothing yet!", and
-I will be more specific then.
+## What I've done in the meantime
+Rather insignificant changes, see git log
 
-I've added some more basic tests to demo.cpp and got compile errors
-and warnings. Please fix/refactor.
-I've also added the "-Werror" compiler option in the Makefile.
-
+## What to do for you right now
+Nothing significant, no changes, no commits.
+Just make a clean build and run the demo.
