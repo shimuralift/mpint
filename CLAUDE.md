@@ -23,8 +23,7 @@ Build commands: come up with a sensible Makefile
 Test commands: testing tbd later
 
 ## What I've done in the meantime
-No significant changes from my side.
+No significant changes from my side, no commits
 
 ## What to do for you right now
-Not much. I will just ask a silly question, get your answer, and then exit the session.
-It's just for testing your 'claude-log' script.
+Not much. I will just ask a silly question and exit.

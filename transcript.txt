@@ -1162,5 +1162,45 @@
 ● Done.
 
 #############################################################################################################################################################################################################
+
+❯ Is there a way to suppress repetition of previous output when using the '--continue' or '--resume <id>' options?
+
+● claude-code-guide(Claude Code resume display options)
+  ⎿  Done (5 tool uses · 35.8k tokens · 28s)
+  (ctrl+o to expand)
+
+● No — there's no flag or setting to suppress it. The history redisplay on --continue/--resume is hardwired behaviour with no opt-out currently.
+
+  The practical workarounds remain what they are:
+
+  - Don't use --continue for transcript purposes — just run plain claude and rely on auto-memory + CLAUDE.md for continuity. This is what claude-log does.
+  - Accept the redisplay in the transcript — it's redundant but harmless, and col -b still produces clean text from it.
+  - Start a fresh session when the history gets long — which is often the right call anyway once a task is done.
+
+  If the redisplay bothers you during interactive use (not just for transcripts), it's worth filing a feature request via /feedback inside Claude Code.
+
+✻ Baked for 45s
+
+#############################################################################################################################################################################################################
+
+❯ The claude log approach does not work. Period. I'll not go down that rabbit hole. Another question: is there a way to put a comment as a prompt, like one could enter '########...' in a bash shell?
+
+● Not natively — everything typed at the Claude Code prompt is sent as a message and I respond to it. There's no #-style ignore mechanism.
+
+  The closest thing: if you just want a visible section marker in a transcript without getting a substantive response, you could type something minimal like --- or ### checkpoint ### and I'll give a very short acknowledgement. But it's
+  not truly silent.
+
+  Is there a specific use case driving the question? If it's about annotating a transcript, there might be a better angle.
+
+❯ ##############################################################################################################################################################################################################################
+
+● Noted.
+
+❯ Ok, I'll use that.
+
+● Good. Short input, short output — clean enough as a section marker in a transcript.
+
+❯
+
 #############################################################################################################################################################################################################
 
