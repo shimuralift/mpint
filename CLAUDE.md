@@ -23,7 +23,18 @@ Build commands: come up with a sensible Makefile
 Test commands: testing tbd later
 
 ## What I've done in the meantime
-No significant changes from my side, no commits
+No significant changes from my side, no commits.
 
 ## What to do for you right now
-Not much. I will just ask a silly question and exit.
+What haunts me for a long time now is the question
+"What are header files, e.g. *.hpp are actually good for?"
+In (well written and maintained) C, headers contained only
+function declarations, typedefs, important constants, etc.
+Libraries used in development come with such headers,
+to include in a C project which use that library.
+They were meant not to expose any of the inner workings of the library.
+Apparently that's different in C++. When we look at e.g. MPint.cpp and
+MPint.hpp, MPint.hpp exposes an awful lot of internals of 
+class MPint, library or not.
+Question: is there a better practice, that's commonly recognized?
+Note that we are in C++14 here, so modules are not available.

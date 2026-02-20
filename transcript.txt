@@ -1204,3 +1204,35 @@
 
 #############################################################################################################################################################################################################
 
+❯ What are "lint errors"?
+
+● Lint errors are warnings or issues flagged by a linter — a static analysis tool that reads your source code without compiling or running it, and reports things that look wrong, suspicious, or stylistically off.
+
+  The name comes from the original Unix lint tool for C code (named after the fluff that gets caught in a clothes dryer lint trap — small stuff worth cleaning up).
+
+  Examples of what linters flag:
+
+  - Unused variables or imports
+  - Variables used before being assigned
+  - Unreachable code
+  - Inconsistent indentation or formatting
+  - Shadowed variable names
+  - Type mismatches (in dynamically typed languages)
+  - Dangerous patterns (e.g. == vs === in JavaScript)
+
+  In C++ the compiler itself (-Wall -Wextra -Werror) already does a lot of what a separate linter would do — which is why your Makefile flags are valuable. Tools like clang-tidy or cppcheck go further for C++.
+
+  In other languages linters are more distinct from the compiler: pylint/flake8 for Python, eslint for JavaScript, etc.
+
+❯ Fix lint errors
+
+● I don't have any lint errors visible to me. Could you clarify — did a linter report specific errors, and if so, in which files? Or would you like me to run a linter (e.g. cppcheck, clang-tidy) against the project and fix what it finds?
+
+❯ You suggested "Try 'fix lint errors'" to me. So I tried it.
+
+● Ah — that was a Claude Code UI suggestion, not something I actually said. Claude Code sometimes auto-suggests prompts based on context (like the Makefile modification notice). I don't have any lint errors to fix.
+
+  Everything builds cleanly as-is. Nothing to do here.
+
+#############################################################################################################################################################################################################
+
