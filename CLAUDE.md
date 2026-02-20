@@ -23,22 +23,8 @@ Build commands: come up with a sensible Makefile
 Test commands: testing tbd later
 
 ## What I've done in the meantime
-No changes from my side. I've started a claude code session to
-test the 'script -a claude ...' approach, more precisely I used
-'script -a mpint-transcript.txt -c "claude --continue" '.
-There are multiple issues with that.
-1st: 'claude --continue' seems to repdislay the complete conversation
-from the start of the session. This collides with 'script -a ..."
-obviously.
-2nd: 'script' stores all the nonprintable control characters which
-renders the transcription to be gibberish. Look at the latest part of 
-'mpint-transcript.txt' to get an impression.
-
-On a side note, make target clean fails when 'bin/demo' is not present, e.g.
-after a fresh checkout from git.
+No significant changes from my side.
 
 ## What to do for you right now
-Come up with some better suggestions for saving transcripts of our sessions incrementally,
-and uncluttered.
-Please modify the Makefile, so that 'make clean' does not fail when 'bin/demo' is not present.
-
+Not much. I will just ask a silly question, get your answer, and then exit the session.
+It's just for testing your 'claude-log' script.
