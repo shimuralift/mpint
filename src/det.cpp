@@ -164,9 +164,7 @@ static void initRandomMatrix(const unsigned int dim, SQState **stateHnd,
   if (0 == (statePtr = (SQState *)malloc(sizeof(SQState)))) {
     exitNoMem();
   }
-  if (0 == (statePtr->flatMatrix = (Bint *)calloc(dim * dim, sizeof(Bint)))) {
-    exitNoMem();
-  }
+  statePtr->flatMatrix = new Bint[dim * dim]();
   if (0 == (matrix = (Bint **)calloc(dim, sizeof(Bint *)))) {
     exitNoMem();
   }
@@ -174,9 +172,7 @@ static void initRandomMatrix(const unsigned int dim, SQState **stateHnd,
     exitNoMem();
   }
   for (unsigned int ridx = 0; ridx < dim; ridx++) {
-    if (0 == (matrix[ridx] = (Bint *)calloc(dim, sizeof(Bint)))) {
-      exitNoMem();
-    }
+    matrix[ridx] = new Bint[dim]();
     if (0 ==
         (dmatrix[ridx] = (long double *)calloc(dim, sizeof(long double)))) {
       exitNoMem();
@@ -229,13 +225,13 @@ static void freeRandomMatrix(const unsigned int dim, SQState *statePtr,
                              Bint **matrix, long double **dmatrix,
                              unsigned int *perm) {
   for (unsigned int ridx = 0; ridx < dim; ridx++) {
-    free(matrix[ridx]);
+    delete[] matrix[ridx];
     free(dmatrix[ridx]);
   }
   free(matrix);
   free(dmatrix);
   free(perm);
-  free(statePtr->flatMatrix);
+  delete[] statePtr->flatMatrix;
   free(statePtr);
 }
 
