@@ -39,6 +39,16 @@ public:
     explicit operator unsigned int()      const noexcept { return static_cast<unsigned int>(mVal); }
     explicit operator bool()              const noexcept { return mVal != 0; }
 
+    // Explicit conversion to floating-point types.
+    // Kept explicit (unlike built-in long int) because implicit float/double
+    // operators cause overload ambiguity when MPint is mixed with integral
+    // literals (e.g. a*3 becomes ambiguous between MPint::operator* and the
+    // built-in double*int).  One static_cast<> at the call site is clearer
+    // than silent loss of precision anyway.
+    explicit operator float()       const noexcept { return static_cast<float>(mVal); }
+    explicit operator double()      const noexcept { return static_cast<double>(mVal); }
+    explicit operator long double() const noexcept { return static_cast<long double>(mVal); }
+
     // --- unary arithmetic ---------------------------------------------------
     MPint  operator+()         const noexcept { return *this; }
     MPint  operator-()         const noexcept { return MPint(-mVal); }

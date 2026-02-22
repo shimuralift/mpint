@@ -197,7 +197,7 @@ static void sameRandomMatrix(const unsigned int dim, const SQState *statePtr,
     perm[ridx] = ridx;
     for (unsigned int cidx = 0; cidx < dim; cidx++) {
       matrix[ridx][cidx] = statePtr->flatMatrix[ridx * dim + cidx];
-      dmatrix[ridx][cidx] = statePtr->flatMatrix[ridx * dim + cidx];
+      dmatrix[ridx][cidx] = static_cast<long double>(statePtr->flatMatrix[ridx * dim + cidx]);
     }
   }
 }
