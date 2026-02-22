@@ -23,18 +23,17 @@ Build commands: come up with a sensible Makefile
 Test commands: testing tbd later
 
 ## What I've done in the meantime
-No significant changes from my side, no commits.
+I've introduced another test, which computes determinants of integral
+square matrices. There are three methods used: Dodgson's method,
+Gaussian elimination using integers only, and for reference, Gaussian elimination
+using floating point numbers.
+I know from previous tinkering (not legally available to you)
+that Integral Gauss comes to its limits when running on signed long int
+in one of the examples, possibly due to int overflow.
+But that problem will go away when we have MPint use real multi precision
+integers, like GMP.
 
 ## What to do for you right now
-What haunts me for a long time now is the question
-"What are header files, e.g. *.hpp are actually good for?"
-In (well written and maintained) C, headers contained only
-function declarations, typedefs, important constants, etc.
-Libraries used in development come with such headers,
-to include in a C project which use that library.
-They were meant not to expose any of the inner workings of the library.
-Apparently that's different in C++. When we look at e.g. MPint.cpp and
-MPint.hpp, MPint.hpp exposes an awful lot of internals of 
-class MPint, library or not.
-Question: is there a better practice, that's commonly recognized?
-Note that we are in C++14 here, so modules are not available.
+Right now, the det example does not compile, because there's no conversion
+from MPint to double. Please add that to MPint in a graceful, human readable and
+maintainable fashion.

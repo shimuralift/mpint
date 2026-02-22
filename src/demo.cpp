@@ -1,4 +1,5 @@
 #include "MPint.hpp"
+#include "det.hpp"
 
 #include <cassert>
 #include <iostream>
@@ -486,5 +487,7 @@ int main() {
   moreexpr();
   std::cout << std::endl << "MPint: extra operator expressions" << std::endl << std::endl;
   extraexpr();
+  std::cout << std::endl << "MPint: determinant example" << std::endl << std::endl;
+  detTest();
   return 0;
 }

@@ -1236,3 +1236,64 @@
 
 #############################################################################################################################################################################################################
 
+❯ see CLAUDE.md for instructions
+
+● Read 1 file (ctrl+o to expand)
+
+● Good question, and a real tension in C++. Here's an honest answer:
+
+  ---
+  Why C++ headers expose so much more than C headers
+
+  In C, the compiler only needs a function's declaration (return type, parameter types) at the call site. The function body lives in a .c file, compiled separately. The header is purely a contract.
+
+  In C++ this breaks down in three ways:
+
+  1. Templates must be fully defined in the header. The compiler needs the complete implementation at every instantiation site — there's no way around it in C++14.
+  2. inline functions (including everything marked inline or defined inside a class body) must be in the header because the compiler needs the body wherever it's called.
+  3. Class layout — even if you only want to use a pointer to Foo, the compiler must know sizeof(Foo) to allocate it on the stack or in another object. That requires seeing the private members.
+
+  ---
+  Is there a better practice? Yes: the Pimpl idiom
+
+  "Pointer to Implementation" — the class in the header contains only a pointer to a forward-declared implementation struct:
+
+  // MPint.hpp — users see nothing internal
+  class MPint {
+  public:
+      MPint();
+      MPint(long v);
+      MPint operator+(const MPint&) const;
+      // ... declarations only
+      ~MPint();  // must be declared, defined in .cpp
+  private:
+      struct Impl;              // forward declaration
+      Impl* pImpl;              // only a pointer — sizeof known
+  };
+
+  // MPint.cpp — all internals hidden
+  struct MPint::Impl {
+      signed long int mVal;
+  };
+  // all method bodies here
+
+  Users of the header see zero internals. Changing mVal from long to a GMP type requires recompiling only MPint.cpp, not every file that includes the header.
+
+  The cost: one heap allocation per MPint object (for Impl), and one pointer indirection per operation. For a type you intend to eventually back with GMP (which heap-allocates anyway), this cost is negligible and the benefit is real.
+
+  ---
+  Is Pimpl commonly recognised?
+
+  Yes — it's a standard C++ idiom, described in every serious C++ book (Sutter's Exceptional C++, Meyers' Effective C++, etc.). The C++ Core Guidelines endorse it for exactly your use case: hiding implementation details and reducing
+  compilation dependencies.
+
+  ---
+  For MPint specifically
+
+  Right now, with mVal as a plain long, the current header-with-inline-bodies approach is fine — there's nothing sensitive to hide and no compilation speed problem. The value of Pimpl will become real exactly when you swap mVal for a GMP
+  type: without Pimpl, every .cpp that includes MPint.hpp would need to include GMP headers and recompile when GMP details change. With Pimpl, only MPint.cpp sees GMP at all.
+
+  So Pimpl is worth keeping in mind as the migration path — not necessarily something to implement today.
+
+#############################################################################################################################################################################################################
+
