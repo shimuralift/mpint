@@ -1297,3 +1297,586 @@
 
 #############################################################################################################################################################################################################
 
+❯ see CLAUDE.md for instructions, as usual.
+
+● Read 3 files (ctrl+o to expand)
+
+● Let me verify the exact compile error first.
+
+● Bash(make 2>&1)
+  ⎿  Error: Exit code 2
+     g++ -std=c++14 -Wall -Wextra -pedantic -Werror -Isrc -o bin/demo src/MPint.cpp src/demo.cpp src/det.cpp
+     src/det.cpp: In function ‘void sameRandomMatrix(unsigned int, const SQState*, Bint**, long double**, unsigned int*)’:
+     src/det.cpp:200:67: error: cannot convert ‘Bint’ {aka ‘MPint’} to ‘long double’ in assignment
+       200 |       dmatrix[ridx][cidx] = statePtr->flatMatrix[ridx * dim + cidx];
+           |                             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+           |                                                                   |
+           |                                                                   Bint {aka MPint}
+     make: *** [Makefile:15: bin/demo] Error 1
+
+     … +8 lines (ctrl+o to see all)
+
+● One error, exactly as described. The fix is to add floating-point conversion operators. These should be non-explicit (unlike the integral ones) because:
+
+  1. signed long int → floating point is already implicit in standard C++
+  2. det.cpp uses the conversion implicitly — it's legacy code we're not meant to rewrite
+  3. Floating-point conversion isn't the same kind of dangerous silent truncation as integer narrowing
+
+● Update(src/MPint.hpp)
+  ⎿  Added 7 lines
+      39      explicit operator unsigned int()      const noexcept { return static_cast<unsigned int>(mVal); }
+      40      explicit operator bool()              const noexcept { return mVal != 0; }
+      41
+      42 +    // Implicit conversion to floating-point types.
+      43 +    // Non-explicit: signed long int converts to float/double/long double
+      44 +    // implicitly in standard C++, so MPint should behave the same way.
+      45 +    operator float()       const noexcept { return static_cast<float>(mVal); }
+      46 +    operator double()      const noexcept { return static_cast<double>(mVal); }
+      47 +    operator long double() const noexcept { return static_cast<long double>(mVal); }
+      48 +
+      49      // --- unary arithmetic ---------------------------------------------------
+      50      MPint  operator+()         const noexcept { return *this; }
+      51      MPint  operator-()         const noexcept { return MPint(-mVal); }
+
+● Bash(make 2>&1)
+  ⎿  Error: Exit code 2
+     g++ -std=c++14 -Wall -Wextra -pedantic -Werror -Isrc -o bin/demo src/MPint.cpp src/demo.cpp src/det.cpp
+     src/demo.cpp: In function ‘int claude_main()’:
+     src/demo.cpp:53:17: error: ambiguous overload for ‘operator*’ (operand types are ‘MPint’ and ‘int’)
+        53 |     MPint r = a * 3 + 1;
+           |               ~ ^ ~
+           |               |   |
+           |               |   int
+           |               MPint
+     src/demo.cpp:53:17: note: candidate: ‘operator*(long double, int)’ (built-in)
+     … +101 lines (ctrl+o to see all)
+
+● The implicit float/double/long double operators create operator overload ambiguity throughout the existing tests — e.g. MPint * int is now ambiguous between MPint::operator* and the built-in long double * int. Any implicit
+  floating-point conversion causes this because both paths require exactly one user-defined conversion.
+
+  The right design: keep the conversions explicit. Then fix the one line in det.cpp that needs it.
+
+● Update(src/MPint.hpp)
+  ⎿  Added 9 lines, removed 6 lines
+      39      explicit operator unsigned int()      const noexcept { return static_cast<unsigned int>(mVal); }
+      40      explicit operator bool()              const noexcept { return mVal != 0; }
+      41
+      42 -    // Implicit conversion to floating-point types.
+      43 -    // Non-explicit: signed long int converts to float/double/long double
+      44 -    // implicitly in standard C++, so MPint should behave the same way.
+      45 -    operator float()       const noexcept { return static_cast<float>(mVal); }
+      46 -    operator double()      const noexcept { return static_cast<double>(mVal); }
+      47 -    operator long double() const noexcept { return static_cast<long double>(mVal); }
+      42 +    // Explicit conversion to floating-point types.
+      43 +    // Kept explicit (unlike built-in long int) because implicit float/double
+      44 +    // operators cause overload ambiguity when MPint is mixed with integral
+      45 +    // literals (e.g. a*3 becomes ambiguous between MPint::operator* and the
+      46 +    // built-in double*int).  One static_cast<> at the call site is clearer
+      47 +    // than silent loss of precision anyway.
+      48 +    explicit operator float()       const noexcept { return static_cast<float>(mVal); }
+      49 +    explicit operator double()      const noexcept { return static_cast<double>(mVal); }
+      50 +    explicit operator long double() const noexcept { return static_cast<long double>(mVal); }
+      51
+      52      // --- unary arithmetic ---------------------------------------------------
+      53      MPint  operator+()         const noexcept { return *this; }
+
+● Now fix the one line in det.cpp that needs the cast:
+
+● Update(src/det.cpp)
+  ⎿  Added 1 line, removed 1 line
+      197      perm[ridx] = ridx;
+      198      for (unsigned int cidx = 0; cidx < dim; cidx++) {
+      199        matrix[ridx][cidx] = statePtr->flatMatrix[ridx * dim + cidx];
+      200 -      dmatrix[ridx][cidx] = statePtr->flatMatrix[ridx * dim + cidx];
+      200 +      dmatrix[ridx][cidx] = static_cast<long double>(statePtr->flatMatrix[ridx * dim + cidx]);
+      201      }
+      202    }
+      203  }
+
+● Bash(make 2>&1)
+  ⎿  g++ -std=c++14 -Wall -Wextra -pedantic -Werror -Isrc -o bin/demo src/MPint.cpp src/demo.cpp src/det.cpp
+
+● Bash(/home/claudeuser/work/mpint/bin/demo 2>&1)
+  ⎿  MPint: claude's elementary operator expressions
+
+     a        = 6
+     … +87 lines (ctrl+o to expand)
+
+● Builds clean, all runs pass. And you can already see the int-overflow behaviour you anticipated — runs 25 and 26 (4×4 dense matrices) show GaussInt diverging from Dodgson and GaussFloat:
+
+  Dodgson:    -43753032   GaussInt:   402904    GaussFloat: -4.3753e+07
+  Dodgson:    -18819899   GaussInt:   -117875   GaussFloat: -1.88199e+07
+
+  GaussFloat and Dodgson agree (both correct), GaussInt is wrong — integer overflow as expected. That'll be the first thing to fix once GMP is in place.
+
+✻ Brewed for 3m 1s
+
+❯ commit this
+
+● Bash(git status && git diff && git log --oneline -3)
+  ⎿  On branch master
+     Changes not staged for commit:
+       (use "git add <file>..." to update what will be committed)
+     … +42 lines (ctrl+o to expand)
+
+● Bash(git add src/MPint.hpp src/det.cpp && git commit -m "add explicit float/double/long double conversion operators to MPint…)
+  ⎿  [master 73b1387] add explicit float/double/long double conversion operators to MPint
+      2 files changed, 11 insertions(+), 1 deletion(-)
+
+● Done.
+
+#############################################################################################################################################################################################################
+
+❯ Let's come back to the pimpl approach you mentioned. (I'd rather call that 'using handles'.) When that gets used, we would have to rewrite the legacy code, all these numerical expressions and algorithms quite invasively, right. But
+   mpint is an exercise in operator overloading.
+
+● No, not at all — that's the key point. Pimpl is purely an internal implementation detail of MPint. The public interface — all the operators, constructors, everything — stays identical. The legacy code still writes:
+
+  MPint a = 5, b = 3;
+  MPint c = a * b + 1;
+  if (c > 0) { ... }
+
+  Nothing changes there. MPint is still a value type from the outside. The handle/pointer is hidden inside the class. The legacy code never sees it.
+
+  What changes is only inside MPint's own implementation files:
+
+  - Instead of mVal being a signed long int directly in the object, it's a pointer to a struct containing signed long int (or later, a GMP integer)
+  - The operator bodies in .cpp go through pImpl->mVal instead of mVal
+  - That's it
+
+  The rewrite you're thinking of — c = add(a, b) instead of c = a + b — is what happens when you don't use MPint at all, or when you use a library type that has no operator overloads. MPint exists precisely to prevent that rewrite. Pimpl
+  doesn't change that equation in any direction.
+
+  So: Pimpl is orthogonal to the operator overloading work. It's just about where the data lives physically, not about what the code looks like at the call site.
+
+❯ This! Thanks. So do it.
+
+● Before writing anything, let me check the current state of the files since they were modified per the system reminders.
+
+● Read 2 files (ctrl+o to expand)
+
+● There's one complication: det.cpp allocates Bint (= MPint) arrays with calloc, which zeroes raw memory. With Pimpl, zeroed memory means a null pImpl — instant crash on use. Those two allocations need to become new Bint[n]() so the
+  default constructor actually runs. Everything else in det.cpp (long doubles, unsigned ints, pointer arrays, SQState itself) is trivial and can stay as-is.
+
+  With that understood, here's the full implementation:
+
+● Write(src/MPint.hpp)
+  ⎿  Added 72 lines, removed 76 lines
+        5  // MPint: a drop-in replacement for signed long int.
+        6  // All arithmetic, comparison, bitwise, increment/decrement, and stream
+        7  // operators are provided so legacy code needs no textual changes.
+        8 -// The private mVal member will later be swapped out for a GMP/PARI/...
+        9 -// multi-precision type without touching any call sites.
+        8 +// The private Impl handle will later be swapped out for a GMP/PARI/...
+        9 +// multi-precision type without touching any call sites or this header.
+       10
+       11  class MPint {
+       12  public:
+       13      // --- construction -------------------------------------------------------
+       14 -    MPint() noexcept : mVal(0) {}
+       14 +    MPint() noexcept;
+       15
+       16      // Accept any built-in integral type without narrowing warnings.
+       17 -    MPint(signed long int   v) noexcept : mVal(v) {}
+       18 -    MPint(signed int        v) noexcept : mVal(v) {}
+       19 -    MPint(signed short      v) noexcept : mVal(v) {}
+       20 -    MPint(signed char       v) noexcept : mVal(v) {}
+       21 -    MPint(unsigned long int v) noexcept : mVal(static_cast<signed long int>(v)) {}
+       22 -    MPint(unsigned int      v) noexcept : mVal(static_cast<signed long int>(v)) {}
+       23 -    MPint(unsigned short    v) noexcept : mVal(static_cast<signed long int>(v)) {}
+       24 -    MPint(unsigned char     v) noexcept : mVal(static_cast<signed long int>(v)) {}
+       25 -    MPint(long long         v) noexcept : mVal(static_cast<signed long int>(v)) {}
+       17 +    MPint(signed long int   v) noexcept;
+       18 +    MPint(signed int        v) noexcept;
+       19 +    MPint(signed short      v) noexcept;
+       20 +    MPint(signed char       v) noexcept;
+       21 +    MPint(unsigned long int v) noexcept;
+       22 +    MPint(unsigned int      v) noexcept;
+       23 +    MPint(unsigned short    v) noexcept;
+       24 +    MPint(unsigned char     v) noexcept;
+       25 +    MPint(long long         v) noexcept;
+       26
+       27 -    // Copy / move (both trivial for a scalar wrapper)
+       28 -    MPint(const MPint&)            = default;
+       29 -    MPint& operator=(const MPint&) = default;
+       27 +    // Copy / move / destroy
+       28 +    MPint(const MPint&)            noexcept;
+       29 +    MPint& operator=(const MPint&) noexcept;
+       30 +    MPint(MPint&&)                 noexcept;
+       31 +    MPint& operator=(MPint&&)      noexcept;
+       32 +    ~MPint();
+       33
+       31 -    // --- conversion out ------------------------------------------------------
+       32 -    // explicit so code like "if (n)" still works (contextual bool conversion)
+       33 -    // but silent implicit truncation to int, etc., is prevented.
+       34 -    explicit operator signed long int()   const noexcept { return mVal; }
+       35 -    explicit operator signed int()        const noexcept { return static_cast<int>(mVal); }
+       36 -    explicit operator signed short()      const noexcept { return static_cast<short>(mVal); }
+       37 -    explicit operator signed char()       const noexcept { return static_cast<signed char>(mVal); }
+       38 -    explicit operator unsigned long int() const noexcept { return static_cast<unsigned long int>(mVal); }
+       39 -    explicit operator unsigned int()      const noexcept { return static_cast<unsigned int>(mVal); }
+       40 -    explicit operator bool()              const noexcept { return mVal != 0; }
+       34 +    // --- conversion out -----------------------------------------------------
+       35 +    // Integral: explicit, to prevent silent narrowing.
+       36 +    explicit operator signed long int()   const noexcept;
+       37 +    explicit operator signed int()        const noexcept;
+       38 +    explicit operator signed short()      const noexcept;
+       39 +    explicit operator signed char()       const noexcept;
+       40 +    explicit operator unsigned long int() const noexcept;
+       41 +    explicit operator unsigned int()      const noexcept;
+       42 +    explicit operator bool()              const noexcept;
+       43
+       42 -    // Explicit conversion to floating-point types.
+       43 -    // Kept explicit (unlike built-in long int) because implicit float/double
+       44 -    // operators cause overload ambiguity when MPint is mixed with integral
+       45 -    // literals (e.g. a*3 becomes ambiguous between MPint::operator* and the
+       46 -    // built-in double*int).  One static_cast<> at the call site is clearer
+       47 -    // than silent loss of precision anyway.
+       48 -    explicit operator float()       const noexcept { return static_cast<float>(mVal); }
+       49 -    explicit operator double()      const noexcept { return static_cast<double>(mVal); }
+       50 -    explicit operator long double() const noexcept { return static_cast<long double>(mVal); }
+       44 +    // Floating-point: explicit too — implicit operators cause overload
+       45 +    // ambiguity when MPint is mixed with integral literals (e.g. a*3).
+       46 +    explicit operator float()             const noexcept;
+       47 +    explicit operator double()            const noexcept;
+       48 +    explicit operator long double()       const noexcept;
+       49
+       50      // --- unary arithmetic ---------------------------------------------------
+       53 -    MPint  operator+()         const noexcept { return *this; }
+       54 -    MPint  operator-()         const noexcept { return MPint(-mVal); }
+       51 +    MPint  operator+()         const noexcept;
+       52 +    MPint  operator-()         const noexcept;
+       53
+       54      // --- unary logical ------------------------------------------------------
+       57 -    bool   operator!()         const noexcept { return mVal == 0; }
+       55 +    bool   operator!()         const noexcept;
+       56
+       57      // --- unary bitwise ------------------------------------------------------
+       60 -    MPint  operator~()         const noexcept { return MPint(~mVal); }
+       58 +    MPint  operator~()         const noexcept;
+       59
+       60      // --- prefix increment / decrement ---------------------------------------
+       63 -    MPint& operator++()    noexcept { ++mVal; return *this; }
+       64 -    MPint& operator--()    noexcept { --mVal; return *this; }
+       61 +    MPint& operator++()    noexcept;
+       62 +    MPint& operator--()    noexcept;
+       63
+       64      // --- postfix increment / decrement --------------------------------------
+       67 -    MPint  operator++(int) noexcept { MPint tmp(*this); ++mVal; return tmp; }
+       68 -    MPint  operator--(int) noexcept { MPint tmp(*this); --mVal; return tmp; }
+       65 +    MPint  operator++(int) noexcept;
+       66 +    MPint  operator--(int) noexcept;
+       67
+       68      // --- compound assignment: arithmetic ------------------------------------
+       71 -    MPint& operator+=(const MPint& rhs) noexcept { mVal += rhs.mVal; return *this; }
+       72 -    MPint& operator-=(const MPint& rhs) noexcept { mVal -= rhs.mVal; return *this; }
+       73 -    MPint& operator*=(const MPint& rhs) noexcept { mVal *= rhs.mVal; return *this; }
+       74 -    MPint& operator/=(const MPint& rhs)          { mVal /= rhs.mVal; return *this; }
+       75 -    MPint& operator%=(const MPint& rhs)          { mVal %= rhs.mVal; return *this; }
+       69 +    MPint& operator+=(const MPint& rhs) noexcept;
+       70 +    MPint& operator-=(const MPint& rhs) noexcept;
+       71 +    MPint& operator*=(const MPint& rhs) noexcept;
+       72 +    MPint& operator/=(const MPint& rhs);
+       73 +    MPint& operator%=(const MPint& rhs);
+       74
+       75      // --- compound assignment: bitwise ---------------------------------------
+       78 -    MPint& operator&=(const MPint& rhs) noexcept { mVal &= rhs.mVal; return *this; }
+       79 -    MPint& operator|=(const MPint& rhs) noexcept { mVal |= rhs.mVal; return *this; }
+       80 -    MPint& operator^=(const MPint& rhs) noexcept { mVal ^= rhs.mVal; return *this; }
+       76 +    MPint& operator&=(const MPint& rhs) noexcept;
+       77 +    MPint& operator|=(const MPint& rhs) noexcept;
+       78 +    MPint& operator^=(const MPint& rhs) noexcept;
+       79
+       80      // --- compound assignment: shift -----------------------------------------
+       83 -    MPint& operator<<=(int n) noexcept { mVal <<= n; return *this; }
+       84 -    MPint& operator>>=(int n) noexcept { mVal >>= n; return *this; }
+       85 -    MPint& operator<<=(const MPint& rhs) noexcept { mVal <<= rhs.mVal; return *this; }
+       86 -    MPint& operator>>=(const MPint& rhs) noexcept { mVal >>= rhs.mVal; return *this; }
+       81 +    MPint& operator<<=(int n)            noexcept;
+       82 +    MPint& operator>>=(int n)            noexcept;
+       83 +    MPint& operator<<=(const MPint& rhs) noexcept;
+       84 +    MPint& operator>>=(const MPint& rhs) noexcept;
+       85
+       86      // --- binary arithmetic (defined via compound assignment) ----------------
+       89 -    friend MPint operator+(MPint lhs, const MPint& rhs) noexcept { return lhs += rhs; }
+       90 -    friend MPint operator-(MPint lhs, const MPint& rhs) noexcept { return lhs -= rhs; }
+       91 -    friend MPint operator*(MPint lhs, const MPint& rhs) noexcept { return lhs *= rhs; }
+       92 -    friend MPint operator/(MPint lhs, const MPint& rhs)          { return lhs /= rhs; }
+       93 -    friend MPint operator%(MPint lhs, const MPint& rhs)          { return lhs %= rhs; }
+       87 +    friend MPint operator+(MPint lhs, const MPint& rhs) noexcept;
+       88 +    friend MPint operator-(MPint lhs, const MPint& rhs) noexcept;
+       89 +    friend MPint operator*(MPint lhs, const MPint& rhs) noexcept;
+       90 +    friend MPint operator/(MPint lhs, const MPint& rhs);
+       91 +    friend MPint operator%(MPint lhs, const MPint& rhs);
+       92
+       93      // --- binary bitwise -----------------------------------------------------
+       96 -    friend MPint operator&(MPint lhs, const MPint& rhs) noexcept { return lhs &= rhs; }
+       97 -    friend MPint operator|(MPint lhs, const MPint& rhs) noexcept { return lhs |= rhs; }
+       98 -    friend MPint operator^(MPint lhs, const MPint& rhs) noexcept { return lhs ^= rhs; }
+       94 +    friend MPint operator&(MPint lhs, const MPint& rhs) noexcept;
+       95 +    friend MPint operator|(MPint lhs, const MPint& rhs) noexcept;
+       96 +    friend MPint operator^(MPint lhs, const MPint& rhs) noexcept;
+       97
+       98      // --- shift --------------------------------------------------------------
+      101 -    friend MPint operator<<(MPint lhs, int n)          noexcept { return lhs <<= n; }
+      102 -    friend MPint operator>>(MPint lhs, int n)          noexcept { return lhs >>= n; }
+      103 -    friend MPint operator<<(MPint lhs, const MPint& rhs) noexcept { return lhs <<= rhs; }
+      104 -    friend MPint operator>>(MPint lhs, const MPint& rhs) noexcept { return lhs >>= rhs; }
+       99 +    friend MPint operator<<(MPint lhs, int n)            noexcept;
+      100 +    friend MPint operator>>(MPint lhs, int n)            noexcept;
+      101 +    friend MPint operator<<(MPint lhs, const MPint& rhs) noexcept;
+      102 +    friend MPint operator>>(MPint lhs, const MPint& rhs) noexcept;
+      103
+      104      // --- comparison ---------------------------------------------------------
+      107 -    friend bool operator==(const MPint& a, const MPint& b) noexcept { return a.mVal == b.mVal; }
+      108 -    friend bool operator!=(const MPint& a, const MPint& b) noexcept { return a.mVal != b.mVal; }
+      109 -    friend bool operator< (const MPint& a, const MPint& b) noexcept { return a.mVal <  b.mVal; }
+      110 -    friend bool operator> (const MPint& a, const MPint& b) noexcept { return a.mVal >  b.mVal; }
+      111 -    friend bool operator<=(const MPint& a, const MPint& b) noexcept { return a.mVal <= b.mVal; }
+      112 -    friend bool operator>=(const MPint& a, const MPint& b) noexcept { return a.mVal >= b.mVal; }
+      105 +    friend bool operator==(const MPint& a, const MPint& b) noexcept;
+      106 +    friend bool operator!=(const MPint& a, const MPint& b) noexcept;
+      107 +    friend bool operator< (const MPint& a, const MPint& b) noexcept;
+      108 +    friend bool operator> (const MPint& a, const MPint& b) noexcept;
+      109 +    friend bool operator<=(const MPint& a, const MPint& b) noexcept;
+      110 +    friend bool operator>=(const MPint& a, const MPint& b) noexcept;
+      111
+      112      // --- stream I/O ---------------------------------------------------------
+      113      friend std::ostream& operator<<(std::ostream& os, const MPint& v);
+      114      friend std::istream& operator>>(std::istream& is,       MPint& v);
+      115
+      116  private:
+      119 -    signed long int mVal;
+      117 +    struct Impl;   // defined in MPint.cpp — no internals visible in this header
+      118 +    Impl*  pImpl;
+      119  };
+      121 -
+      122 -// Stream definitions live in MPint.cpp to avoid pulling <iostream> into every
+      123 -// translation unit that includes this header.
+
+● Write(src/MPint.cpp)
+  ⎿  Added 125 lines, removed 4 lines
+        2
+        3  #include <iostream>
+        4
+        5 -std::ostream& operator<<(std::ostream& os, const MPint& v) {
+        6 -    return os << v.mVal;
+        5 +// ---------------------------------------------------------------------------
+        6 +// The only implementation detail: what an MPint actually stores.
+        7 +// To switch to GMP, replace this struct and adjust the operator bodies below.
+        8 +// Nothing outside this file needs to change.
+        9 +// ---------------------------------------------------------------------------
+       10 +struct MPint::Impl {
+       11 +    signed long int mVal;
+       12 +};
+       13 +
+       14 +// --- construction -----------------------------------------------------------
+       15 +
+       16 +MPint::MPint()                    noexcept : pImpl(new Impl{0L}) {}
+       17 +MPint::MPint(signed long int   v) noexcept : pImpl(new Impl{v}) {}
+       18 +MPint::MPint(signed int        v) noexcept : pImpl(new Impl{v}) {}
+       19 +MPint::MPint(signed short      v) noexcept : pImpl(new Impl{v}) {}
+       20 +MPint::MPint(signed char       v) noexcept : pImpl(new Impl{v}) {}
+       21 +MPint::MPint(unsigned long int v) noexcept : pImpl(new Impl{static_cast<signed long int>(v)}) {}
+       22 +MPint::MPint(unsigned int      v) noexcept : pImpl(new Impl{static_cast<signed long int>(v)}) {}
+       23 +MPint::MPint(unsigned short    v) noexcept : pImpl(new Impl{static_cast<signed long int>(v)}) {}
+       24 +MPint::MPint(unsigned char     v) noexcept : pImpl(new Impl{static_cast<signed long int>(v)}) {}
+       25 +MPint::MPint(long long         v) noexcept : pImpl(new Impl{static_cast<signed long int>(v)}) {}
+       26 +
+       27 +MPint::MPint(const MPint& other)  noexcept : pImpl(new Impl{other.pImpl->mVal}) {}
+       28 +MPint::MPint(MPint&&      other)  noexcept : pImpl(other.pImpl) { other.pImpl = nullptr; }
+       29 +
+       30 +MPint& MPint::operator=(const MPint& other) noexcept {
+       31 +    if (this != &other) pImpl->mVal = other.pImpl->mVal;
+       32 +    return *this;
+       33  }
+       34
+        9 -std::istream& operator>>(std::istream& is, MPint& v) {
+       10 -    return is >> v.mVal;
+       35 +MPint& MPint::operator=(MPint&& other) noexcept {
+       36 +    if (this != &other) { delete pImpl; pImpl = other.pImpl; other.pImpl = nullptr; }
+       37 +    return *this;
+       38  }
+       39 +
+       40 +MPint::~MPint() { delete pImpl; }
+       41 +
+       42 +// --- conversion out ---------------------------------------------------------
+       43 +
+       44 +MPint::operator signed long int()   const noexcept { return pImpl->mVal; }
+       45 +MPint::operator signed int()        const noexcept { return static_cast<int>(pImpl->mVal); }
+       46 +MPint::operator signed short()      const noexcept { return static_cast<short>(pImpl->mVal); }
+       47 +MPint::operator signed char()       const noexcept { return static_cast<signed char>(pImpl->mVal); }
+       48 +MPint::operator unsigned long int() const noexcept { return static_cast<unsigned long int>(pImpl->mVal); }
+       49 +MPint::operator unsigned int()      const noexcept { return static_cast<unsigned int>(pImpl->mVal); }
+       50 +MPint::operator bool()              const noexcept { return pImpl->mVal != 0; }
+       51 +MPint::operator float()             const noexcept { return static_cast<float>(pImpl->mVal); }
+       52 +MPint::operator double()            const noexcept { return static_cast<double>(pImpl->mVal); }
+       53 +MPint::operator long double()       const noexcept { return static_cast<long double>(pImpl->mVal); }
+       54 +
+       55 +// --- unary arithmetic -------------------------------------------------------
+       56 +
+       57 +MPint MPint::operator+() const noexcept { return *this; }
+       58 +MPint MPint::operator-() const noexcept { return MPint(-pImpl->mVal); }
+       59 +
+       60 +// --- unary logical ----------------------------------------------------------
+       61 +
+       62 +bool MPint::operator!() const noexcept { return pImpl->mVal == 0; }
+       63 +
+       64 +// --- unary bitwise ----------------------------------------------------------
+       65 +
+       66 +MPint MPint::operator~() const noexcept { return MPint(~pImpl->mVal); }
+       67 +
+       68 +// --- prefix increment / decrement -------------------------------------------
+       69 +
+       70 +MPint& MPint::operator++() noexcept { ++pImpl->mVal; return *this; }
+       71 +MPint& MPint::operator--() noexcept { --pImpl->mVal; return *this; }
+       72 +
+       73 +// --- postfix increment / decrement ------------------------------------------
+       74 +
+       75 +MPint MPint::operator++(int) noexcept { MPint tmp(*this); ++pImpl->mVal; return tmp; }
+       76 +MPint MPint::operator--(int) noexcept { MPint tmp(*this); --pImpl->mVal; return tmp; }
+       77 +
+       78 +// --- compound assignment: arithmetic ----------------------------------------
+       79 +
+       80 +MPint& MPint::operator+=(const MPint& rhs) noexcept { pImpl->mVal += rhs.pImpl->mVal; return *this; }
+       81 +MPint& MPint::operator-=(const MPint& rhs) noexcept { pImpl->mVal -= rhs.pImpl->mVal; return *this; }
+       82 +MPint& MPint::operator*=(const MPint& rhs) noexcept { pImpl->mVal *= rhs.pImpl->mVal; return *this; }
+       83 +MPint& MPint::operator/=(const MPint& rhs)           { pImpl->mVal /= rhs.pImpl->mVal; return *this; }
+       84 +MPint& MPint::operator%=(const MPint& rhs)           { pImpl->mVal %= rhs.pImpl->mVal; return *this; }
+       85 +
+       86 +// --- compound assignment: bitwise -------------------------------------------
+       87 +
+       88 +MPint& MPint::operator&=(const MPint& rhs) noexcept { pImpl->mVal &= rhs.pImpl->mVal; return *this; }
+       89 +MPint& MPint::operator|=(const MPint& rhs) noexcept { pImpl->mVal |= rhs.pImpl->mVal; return *this; }
+       90 +MPint& MPint::operator^=(const MPint& rhs) noexcept { pImpl->mVal ^= rhs.pImpl->mVal; return *this; }
+       91 +
+       92 +// --- compound assignment: shift ---------------------------------------------
+       93 +
+       94 +MPint& MPint::operator<<=(int n)            noexcept { pImpl->mVal <<= n;              return *this; }
+       95 +MPint& MPint::operator>>=(int n)            noexcept { pImpl->mVal >>= n;              return *this; }
+       96 +MPint& MPint::operator<<=(const MPint& rhs) noexcept { pImpl->mVal <<= rhs.pImpl->mVal; return *this; }
+       97 +MPint& MPint::operator>>=(const MPint& rhs) noexcept { pImpl->mVal >>= rhs.pImpl->mVal; return *this; }
+       98 +
+       99 +// --- binary arithmetic ------------------------------------------------------
+      100 +
+      101 +MPint operator+(MPint lhs, const MPint& rhs) noexcept { return lhs += rhs; }
+      102 +MPint operator-(MPint lhs, const MPint& rhs) noexcept { return lhs -= rhs; }
+      103 +MPint operator*(MPint lhs, const MPint& rhs) noexcept { return lhs *= rhs; }
+      104 +MPint operator/(MPint lhs, const MPint& rhs)           { return lhs /= rhs; }
+      105 +MPint operator%(MPint lhs, const MPint& rhs)           { return lhs %= rhs; }
+      106 +
+      107 +// --- binary bitwise ---------------------------------------------------------
+      108 +
+      109 +MPint operator&(MPint lhs, const MPint& rhs) noexcept { return lhs &= rhs; }
+      110 +MPint operator|(MPint lhs, const MPint& rhs) noexcept { return lhs |= rhs; }
+      111 +MPint operator^(MPint lhs, const MPint& rhs) noexcept { return lhs ^= rhs; }
+      112 +
+      113 +// --- shift ------------------------------------------------------------------
+      114 +
+      115 +MPint operator<<(MPint lhs, int n)            noexcept { return lhs <<= n; }
+      116 +MPint operator>>(MPint lhs, int n)            noexcept { return lhs >>= n; }
+      117 +MPint operator<<(MPint lhs, const MPint& rhs) noexcept { return lhs <<= rhs; }
+      118 +MPint operator>>(MPint lhs, const MPint& rhs) noexcept { return lhs >>= rhs; }
+      119 +
+      120 +// --- comparison -------------------------------------------------------------
+      121 +
+      122 +bool operator==(const MPint& a, const MPint& b) noexcept { return a.pImpl->mVal == b.pImpl->mVal; }
+      123 +bool operator!=(const MPint& a, const MPint& b) noexcept { return a.pImpl->mVal != b.pImpl->mVal; }
+      124 +bool operator< (const MPint& a, const MPint& b) noexcept { return a.pImpl->mVal <  b.pImpl->mVal; }
+      125 +bool operator> (const MPint& a, const MPint& b) noexcept { return a.pImpl->mVal >  b.pImpl->mVal; }
+      126 +bool operator<=(const MPint& a, const MPint& b) noexcept { return a.pImpl->mVal <= b.pImpl->mVal; }
+      127 +bool operator>=(const MPint& a, const MPint& b) noexcept { return a.pImpl->mVal >= b.pImpl->mVal; }
+      128 +
+      129 +// --- stream I/O -------------------------------------------------------------
+      130 +
+      131 +std::ostream& operator<<(std::ostream& os, const MPint& v) { return os << v.pImpl->mVal; }
+      132 +std::istream& operator>>(std::istream& is,       MPint& v) { return is >> v.pImpl->mVal; }
+
+● Now the two calloc calls in det.cpp that allocate Bint objects:
+
+● Update(src/det.cpp)
+  ⎿  Added 1 line, removed 3 lines
+      164    if (0 == (statePtr = (SQState *)malloc(sizeof(SQState)))) {
+      165      exitNoMem();
+      166    }
+      167 -  if (0 == (statePtr->flatMatrix = (Bint *)calloc(dim * dim, sizeof(Bint)))) {
+      168 -    exitNoMem();
+      169 -  }
+      167 +  statePtr->flatMatrix = new Bint[dim * dim]();
+      168    if (0 == (matrix = (Bint **)calloc(dim, sizeof(Bint *)))) {
+      169      exitNoMem();
+      170    }
+
+● Update(src/det.cpp)
+  ⎿  Added 1 line, removed 3 lines
+      172      exitNoMem();
+      173    }
+      174    for (unsigned int ridx = 0; ridx < dim; ridx++) {
+      175 -    if (0 == (matrix[ridx] = (Bint *)calloc(dim, sizeof(Bint)))) {
+      176 -      exitNoMem();
+      177 -    }
+      175 +    matrix[ridx] = new Bint[dim]();
+      176      if (0 ==
+      177          (dmatrix[ridx] = (long double *)calloc(dim, sizeof(long double)))) {
+      178        exitNoMem();
+
+● Update(src/det.cpp)
+  ⎿  Added 1 line, removed 1 line
+      225                               Bint **matrix, long double **dmatrix,
+      226                               unsigned int *perm) {
+      227    for (unsigned int ridx = 0; ridx < dim; ridx++) {
+      228 -    free(matrix[ridx]);
+      228 +    delete[] matrix[ridx];
+      229      free(dmatrix[ridx]);
+      230    }
+      231    free(matrix);
+
+● Update(src/det.cpp)
+  ⎿  Added 1 line, removed 1 line
+      231    free(matrix);
+      232    free(dmatrix);
+      233    free(perm);
+      234 -  free(statePtr->flatMatrix);
+      234 +  delete[] statePtr->flatMatrix;
+      235    free(statePtr);
+      236  }
+      237
+
+● Bash(make clean && make 2>&1)
+  ⎿  rm -f bin/demo
+     g++ -std=c++14 -Wall -Wextra -pedantic -Werror -Isrc -o bin/demo src/MPint.cpp src/demo.cpp src/det.cpp
+
+● Bash(/home/claudeuser/work/mpint/bin/demo 2>&1 | head -20 && echo "..." && /home/claudeuser/work/mpint/bin/demo 2>&1 | tail -20)
+  ⎿  MPint: claude's elementary operator expressions
+
+     a        = 6
+     … +37 lines (ctrl+o to expand)
+
+● Clean build, all tests pass, output identical to before.
+
+  To summarise what changed:
+
+  MPint.hpp — now a pure interface: declarations only, no bodies, no mVal, no signed long int visible. The only private member is struct Impl; Impl* pImpl;. A future maintainer swapping in GMP doesn't touch this file.
+
+  MPint.cpp — owns the complete implementation. struct Impl { signed long int mVal; } is the one place to change when switching to GMP. All operator bodies follow.
+
+  det.cpp — four minimal changes: two calloc → new Bint[n]() (so MPint's constructor runs), two free → delete[] (so the destructor runs). Everything else untouched.
+
+✻ Cooked for 9m 29s
+
+❯ commit this
+
+● Bash(git status && git diff --stat && git log --oneline -3)
+  ⎿  On branch master
+     Changes not staged for commit:
+       (use "git add <file>..." to update what will be committed)
+     … +17 lines (ctrl+o to expand)
+
+● Bash(git add src/MPint.hpp src/MPint.cpp src/det.cpp && git commit -m "refactor MPint to use Pimpl (handle/opaque pointer)…)
+  ⎿  [master cc2a7a0] refactor MPint to use Pimpl (handle/opaque pointer)
+      3 files changed, 204 insertions(+), 91 deletions(-)
+
+● Done.
+
+#############################################################################################################################################################################################################
+

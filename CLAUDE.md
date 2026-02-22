@@ -23,17 +23,8 @@ Build commands: come up with a sensible Makefile
 Test commands: testing tbd later
 
 ## What I've done in the meantime
-I've introduced another test, which computes determinants of integral
-square matrices. There are three methods used: Dodgson's method,
-Gaussian elimination using integers only, and for reference, Gaussian elimination
-using floating point numbers.
-I know from previous tinkering (not legally available to you)
-that Integral Gauss comes to its limits when running on signed long int
-in one of the examples, possibly due to int overflow.
-But that problem will go away when we have MPint use real multi precision
-integers, like GMP.
+Nothing specific.
 
 ## What to do for you right now
-Right now, the det example does not compile, because there's no conversion
-from MPint to double. Please add that to MPint in a graceful, human readable and
-maintainable fashion.
+Now change the build process, so that MPint resides in a library 'libMP',
+to be linked statically to the 'demo' executable.
