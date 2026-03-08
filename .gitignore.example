@@ -1,0 +1,10 @@
+.gitignore
+*.bak/
+*.bak
+*.o
+bin/demo
+bin/*.a
+*.*~
+core
+bin/core
+test/demo.output
