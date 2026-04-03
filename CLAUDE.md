@@ -19,12 +19,30 @@ File structure preferences: no prefs so far, tbd later
 Testing approaches: no prefs so far, tbd later
 
 ## Important Commands
-Build commands: come up with a sensible Makefile
-Test commands: testing tbd later
+Build commands: make
+Test commands: simple stdout/stderr based regression test: cd test; ./test.sh all
 
 ## What I've done in the meantime
-Nothing specific.
+The source files src/MPint.cpp, src/MPint.hpp have been duplicated, unmodified, to
+src/MPintMyOwn.cpp, MPintMyOwn.hpp and to src/MPintGMP.cpp, src/MPintGMP.hpp.
+Accordingly, the Makefile was extended to produce libraries bin/libMP.a,
+bin/libMPMyOwn.a, bin/libMPGMP.a and three executables bin/demo, bin/demoMyOwn, bin/demoGMP.
+These duplications are worrisome, of course, but they are only temporary for some explorative
+testing and profiling.
+
+A simple regression test script, to be run in subdir test, has been added.
+It runs the demo executables and captures their resp. outputs (stderr and stdout
+combined) to files test/demo*.output. These files will then be diffed to
+test/demo.output.ref.
 
 ## What to do for you right now
-Now change the build process, so that MPint resides in a library 'libMP',
-to be linked statically to the 'demo' executable.
+Although the three implementation variants do not differ yet, and have their
+implementation based on the native long int, implement some high-res profiling, prefereably
+not in seconds but rather in cpu cycles, like rdtsc in the good old days.
+Please stay platform/os/runtime dependent for now.
+Avoid or at least minimize dependencies.
+Implement timer starts/stops around the individual function calls in main, i.e.
+claude_main(), basicexpr(), moreexpr(), extraexpr(), detTest().
+Implement report generation on stdout, human readable, appended to stdout output
+which already exists, but only, when command line option -prof is given to the respective demo*
+executable, so that the output based regression test does not break.

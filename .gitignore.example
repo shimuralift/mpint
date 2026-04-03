@@ -2,9 +2,11 @@
 *.bak/
 *.bak
 *.o
-bin/demo
+bin/demo*
 bin/*.a
 *.*~
 core
 bin/core
 test/demo.output
+test/demoMyOwn.output
+test/demoGMP.output
