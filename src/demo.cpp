@@ -510,21 +510,32 @@ int main(int argc, char* argv[]) {
     if (std::strcmp(argv[i], "-prof") == 0) { prof = true; break; }
   }
 
-  uint64_t ts[5], te[5];
+  const int PROF_RUNS = 50;
+  uint64_t total[5] = {0, 0, 0, 0, 0};
+  uint64_t t0, t1;
 
   NullBuf nullbuf;
   std::streambuf* orig = prof ? std::cout.rdbuf(&nullbuf) : nullptr;
 
   std::cout << "MPint: claude's elementary operator expressions" << std::endl << std::endl;
-  ts[0] = rdtsc_read(); claude_main();  te[0] = rdtsc_read();
+  for (int r = 0; r < (prof ? PROF_RUNS : 1); ++r)
+    { t0 = rdtsc_read(); claude_main(); t1 = rdtsc_read(); total[0] += t1 - t0; }
+
   std::cout << "MPint: my elementary operator expressions" << std::endl << std::endl;
-  ts[1] = rdtsc_read(); basicexpr();    te[1] = rdtsc_read();
+  for (int r = 0; r < (prof ? PROF_RUNS : 1); ++r)
+    { t0 = rdtsc_read(); basicexpr();   t1 = rdtsc_read(); total[1] += t1 - t0; }
+
   std::cout << std::endl << "MPint: more operator expressions" << std::endl << std::endl;
-  ts[2] = rdtsc_read(); moreexpr();     te[2] = rdtsc_read();
+  for (int r = 0; r < (prof ? PROF_RUNS : 1); ++r)
+    { t0 = rdtsc_read(); moreexpr();    t1 = rdtsc_read(); total[2] += t1 - t0; }
+
   std::cout << std::endl << "MPint: extra operator expressions" << std::endl << std::endl;
-  ts[3] = rdtsc_read(); extraexpr();    te[3] = rdtsc_read();
+  for (int r = 0; r < (prof ? PROF_RUNS : 1); ++r)
+    { t0 = rdtsc_read(); extraexpr();   t1 = rdtsc_read(); total[3] += t1 - t0; }
+
   std::cout << std::endl << "MPint: determinant example" << std::endl << std::endl;
-  ts[4] = rdtsc_read(); detTest();      te[4] = rdtsc_read();
+  for (int r = 0; r < (prof ? PROF_RUNS : 1); ++r)
+    { t0 = rdtsc_read(); detTest();     t1 = rdtsc_read(); total[4] += t1 - t0; }
 
   if (prof) {
     std::cout.rdbuf(orig);
@@ -534,11 +545,11 @@ int main(int argc, char* argv[]) {
     std::string formatted[5];
     std::string::size_type maxcycles = 0, maxname = 0;
     for (int i = 0; i < 5; ++i) {
-      formatted[i] = format_cycles(te[i] - ts[i]);
+      formatted[i] = format_cycles(total[i] / PROF_RUNS);
       if (formatted[i].size() > maxcycles) maxcycles = formatted[i].size();
       if (std::strlen(names[i]) > maxname) maxname = std::strlen(names[i]);
     }
-    std::cout << "=== profiling report (rdtsc cpu cycles) ===" << std::endl;
+    std::cout << "=== profiling report (rdtsc cpu cycles, avg of " << PROF_RUNS << " runs) ===" << std::endl;
     for (int i = 0; i < 5; ++i) {
       std::cout << "  " << std::setw(static_cast<int>(maxname)) << std::left  << names[i]
                 << ": " << std::setw(static_cast<int>(maxcycles)) << std::right << formatted[i]
