@@ -4,7 +4,10 @@
 #include <cassert>
 #include <cstdint>
 #include <cstring>
+#include <iomanip>
 #include <iostream>
+#include <streambuf>
+#include <string>
 
 int claude_main() {
     // --- construction from literals -----------------------------------------
@@ -480,6 +483,17 @@ int extraexpr() {
   return 0;
 }
 
+static std::string format_cycles(uint64_t n) {
+    std::string s = std::to_string(n);
+    for (int pos = static_cast<int>(s.size()) - 3; pos > 0; pos -= 3)
+        s.insert(static_cast<std::string::size_type>(pos), 1, ' ');
+    return s;
+}
+
+struct NullBuf : std::streambuf {
+    int overflow(int c) override { return c; }
+};
+
 static inline uint64_t rdtsc_read() {
 #if defined(__x86_64__) || defined(__i386__)
     unsigned int lo, hi;
@@ -498,6 +512,9 @@ int main(int argc, char* argv[]) {
 
   uint64_t ts[5], te[5];
 
+  NullBuf nullbuf;
+  std::streambuf* orig = prof ? std::cout.rdbuf(&nullbuf) : nullptr;
+
   std::cout << "MPint: claude's elementary operator expressions" << std::endl << std::endl;
   ts[0] = rdtsc_read(); claude_main();  te[0] = rdtsc_read();
   std::cout << "MPint: my elementary operator expressions" << std::endl << std::endl;
@@ -510,13 +527,21 @@ int main(int argc, char* argv[]) {
   ts[4] = rdtsc_read(); detTest();      te[4] = rdtsc_read();
 
   if (prof) {
+    std::cout.rdbuf(orig);
     static const char* const names[5] = {
       "claude_main", "basicexpr", "moreexpr", "extraexpr", "detTest"
     };
-    std::cout << std::endl;
+    std::string formatted[5];
+    std::string::size_type maxlen = 0;
+    for (int i = 0; i < 5; ++i) {
+      formatted[i] = format_cycles(te[i] - ts[i]);
+      if (formatted[i].size() > maxlen) maxlen = formatted[i].size();
+    }
     std::cout << "=== profiling report (rdtsc cpu cycles) ===" << std::endl;
     for (int i = 0; i < 5; ++i) {
-      std::cout << "  " << names[i] << ": " << (te[i] - ts[i]) << " cycles" << std::endl;
+      std::cout << "  " << names[i] << ": "
+                << std::setw(static_cast<int>(maxlen)) << std::right << formatted[i]
+                << " cycles" << std::endl;
     }
   }
 
