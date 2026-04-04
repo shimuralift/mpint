@@ -532,15 +532,16 @@ int main(int argc, char* argv[]) {
       "claude_main", "basicexpr", "moreexpr", "extraexpr", "detTest"
     };
     std::string formatted[5];
-    std::string::size_type maxlen = 0;
+    std::string::size_type maxcycles = 0, maxname = 0;
     for (int i = 0; i < 5; ++i) {
       formatted[i] = format_cycles(te[i] - ts[i]);
-      if (formatted[i].size() > maxlen) maxlen = formatted[i].size();
+      if (formatted[i].size() > maxcycles) maxcycles = formatted[i].size();
+      if (std::strlen(names[i]) > maxname) maxname = std::strlen(names[i]);
     }
     std::cout << "=== profiling report (rdtsc cpu cycles) ===" << std::endl;
     for (int i = 0; i < 5; ++i) {
-      std::cout << "  " << names[i] << ": "
-                << std::setw(static_cast<int>(maxlen)) << std::right << formatted[i]
+      std::cout << "  " << std::setw(static_cast<int>(maxname)) << std::left  << names[i]
+                << ": " << std::setw(static_cast<int>(maxcycles)) << std::right << formatted[i]
                 << " cycles" << std::endl;
     }
   }
