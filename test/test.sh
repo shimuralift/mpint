@@ -15,6 +15,7 @@ OUTFILEGMP="demoGMP.output"
 
 
 REFFILE="demo.output.ref"
+REFFILEGMP="demoGMP.output.ref"
 
 DIFFCMD="diff"
 RMCMD="rm"
@@ -47,8 +48,9 @@ runExecutable () {
 }
 
 doDiff () {
-    local outfile=$1    
-    runCmd "${DIFFCMD} ${outfile} ${REFFILE}"
+    local outfile=$1
+    local reffile=$2
+    runCmd "${DIFFCMD} ${outfile} ${reffile}"
     return $?
 }
 
@@ -76,19 +78,19 @@ doAll () {
     fi
 
     
-    doDiff "${OUTFILE}"
+    doDiff "${OUTFILE}" "${REFFILE}"
     diffretval=$?
     if [ "${diffretval}" -ne 0 ]; then
         retval=${diffretval}
     fi
 
-    doDiff "${OUTFILEMyOwn}"
+    doDiff "${OUTFILEMyOwn}" "${REFFILE}"
     diffretval=$?
     if [ "${diffretval}" -ne 0 ]; then
         retval=${diffretval}
     fi
 
-    doDiff "${OUTFILEGMP}"
+    doDiff "${OUTFILEGMP}" "${REFFILEGMP}"
     diffretval=$?
     if [ "${diffretval}" -ne 0 ]; then
         retval=${diffretval}
