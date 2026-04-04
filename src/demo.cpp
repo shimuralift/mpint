@@ -2,6 +2,8 @@
 #include "det.hpp"
 
 #include <cassert>
+#include <cstdint>
+#include <cstring>
 #include <iostream>
 
 int claude_main() {
@@ -478,16 +480,45 @@ int extraexpr() {
   return 0;
 }
 
-int main() {
+static inline uint64_t rdtsc_read() {
+#if defined(__x86_64__) || defined(__i386__)
+    unsigned int lo, hi;
+    __asm__ __volatile__("rdtsc" : "=a"(lo), "=d"(hi));
+    return (static_cast<uint64_t>(hi) << 32) | lo;
+#else
+    return 0;
+#endif
+}
+
+int main(int argc, char* argv[]) {
+  bool prof = false;
+  for (int i = 1; i < argc; ++i) {
+    if (std::strcmp(argv[i], "-prof") == 0) { prof = true; break; }
+  }
+
+  uint64_t ts[5], te[5];
+
   std::cout << "MPint: claude's elementary operator expressions" << std::endl << std::endl;
-  claude_main();
+  ts[0] = rdtsc_read(); claude_main();  te[0] = rdtsc_read();
   std::cout << "MPint: my elementary operator expressions" << std::endl << std::endl;
-  basicexpr();
+  ts[1] = rdtsc_read(); basicexpr();    te[1] = rdtsc_read();
   std::cout << std::endl << "MPint: more operator expressions" << std::endl << std::endl;
-  moreexpr();
+  ts[2] = rdtsc_read(); moreexpr();     te[2] = rdtsc_read();
   std::cout << std::endl << "MPint: extra operator expressions" << std::endl << std::endl;
-  extraexpr();
+  ts[3] = rdtsc_read(); extraexpr();    te[3] = rdtsc_read();
   std::cout << std::endl << "MPint: determinant example" << std::endl << std::endl;
-  detTest();
+  ts[4] = rdtsc_read(); detTest();      te[4] = rdtsc_read();
+
+  if (prof) {
+    static const char* const names[5] = {
+      "claude_main", "basicexpr", "moreexpr", "extraexpr", "detTest"
+    };
+    std::cout << std::endl;
+    std::cout << "=== profiling report (rdtsc cpu cycles) ===" << std::endl;
+    for (int i = 0; i < 5; ++i) {
+      std::cout << "  " << names[i] << ": " << (te[i] - ts[i]) << " cycles" << std::endl;
+    }
+  }
+
   return 0;
 }

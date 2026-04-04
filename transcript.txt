@@ -2051,3 +2051,117 @@
 
 #############################################################################################################################################################################################################
 
+❯ see CLAUDE.md for instructions.
+
+● Let me read the current source files to understand the structure before implementing profiling.
+
+  Read 3 files (ctrl+o to expand)
+
+● Now I have a clear picture. The plan:
+  - Add a rdtsc_read() helper (inline asm, x86/x86-64) before main()
+  - Change main() to accept argc/argv, parse -prof, bracket each call with rdtsc reads, print report at end if -prof was given
+  - Add #include <cstdint> and #include <cstring> for uint64_t and strcmp
+  - No changes to any lib code; only demo.cpp
+
+  Two targeted edits:
+
+● Update(src/demo.cpp)
+  ⎿  Added 2 lines
+      2  #include "det.hpp"
+      3
+      4  #include <cassert>
+      5 +#include <cstdint>
+      6 +#include <cstring>
+      7  #include <iostream>
+      8
+      9  int claude_main() {
+
+● Update(src/demo.cpp)
+  ⎿  Added 35 lines, removed 6 lines
+      480    return 0;
+      481  }
+      482
+      483 -int main() {
+      483 +static inline uint64_t rdtsc_read() {
+      484 +#if defined(__x86_64__) || defined(__i386__)
+      485 +    unsigned int lo, hi;
+      486 +    __asm__ __volatile__("rdtsc" : "=a"(lo), "=d"(hi));
+      487 +    return (static_cast<uint64_t>(hi) << 32) | lo;
+      488 +#else
+      489 +    return 0;
+      490 +#endif
+      491 +}
+      492 +
+      493 +int main(int argc, char* argv[]) {
+      494 +  bool prof = false;
+      495 +  for (int i = 1; i < argc; ++i) {
+      496 +    if (std::strcmp(argv[i], "-prof") == 0) { prof = true; break; }
+      497 +  }
+      498 +
+      499 +  uint64_t ts[5], te[5];
+      500 +
+      501    std::cout << "MPint: claude's elementary operator expressions" << std::endl << std::endl;
+      485 -  claude_main();
+      502 +  ts[0] = rdtsc_read(); claude_main();  te[0] = rdtsc_read();
+      503    std::cout << "MPint: my elementary operator expressions" << std::endl << std::endl;
+      487 -  basicexpr();
+      504 +  ts[1] = rdtsc_read(); basicexpr();    te[1] = rdtsc_read();
+      505    std::cout << std::endl << "MPint: more operator expressions" << std::endl << std::endl;
+      489 -  moreexpr();
+      506 +  ts[2] = rdtsc_read(); moreexpr();     te[2] = rdtsc_read();
+      507    std::cout << std::endl << "MPint: extra operator expressions" << std::endl << std::endl;
+      491 -  extraexpr();
+      508 +  ts[3] = rdtsc_read(); extraexpr();    te[3] = rdtsc_read();
+      509    std::cout << std::endl << "MPint: determinant example" << std::endl << std::endl;
+      493 -  detTest();
+      510 +  ts[4] = rdtsc_read(); detTest();      te[4] = rdtsc_read();
+      511 +
+      512 +  if (prof) {
+      513 +    static const char* const names[5] = {
+      514 +      "claude_main", "basicexpr", "moreexpr", "extraexpr", "detTest"
+      515 +    };
+      516 +    std::cout << std::endl;
+      517 +    std::cout << "=== profiling report (rdtsc cpu cycles) ===" << std::endl;
+      518 +    for (int i = 0; i < 5; ++i) {
+      519 +      std::cout << "  " << names[i] << ": " << (te[i] - ts[i]) << " cycles" << std::endl;
+      520 +    }
+      521 +  }
+      522 +
+      523    return 0;
+      524  }
+
+● The clangd hint about cstdint is just a linter note — let me build to confirm the compiler is happy:
+
+● Bash(make clean && make 2>&1)
+  ⎿  rm -f bin/demo bin/libMP.a bin/MPint.o bin/demoMyOwn bin/libMPMyOwn.a bin/MPintMyOwn.o bin/demoGMP bin/libMPGMP.a bin/MPintGMP.o
+     g++ -std=c++14 -Wall -Wextra -pedantic -Werror -Isrc -c -o bin/MPint.o src/MPint.cpp
+     ar rcs bin/libMP.a bin/MPint.o
+     … +7 lines (ctrl+o to expand)
+
+● Clean build, all six artifacts produced. Now a quick sanity check — regression test without -prof, then a glimpse of -prof output:
+
+● Bash(cd /home/claudeuser/work/mpint/test && ./test.sh all 2>&1 | tail -5)
+  ⎿  ############################## EXIT  : diff demo.output demo.output.ref : EXITCODE : 0 ##########
+     ############################## START : diff demoMyOwn.output demo.output.ref ##########
+     ############################## EXIT  : diff demoMyOwn.output demo.output.ref : EXITCODE : 0 ##########
+     … +2 lines (ctrl+o to expand)
+
+● Bash(/home/claudeuser/work/mpint/bin/demo -prof 2>&1 | tail -10)
+  ⎿  GaussInt:   0
+     GaussFloat: 0
+     … +7 lines (ctrl+o to expand)
+
+● Everything works:
+
+  - Regression tests pass — all three diffs to .ref exit 0, no output change without -prof
+  - -prof report appends to stdout after the existing output, showing per-function rdtsc cycle counts
+  - All three executables (demo, demoMyOwn, demoGMP) share the same demo.cpp, so they all get profiling for free
+  - Uses __asm__ __volatile__("rdtsc" ...) — GCC extension, works under -pedantic -Werror, no external dependencies
+
+✻ Cogitated for 1m 50s
+
+❯ /exit
+  ⎿  Bye!
+
+#############################################################################################################################################################################################################
+
