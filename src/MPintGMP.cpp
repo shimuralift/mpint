@@ -1,6 +1,7 @@
 #include "MPint.hpp"
 
 #include <cstdlib>
+#include <cstring>
 #include <iostream>
 #include <string>
 
@@ -22,6 +23,37 @@ struct MPint::Impl {
     Impl& operator=(const Impl&) = delete;
 };
 
+// --- string parsing helper --------------------------------------------------
+// Strips single-quote separators and handles the 0b/0B binary prefix that
+// GMP's mpz_set_str does not recognise natively.
+
+static void mpz_set_mpint_str(mpz_t dest, const char* s) {
+    const char* p = s;
+
+    // Preserve leading sign for the clean buffer
+    bool negative = false;
+    if (*p == '-')      { negative = true; ++p; }
+    else if (*p == '+') { ++p; }
+
+    // Detect base and advance past any prefix
+    int base = 0; // 0 → GMP auto-detects 0x (hex) and 0 (octal)
+    if (*p == '0') {
+        const char* q = p + 1;
+        if (*q == 'b' || *q == 'B') { base = 2; p += 2; }
+        // 0x and 0-prefix are left for GMP's base-0 auto-detection
+    }
+
+    // Build a clean copy without single-quote separators
+    std::string clean;
+    clean.reserve(std::strlen(p) + 1);
+    if (negative) clean += '-';
+    for (; *p; ++p) {
+        if (*p != '\'') clean += *p;
+    }
+
+    mpz_set_str(dest, clean.c_str(), base);
+}
+
 // --- construction -----------------------------------------------------------
 
 MPint::MPint()                    noexcept : pImpl(new Impl()) {}
@@ -34,6 +66,9 @@ MPint::MPint(unsigned int      v) noexcept : pImpl(new Impl(static_cast<signed l
 MPint::MPint(unsigned short    v) noexcept : pImpl(new Impl(static_cast<signed long int>(v))) {}
 MPint::MPint(unsigned char     v) noexcept : pImpl(new Impl(static_cast<signed long int>(v))) {}
 MPint::MPint(long long         v) noexcept : pImpl(new Impl(static_cast<signed long int>(v))) {}
+
+MPint::MPint(const char*        s) noexcept : pImpl(new Impl()) { mpz_set_mpint_str(pImpl->mVal, s); }
+MPint::MPint(const std::string& s) noexcept : pImpl(new Impl()) { mpz_set_mpint_str(pImpl->mVal, s.c_str()); }
 
 MPint::MPint(const MPint& other)  noexcept : pImpl(new Impl(*other.pImpl)) {}
 MPint::MPint(MPint&&      other)  noexcept : pImpl(other.pImpl) { other.pImpl = nullptr; }

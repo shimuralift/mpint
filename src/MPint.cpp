@@ -1,6 +1,7 @@
 #include "MPint.hpp"
 
 #include <iostream>
+#include <string>
 
 // ---------------------------------------------------------------------------
 // The only implementation detail: what an MPint actually stores.
@@ -10,6 +11,37 @@
 struct MPint::Impl {
     signed long int mVal;
 };
+
+// --- string parsing helper --------------------------------------------------
+
+static signed long int parse_str(const char* s) {
+    const char* p = s;
+    bool negative = false;
+    if (*p == '-')      { negative = true; ++p; }
+    else if (*p == '+') { ++p; }
+
+    int base = 10;
+    if (*p == '0') {
+        const char* q = p + 1;
+        if      (*q == 'x' || *q == 'X') { base = 16; p += 2; }
+        else if (*q == 'b' || *q == 'B') { base =  2; p += 2; }
+        else                             { base =  8; p += 1; }
+    }
+
+    unsigned long int result = 0;
+    for (; *p; ++p) {
+        if (*p == '\'') continue;
+        unsigned int digit;
+        char c = *p;
+        if      (c >= '0' && c <= '9') digit = static_cast<unsigned int>(c - '0');
+        else if (c >= 'a' && c <= 'f') digit = static_cast<unsigned int>(c - 'a') + 10u;
+        else if (c >= 'A' && c <= 'F') digit = static_cast<unsigned int>(c - 'A') + 10u;
+        else break;
+        result = result * static_cast<unsigned long int>(base) + digit;
+    }
+    return negative ? -static_cast<signed long int>(result)
+                    :  static_cast<signed long int>(result);
+}
 
 // --- construction -----------------------------------------------------------
 
@@ -23,6 +55,9 @@ MPint::MPint(unsigned int      v) noexcept : pImpl(new Impl{static_cast<signed l
 MPint::MPint(unsigned short    v) noexcept : pImpl(new Impl{static_cast<signed long int>(v)}) {}
 MPint::MPint(unsigned char     v) noexcept : pImpl(new Impl{static_cast<signed long int>(v)}) {}
 MPint::MPint(long long         v) noexcept : pImpl(new Impl{static_cast<signed long int>(v)}) {}
+
+MPint::MPint(const char*        s) noexcept : pImpl(new Impl{parse_str(s)}) {}
+MPint::MPint(const std::string& s) noexcept : pImpl(new Impl{parse_str(s.c_str())}) {}
 
 MPint::MPint(const MPint& other)  noexcept : pImpl(new Impl{other.pImpl->mVal}) {}
 MPint::MPint(MPint&&      other)  noexcept : pImpl(other.pImpl) { other.pImpl = nullptr; }

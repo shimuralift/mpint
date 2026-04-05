@@ -1,6 +1,7 @@
 #pragma once
 
 #include <iosfwd>
+#include <string>
 
 // MPint: a drop-in replacement for signed long int.
 // All arithmetic, comparison, bitwise, increment/decrement, and stream
@@ -23,6 +24,11 @@ public:
     MPint(unsigned short    v) noexcept;
     MPint(unsigned char     v) noexcept;
     MPint(long long         v) noexcept;
+
+    // String literals: decimal, octal (0-prefix), hex (0x), binary (0b).
+    // Single-quote digit separators are ignored.  No type suffixes.
+    explicit MPint(const char*        s) noexcept;
+    explicit MPint(const std::string& s) noexcept;
 
     // Copy / move / destroy
     MPint(const MPint&)            noexcept;
