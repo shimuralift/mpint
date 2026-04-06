@@ -483,6 +483,100 @@ int extraexpr() {
   return 0;
 }
 
+int strconstr() {
+  std::cout << "--- string constructor: decimal ---" << std::endl;
+  MPint sd0("0");
+  MPint sd1("42");
+  MPint sd2("-17");
+  MPint sd3("+99");
+  MPint sd4("1'000'000");
+  assert(sd0 == MPint(0));
+  assert(sd1 == MPint(42));
+  assert(sd2 == MPint(-17));
+  assert(sd3 == MPint(99));
+  assert(sd4 == MPint(1000000));
+  std::cout << "\"0\"          = " << sd0 << std::endl;  // 0
+  std::cout << "\"42\"         = " << sd1 << std::endl;  // 42
+  std::cout << "\"-17\"        = " << sd2 << std::endl;  // -17
+  std::cout << "\"+99\"        = " << sd3 << std::endl;  // 99
+  std::cout << "\"1'000'000\"  = " << sd4 << std::endl;  // 1000000
+
+  std::cout << std::endl << "--- string constructor: octal ---" << std::endl;
+  MPint so0("0");
+  MPint so1("010");
+  MPint so2("0755");
+  MPint so3("-010");
+  assert(so0 == MPint(0));
+  assert(so1 == MPint(8));
+  assert(so2 == MPint(493));
+  assert(so3 == MPint(-8));
+  std::cout << "\"0\"      = " << so0 << std::endl;  // 0
+  std::cout << "\"010\"    = " << so1 << std::endl;  // 8
+  std::cout << "\"0755\"   = " << so2 << std::endl;  // 493
+  std::cout << "\"-010\"   = " << so3 << std::endl;  // -8
+
+  std::cout << std::endl << "--- string constructor: hexadecimal ---" << std::endl;
+  MPint sh0("0xff");
+  MPint sh1("0xDEAD");
+  MPint sh2("0X1A2B");
+  MPint sh3("0xff'ee");
+  MPint sh4("-0x10");
+  assert(sh0 == MPint(255));
+  assert(sh1 == MPint(57005));
+  assert(sh2 == MPint(6699));
+  assert(sh3 == MPint(65518));
+  assert(sh4 == MPint(-16));
+  std::cout << "\"0xff\"      = " << sh0 << std::endl;  // 255
+  std::cout << "\"0xDEAD\"    = " << sh1 << std::endl;  // 57005
+  std::cout << "\"0X1A2B\"    = " << sh2 << std::endl;  // 6699
+  std::cout << "\"0xff'ee\"   = " << sh3 << std::endl;  // 65518
+  std::cout << "\"-0x10\"     = " << sh4 << std::endl;  // -16
+
+  std::cout << std::endl << "--- string constructor: binary ---" << std::endl;
+  MPint sb0("0b1010");
+  MPint sb1("0B11111111");
+  MPint sb2("0b1111'1111");
+  MPint sb3("-0b11");
+  assert(sb0 == MPint(10));
+  assert(sb1 == MPint(255));
+  assert(sb2 == MPint(255));
+  assert(sb3 == MPint(-3));
+  std::cout << "\"0b1010\"       = " << sb0 << std::endl;  // 10
+  std::cout << "\"0B11111111\"   = " << sb1 << std::endl;  // 255
+  std::cout << "\"0b1111'1111\"  = " << sb2 << std::endl;  // 255
+  std::cout << "\"-0b11\"        = " << sb3 << std::endl;  // -3
+
+  std::cout << std::endl << "--- string constructor: std::string ---" << std::endl;
+  std::string ss1 = "12345";
+  std::string ss2 = "0xCAFE";
+  MPint fs1(ss1);
+  MPint fs2(ss2);
+  assert(fs1 == MPint(12345));
+  assert(fs2 == MPint(0xCAFE));
+  std::cout << "std::string(\"12345\")  = " << fs1 << std::endl;  // 12345
+  std::cout << "std::string(\"0xCAFE\") = " << fs2 << std::endl;  // 51966
+
+  std::cout << std::endl << "--- string constructor: arithmetic ---" << std::endl;
+  assert(MPint("100") + MPint("200") == MPint(300));
+  std::cout << "\"100\" + \"200\"      = " << (MPint("100") + MPint("200")) << std::endl;  // 300
+  assert(MPint("0xFF") * MPint("2") == MPint(510));
+  std::cout << "\"0xFF\" * \"2\"       = " << (MPint("0xFF") * MPint("2")) << std::endl;   // 510
+  assert(MPint("0b1010") * MPint("010") == MPint(80));
+  std::cout << "\"0b1010\" * \"010\"   = " << (MPint("0b1010") * MPint("010")) << std::endl;  // 80
+  assert(MPint("-0x10") + MPint("0b10000") == MPint(0));
+  std::cout << "\"-0x10\" + \"0b10000\" = " << (MPint("-0x10") + MPint("0b10000")) << std::endl; // 0
+
+  std::cout << std::endl << "--- string constructor: large values fitting in long int ---" << std::endl;
+  MPint big1("1'000'000'000'000'000'000");   // 10^18
+  MPint big2("999'999'999'999'999'999");     // 10^18 - 1
+  assert(big1 == MPint(1000000000000000000LL));
+  assert(big2 + MPint(1) == big1);
+  std::cout << "\"1'000'000'000'000'000'000\" = " << big1 << std::endl;  // 1000000000000000000
+  std::cout << "\"999'999'999'999'999'999\" + 1 = " << (big2 + MPint(1)) << std::endl;  // 1000000000000000000
+
+  return 0;
+}
+
 static std::string format_cycles(uint64_t n) {
     std::string s = std::to_string(n);
     for (int pos = static_cast<int>(s.size()) - 3; pos > 0; pos -= 3)
@@ -511,7 +605,7 @@ int main(int argc, char* argv[]) {
   }
 
   const int PROF_RUNS = 100000;
-  uint64_t total[5] = {0, 0, 0, 0, 0};
+  uint64_t total[6] = {0, 0, 0, 0, 0, 0};
   uint64_t t0, t1;
 
   NullBuf nullbuf;
@@ -537,20 +631,24 @@ int main(int argc, char* argv[]) {
   for (int r = 0; r < (prof ? PROF_RUNS : 1); ++r)
     { t0 = rdtsc_read(); detTest();     t1 = rdtsc_read(); total[4] += t1 - t0; }
 
+  std::cout << std::endl << "MPint: string constructor tests" << std::endl << std::endl;
+  for (int r = 0; r < (prof ? PROF_RUNS : 1); ++r)
+    { t0 = rdtsc_read(); strconstr();   t1 = rdtsc_read(); total[5] += t1 - t0; }
+
   if (prof) {
     std::cout.rdbuf(orig);
-    static const char* const names[5] = {
-      "claude_main", "basicexpr", "moreexpr", "extraexpr", "detTest"
+    static const char* const names[6] = {
+      "claude_main", "basicexpr", "moreexpr", "extraexpr", "detTest", "strconstr"
     };
-    std::string formatted[5];
+    std::string formatted[6];
     std::string::size_type maxcycles = 0, maxname = 0;
-    for (int i = 0; i < 5; ++i) {
+    for (int i = 0; i < 6; ++i) {
       formatted[i] = format_cycles(total[i] / PROF_RUNS);
       if (formatted[i].size() > maxcycles) maxcycles = formatted[i].size();
       if (std::strlen(names[i]) > maxname) maxname = std::strlen(names[i]);
     }
     std::cout << "=== profiling report (rdtsc cpu cycles, avg of " << PROF_RUNS << " runs) ===" << std::endl;
-    for (int i = 0; i < 5; ++i) {
+    for (int i = 0; i < 6; ++i) {
       std::cout << "  " << std::setw(static_cast<int>(maxname)) << std::left  << names[i]
                 << ": " << std::setw(static_cast<int>(maxcycles)) << std::right << formatted[i]
                 << " cycles" << std::endl;
