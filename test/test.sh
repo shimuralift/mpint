@@ -100,15 +100,76 @@ doAll () {
     return ${retval}
 }
 
+doProf () {
+    if [ "${DRYPARAM}" == "dry" ]; then
+        echo "DRY: would run ${EXECUTABLE}, ${EXECUTABLEMyOwn}, ${EXECUTABLEGMP} with -prof and display side-by-side"
+        return 0
+    fi
+
+    local tmp1 tmp2 tmp3 tdata1 tdata2 tdata3
+    tmp1=$(mktemp)
+    tmp2=$(mktemp)
+    tmp3=$(mktemp)
+    tdata1=$(mktemp)
+    tdata2=$(mktemp)
+    tdata3=$(mktemp)
+
+    echo "profiling ${EXECUTABLE} ..."
+    ${EXECUTABLE}        -prof > "${tmp1}" 2>&1
+    echo "profiling ${EXECUTABLEMyOwn} ..."
+    ${EXECUTABLEMyOwn}  -prof > "${tmp2}" 2>&1
+    echo "profiling ${EXECUTABLEGMP} ..."
+    ${EXECUTABLEGMP}    -prof > "${tmp3}" 2>&1
+
+    # Strip the "===" header line, keep only per-function rows
+    grep -v '^===' "${tmp1}" > "${tdata1}"
+    grep -v '^===' "${tmp2}" > "${tdata2}"
+    grep -v '^===' "${tmp3}" > "${tdata3}"
+
+    echo ""
+    grep '===' "${tmp1}" | sed 's/profiling report/profiling comparison/'
+    echo ""
+
+    # Merge the three data files side-by-side and format as a table.
+    # Each data line has the form "  name: cycles cycles".
+    paste "${tdata1}" "${tdata2}" "${tdata3}" | awk -F'\t' '
+    BEGIN {
+        printf "%-14s  %20s  %20s  %20s\n",
+               "function", "demo (long int)", "demoMyOwn", "demoGMP"
+        printf "%-14s  %20s  %20s  %20s\n",
+               "--------------",
+               "--------------------",
+               "--------------------",
+               "--------------------"
+    }
+    {
+        split($1, a, ":"); name = a[1]
+        gsub(/^[[:space:]]+|[[:space:]]+$/, "", name)
+        c1 = a[2]
+        gsub(/[[:space:]]*cycles[[:space:]]*$/, "", c1); gsub(/^[[:space:]]+/, "", c1)
+        split($2, b, ":"); c2 = b[2]
+        gsub(/[[:space:]]*cycles[[:space:]]*$/, "", c2); gsub(/^[[:space:]]+/, "", c2)
+        split($3, c, ":"); c3 = c[2]
+        gsub(/[[:space:]]*cycles[[:space:]]*$/, "", c3); gsub(/^[[:space:]]+/, "", c3)
+        printf "%-14s  %20s  %20s  %20s\n", name, c1, c2, c3
+    }
+    '
+
+    rm -f "${tmp1}" "${tmp2}" "${tmp3}" "${tdata1}" "${tdata2}" "${tdata3}"
+    return 0
+}
+
 printHelp () {
     local retval=0
 
     local helptext='synopsis:
-./test.sh  "all"|"help" ["dry"]
+./test.sh  "all"|"prof"|"help" ["dry"]
 
 mandatory 1st arg:
     all           : runs the executables, compares their output
                     (stdout and stderr combined) to a reference
+    prof          : runs all demo* variants with -prof and shows
+                    cycle counts side-by-side for easy comparison
     help          : prints this help
 
 optional 2nd arg:
@@ -139,6 +200,10 @@ main () {
             case "${CMDLPARAM}" in
                 all)
                     doAll
+                    exitval=$?
+                    ;;
+                prof)
+                    doProf
                     exitval=$?
                     ;;
                 help)
