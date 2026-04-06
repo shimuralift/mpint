@@ -280,10 +280,10 @@ MPint(42) >= 42     ok
 100 > MPint(42)     ok
 
 --- GCD (Euclidean algorithm) ---
-gcd(48, 18) = 6
+gcd(482923147313, 988823136811) = 1
 
 --- power by repeated squaring ---
-3^7 = 2187
+23^19 = 74615470927590710561908487 (overflow on native int based MPint implementations)
 
 MPint: determinant example
 

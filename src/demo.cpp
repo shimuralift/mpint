@@ -457,18 +457,18 @@ int extraexpr() {
   assert(100 > v);     std::cout << "100 > MPint(42)     ok" << std::endl;
 
   std::cout << std::endl << "--- GCD (Euclidean algorithm) ---" << std::endl;
-  MPint ga = 48, gb = 18;
+  MPint ga = 482923147313, gb = 988823136811;
   MPint ta = ga, tb = gb;
   while (tb != 0) {
     MPint tmp = tb;
     tb = ta % tb;
     ta = tmp;
   }
-  std::cout << "gcd(48, 18) = " << ta << std::endl;  // 6
-  assert(ta == MPint(6));
+  std::cout << "gcd(482923147313, 988823136811) = " << ta << std::endl;  // 1
+  assert(ta == MPint(1));
 
   std::cout << std::endl << "--- power by repeated squaring ---" << std::endl;
-  MPint base = 3, exp = 7, result = 1;
+  MPint base = 23, exp = 19, result = 1;
   MPint b2 = base;
   MPint e2 = exp;
   while (e2 > 0) {
@@ -477,8 +477,8 @@ int extraexpr() {
     b2 *= b2;
     e2 /= 2;
   }
-  std::cout << "3^7 = " << result << std::endl;  // 2187
-  assert(result == MPint(2187));
+  std::cout << "23^19 = " << result << " (overflow on native int based MPint implementations)" << std::endl;  // 74615470927590710561908487
+  assert(result == MPint("74615470927590710561908487"));
 
   return 0;
 }
@@ -510,7 +510,7 @@ int main(int argc, char* argv[]) {
     if (std::strcmp(argv[i], "-prof") == 0) { prof = true; break; }
   }
 
-  const int PROF_RUNS = 50;
+  const int PROF_RUNS = 100000;
   uint64_t total[5] = {0, 0, 0, 0, 0};
   uint64_t t0, t1;
 
