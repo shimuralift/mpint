@@ -7,8 +7,6 @@ DRYPARAM=$2
 EXECUTABLE="../bin/demo"
 OUTFILE="demo.output"
 
-EXECUTABLEMyOwn="../bin/demoMyOwn"
-OUTFILEMyOwn="demoMyOwn.output"
 
 EXECUTABLEGMP="../bin/demoGMP"
 OUTFILEGMP="demoGMP.output"
@@ -65,12 +63,6 @@ doAll () {
         return ${retval}
     fi
 
-    runExecutable ${EXECUTABLEMyOwn} ${OUTFILEMyOwn}
-    retval=$?
-    if [ "${retval}" -ne 0 ]; then
-        return ${retval}
-    fi
-
     runExecutable ${EXECUTABLEGMP} ${OUTFILEGMP}
     retval=$?
     if [ "${retval}" -ne 0 ]; then
@@ -79,12 +71,6 @@ doAll () {
 
     
     doDiff "${OUTFILE}" "${REFFILE}"
-    diffretval=$?
-    if [ "${diffretval}" -ne 0 ]; then
-        retval=${diffretval}
-    fi
-
-    doDiff "${OUTFILEMyOwn}" "${REFFILE}"
     diffretval=$?
     if [ "${diffretval}" -ne 0 ]; then
         retval=${diffretval}
@@ -102,43 +88,37 @@ doAll () {
 
 doProf () {
     if [ "${DRYPARAM}" == "dry" ]; then
-        echo "DRY: would run ${EXECUTABLE}, ${EXECUTABLEMyOwn}, ${EXECUTABLEGMP} with -prof and display side-by-side"
+        echo "DRY: would run ${EXECUTABLE}, ${EXECUTABLEGMP} with -prof and display side-by-side"
         return 0
     fi
 
-    local tmp1 tmp2 tmp3 tdata1 tdata2 tdata3
+    local tmp1 tmp2 tdata1 tdata2
     tmp1=$(mktemp)
     tmp2=$(mktemp)
-    tmp3=$(mktemp)
     tdata1=$(mktemp)
     tdata2=$(mktemp)
-    tdata3=$(mktemp)
 
     echo "profiling ${EXECUTABLE} ..."
-    ${EXECUTABLE}        -prof > "${tmp1}" 2>&1
-    echo "profiling ${EXECUTABLEMyOwn} ..."
-    ${EXECUTABLEMyOwn}  -prof > "${tmp2}" 2>&1
+    ${EXECUTABLE}     -prof > "${tmp1}" 2>&1
     echo "profiling ${EXECUTABLEGMP} ..."
-    ${EXECUTABLEGMP}    -prof > "${tmp3}" 2>&1
+    ${EXECUTABLEGMP}  -prof > "${tmp2}" 2>&1
 
     # Strip the "===" header line, keep only per-function rows
     grep -v '^===' "${tmp1}" > "${tdata1}"
     grep -v '^===' "${tmp2}" > "${tdata2}"
-    grep -v '^===' "${tmp3}" > "${tdata3}"
 
     echo ""
     grep '===' "${tmp1}" | sed 's/profiling report/profiling comparison/'
     echo ""
 
-    # Merge the three data files side-by-side and format as a table.
+    # Merge the two data files side-by-side and format as a table.
     # Each data line has the form "  name: cycles cycles".
-    paste "${tdata1}" "${tdata2}" "${tdata3}" | awk -F'\t' '
+    paste "${tdata1}" "${tdata2}" | awk -F'\t' '
     BEGIN {
-        printf "%-14s  %20s  %20s  %20s\n",
-               "function", "demo (long int)", "demoMyOwn", "demoGMP"
-        printf "%-14s  %20s  %20s  %20s\n",
+        printf "%-14s  %20s  %20s\n",
+               "function", "demo (long int)", "demoGMP"
+        printf "%-14s  %20s  %20s\n",
                "--------------",
-               "--------------------",
                "--------------------",
                "--------------------"
     }
@@ -149,13 +129,11 @@ doProf () {
         gsub(/[[:space:]]*cycles[[:space:]]*$/, "", c1); gsub(/^[[:space:]]+/, "", c1)
         split($2, b, ":"); c2 = b[2]
         gsub(/[[:space:]]*cycles[[:space:]]*$/, "", c2); gsub(/^[[:space:]]+/, "", c2)
-        split($3, c, ":"); c3 = c[2]
-        gsub(/[[:space:]]*cycles[[:space:]]*$/, "", c3); gsub(/^[[:space:]]+/, "", c3)
-        printf "%-14s  %20s  %20s  %20s\n", name, c1, c2, c3
+        printf "%-14s  %20s  %20s\n", name, c1, c2
     }
     '
 
-    rm -f "${tmp1}" "${tmp2}" "${tmp3}" "${tdata1}" "${tdata2}" "${tdata3}"
+    rm -f "${tmp1}" "${tmp2}" "${tdata1}" "${tdata2}"
     return 0
 }
 
