@@ -3258,3 +3258,387 @@ constructors.
 
 #############################################################################################################################################################################################################
 
+❯ Add some comprehensive testing of construction/conversion of MPint from strings to the regression tests in src/demo.cpp.
+
+  Read 1 file (ctrl+o to expand)
+
+● Let me check the reference files briefly to understand the existing test structure:
+
+  Searched for 2 patterns (ctrl+o to expand)
+
+● Let me find detTest and understand the full main structure:
+
+  Searched for 1 pattern (ctrl+o to expand)
+
+● Now I have a complete picture. I'll add a strconstr() function and wire it into main(). The function will cover decimal/octal/hex/binary, single-quote separators, std::string overload, and arithmetic — all with
+  values that fit in signed long int so the output is identical across all three variants.
+
+● Update(src/demo.cpp)
+  ⎿  Added 94 lines
+      483    return 0;
+      484  }
+      485
+      486 +int strconstr() {
+      487 +  std::cout << "--- string constructor: decimal ---" << std::endl;
+      488 +  MPint sd0("0");
+      489 +  MPint sd1("42");
+      490 +  MPint sd2("-17");
+      491 +  MPint sd3("+99");
+      492 +  MPint sd4("1'000'000");
+      493 +  assert(sd0 == MPint(0));
+      494 +  assert(sd1 == MPint(42));
+      495 +  assert(sd2 == MPint(-17));
+      496 +  assert(sd3 == MPint(99));
+      497 +  assert(sd4 == MPint(1000000));
+      498 +  std::cout << "\"0\"          = " << sd0 << std::endl;  // 0
+      499 +  std::cout << "\"42\"         = " << sd1 << std::endl;  // 42
+      500 +  std::cout << "\"-17\"        = " << sd2 << std::endl;  // -17
+      501 +  std::cout << "\"+99\"        = " << sd3 << std::endl;  // 99
+      502 +  std::cout << "\"1'000'000\"  = " << sd4 << std::endl;  // 1000000
+      503 +
+      504 +  std::cout << std::endl << "--- string constructor: octal ---" << std::endl;
+      505 +  MPint so0("0");
+      506 +  MPint so1("010");
+      507 +  MPint so2("0755");
+      508 +  MPint so3("-010");
+      509 +  assert(so0 == MPint(0));
+      510 +  assert(so1 == MPint(8));
+      511 +  assert(so2 == MPint(493));
+      512 +  assert(so3 == MPint(-8));
+      513 +  std::cout << "\"0\"      = " << so0 << std::endl;  // 0
+      514 +  std::cout << "\"010\"    = " << so1 << std::endl;  // 8
+      515 +  std::cout << "\"0755\"   = " << so2 << std::endl;  // 493
+      516 +  std::cout << "\"-010\"   = " << so3 << std::endl;  // -8
+      517 +
+      518 +  std::cout << std::endl << "--- string constructor: hexadecimal ---" << std::endl;
+      519 +  MPint sh0("0xff");
+      520 +  MPint sh1("0xDEAD");
+      521 +  MPint sh2("0X1A2B");
+      522 +  MPint sh3("0xff'ee");
+      523 +  MPint sh4("-0x10");
+      524 +  assert(sh0 == MPint(255));
+      525 +  assert(sh1 == MPint(57005));
+      526 +  assert(sh2 == MPint(6699));
+      527 +  assert(sh3 == MPint(65518));
+      528 +  assert(sh4 == MPint(-16));
+      529 +  std::cout << "\"0xff\"      = " << sh0 << std::endl;  // 255
+      530 +  std::cout << "\"0xDEAD\"    = " << sh1 << std::endl;  // 57005
+      531 +  std::cout << "\"0X1A2B\"    = " << sh2 << std::endl;  // 6699
+      532 +  std::cout << "\"0xff'ee\"   = " << sh3 << std::endl;  // 65518
+      533 +  std::cout << "\"-0x10\"     = " << sh4 << std::endl;  // -16
+      534 +
+      535 +  std::cout << std::endl << "--- string constructor: binary ---" << std::endl;
+      536 +  MPint sb0("0b1010");
+      537 +  MPint sb1("0B11111111");
+      538 +  MPint sb2("0b1111'1111");
+      539 +  MPint sb3("-0b11");
+      540 +  assert(sb0 == MPint(10));
+      541 +  assert(sb1 == MPint(255));
+      542 +  assert(sb2 == MPint(255));
+      543 +  assert(sb3 == MPint(-3));
+      544 +  std::cout << "\"0b1010\"       = " << sb0 << std::endl;  // 10
+      545 +  std::cout << "\"0B11111111\"   = " << sb1 << std::endl;  // 255
+      546 +  std::cout << "\"0b1111'1111\"  = " << sb2 << std::endl;  // 255
+      547 +  std::cout << "\"-0b11\"        = " << sb3 << std::endl;  // -3
+      548 +
+      549 +  std::cout << std::endl << "--- string constructor: std::string ---" << std::endl;
+      550 +  std::string ss1 = "12345";
+      551 +  std::string ss2 = "0xCAFE";
+      552 +  MPint fs1(ss1);
+      553 +  MPint fs2(ss2);
+      554 +  assert(fs1 == MPint(12345));
+      555 +  assert(fs2 == MPint(0xCAFE));
+      556 +  std::cout << "std::string(\"12345\")  = " << fs1 << std::endl;  // 12345
+      557 +  std::cout << "std::string(\"0xCAFE\") = " << fs2 << std::endl;  // 51966
+      558 +
+      559 +  std::cout << std::endl << "--- string constructor: arithmetic ---" << std::endl;
+      560 +  assert(MPint("100") + MPint("200") == MPint(300));
+      561 +  std::cout << "\"100\" + \"200\"      = " << (MPint("100") + MPint("200")) << std::endl;  // 300
+      562 +  assert(MPint("0xFF") * MPint("2") == MPint(510));
+      563 +  std::cout << "\"0xFF\" * \"2\"       = " << (MPint("0xFF") * MPint("2")) << std::endl;   // 510
+      564 +  assert(MPint("0b1010") * MPint("010") == MPint(80));
+      565 +  std::cout << "\"0b1010\" * \"010\"   = " << (MPint("0b1010") * MPint("010")) << std::endl;  // 80
+      566 +  assert(MPint("-0x10") + MPint("0b10000") == MPint(0));
+      567 +  std::cout << "\"-0x10\" + \"0b10000\" = " << (MPint("-0x10") + MPint("0b10000")) << std::endl; // 0
+      568 +
+      569 +  std::cout << std::endl << "--- string constructor: large values fitting in long int ---" << std::endl;
+      570 +  MPint big1("1'000'000'000'000'000'000");   // 10^18
+      571 +  MPint big2("999'999'999'999'999'999");     // 10^18 - 1
+      572 +  assert(big1 == MPint(1000000000000000000LL));
+      573 +  assert(big2 + MPint(1) == big1);
+      574 +  std::cout << "\"1'000'000'000'000'000'000\" = " << big1 << std::endl;  // 1000000000000000000
+      575 +  std::cout << "\"999'999'999'999'999'999\" + 1 = " << (big2 + MPint(1)) << std::endl;  // 1000000000000000000
+      576 +
+      577 +  return 0;
+      578 +}
+      579 +
+      580  static std::string format_cycles(uint64_t n) {
+      581      std::string s = std::to_string(n);
+      582      for (int pos = static_cast<int>(s.size()) - 3; pos > 0; pos -= 3)
+
+● Now wire strconstr() into main() — extend the arrays and add the call:
+
+● Update(src/demo.cpp)
+  ⎿  Added 1 line, removed 1 line
+      605    }
+      606
+      607    const int PROF_RUNS = 100000;
+      608 -  uint64_t total[5] = {0, 0, 0, 0, 0};
+      608 +  uint64_t total[6] = {0, 0, 0, 0, 0, 0};
+      609    uint64_t t0, t1;
+      610
+      611    NullBuf nullbuf;
+
+● Update(src/demo.cpp)
+  ⎿  Added 9 lines, removed 5 lines
+      631    for (int r = 0; r < (prof ? PROF_RUNS : 1); ++r)
+      632      { t0 = rdtsc_read(); detTest();     t1 = rdtsc_read(); total[4] += t1 - t0; }
+      633
+      634 +  std::cout << std::endl << "MPint: string constructor tests" << std::endl << std::endl;
+      635 +  for (int r = 0; r < (prof ? PROF_RUNS : 1); ++r)
+      636 +    { t0 = rdtsc_read(); strconstr();   t1 = rdtsc_read(); total[5] += t1 - t0; }
+      637 +
+      638    if (prof) {
+      639      std::cout.rdbuf(orig);
+      636 -    static const char* const names[5] = {
+      637 -      "claude_main", "basicexpr", "moreexpr", "extraexpr", "detTest"
+      640 +    static const char* const names[6] = {
+      641 +      "claude_main", "basicexpr", "moreexpr", "extraexpr", "detTest", "strconstr"
+      642      };
+      639 -    std::string formatted[5];
+      643 +    std::string formatted[6];
+      644      std::string::size_type maxcycles = 0, maxname = 0;
+      641 -    for (int i = 0; i < 5; ++i) {
+      645 +    for (int i = 0; i < 6; ++i) {
+      646        formatted[i] = format_cycles(total[i] / PROF_RUNS);
+      647        if (formatted[i].size() > maxcycles) maxcycles = formatted[i].size();
+      648        if (std::strlen(names[i]) > maxname) maxname = std::strlen(names[i]);
+      649      }
+      650      std::cout << "=== profiling report (rdtsc cpu cycles, avg of " << PROF_RUNS << " runs) ===" << std::endl;
+      647 -    for (int i = 0; i < 5; ++i) {
+      651 +    for (int i = 0; i < 6; ++i) {
+      652        std::cout << "  " << std::setw(static_cast<int>(maxname)) << std::left  << names[i]
+      653                  << ": " << std::setw(static_cast<int>(maxcycles)) << std::right << formatted[i]
+      654                  << " cycles" << std::endl;
+
+● Now build and run to capture the new output:
+
+● Bash(make 2>&1)
+  ⎿  g++ -std=c++14 -Wall -Wextra -pedantic -Werror -Isrc -o bin/demo src/demo.cpp src/det.cpp -Lbin -lMP
+     g++ -std=c++14 -Wall -Wextra -pedantic -Werror -Isrc -o bin/demoMyOwn src/demo.cpp src/det.cpp -Lbin -lMPMyOwn
+     g++ -std=c++14 -Wall -Wextra -pedantic -Werror -Isrc -o bin/demoGMP src/demo.cpp src/det.cpp -Lbin -lMPGMP -lgmp
+
+● Bash(bin/demo 2>&1 | tail -40)
+  ⎿  --- string constructor: decimal ---
+     "0"          = 0
+     "42"         = 42
+     … +36 lines (ctrl+o to expand)
+
+● Bash(bin/demoGMP 2>&1 | tail -20)
+  ⎿  --- string constructor: binary ---
+     "0b1010"       = 10
+     "0B11111111"   = 255
+     … +16 lines (ctrl+o to expand)
+
+● All three produce identical output for the new section. Now update the reference files:
+
+● Bash(bin/demo > test/demo.output.ref && bin/demoGMP > test/demoGMP.output.ref && echo "reference files updated")
+  ⎿  reference files updated
+
+● Bash(cd /home/claudeuser/work/mpint/test && ./test.sh all 2>&1 | grep -E "EXIT|FAIL|diff")
+  ⎿  ############################## EXIT  : ../bin/demo > demo.output 2>&1 : EXITCODE : 0 ##########
+     ############################## EXIT  : cat demo.output : EXITCODE : 0 ##########
+     ############################## EXIT  : ../bin/demoMyOwn > demoMyOwn.output 2>&1 : EXITCODE : 0 ##########
+     … +9 lines (ctrl+o to expand)
+
+● All three variants pass. The new strconstr() function tests:
+
+  - Decimal: "0", "42", "-17", "+99", "1'000'000" (with separator)
+  - Octal: "0", "010" (8), "0755" (493), "-010" (negative)
+  - Hex: "0xff", "0xDEAD", "0X1A2B" (uppercase X), "0xff'ee" (with separator), "-0x10" (negative)
+  - Binary: "0b1010", "0B11111111" (uppercase B), "0b1111'1111" (with separator), "-0b11" (negative)
+  - std::string overload: "12345", "0xCAFE"
+  - Arithmetic with string-constructed values: cross-base arithmetic checks
+  - Large values: 10^18 with separators, still fits in signed long int so output is identical across all three backends
+
+✻ Worked for 6m 1s
+
+❯ commit it.
+
+● Bash(cd /home/claudeuser/work/mpint && git status && git diff --stat)
+  ⎿  On branch master
+     Changes not staged for commit:
+       (use "git add <file>..." to update what will be committed)
+     … +10 lines (ctrl+o to expand)
+
+● Bash(git add src/demo.cpp test/demo.output.ref test/demoGMP.output.ref && git commit -m "$(cat <<'EOF'
+      add comprehensive string-constructor regression tests (strcons…)
+  ⎿  [master 363951a] add comprehensive string-constructor regression tests (strconstr)
+      3 files changed, 188 insertions(+), 6 deletions(-)
+
+● Done.
+
+❯ Add a new option prof to test script test/test.sh. It shall run all the demo* variants with option -prof and present the resp. outputs _side_by_side_ in a table for easy comparison.
+
+  Read 1 file (ctrl+o to expand)
+
+● Now I have a clear picture. I'll add a doProf function that runs all three variants with -prof, parses the output with awk, and prints a formatted side-by-side table. Then wire it into the case and printHelp.
+
+● Update(test/test.sh)
+  ⎿  Added 59 lines
+      100      return ${retval}
+      101  }
+      102
+      103 +doProf () {
+      104 +    if [ "${DRYPARAM}" == "dry" ]; then
+      105 +        echo "DRY: would run ${EXECUTABLE}, ${EXECUTABLEMyOwn}, ${EXECUTABLEGMP} with -prof and display side-by-side"
+      106 +        return 0
+      107 +    fi
+      108 +
+      109 +    local tmp1 tmp2 tmp3 tdata1 tdata2 tdata3
+      110 +    tmp1=$(mktemp)
+      111 +    tmp2=$(mktemp)
+      112 +    tmp3=$(mktemp)
+      113 +    tdata1=$(mktemp)
+      114 +    tdata2=$(mktemp)
+      115 +    tdata3=$(mktemp)
+      116 +
+      117 +    echo "profiling ${EXECUTABLE} ..."
+      118 +    ${EXECUTABLE}        -prof > "${tmp1}" 2>&1
+      119 +    echo "profiling ${EXECUTABLEMyOwn} ..."
+      120 +    ${EXECUTABLEMyOwn}  -prof > "${tmp2}" 2>&1
+      121 +    echo "profiling ${EXECUTABLEGMP} ..."
+      122 +    ${EXECUTABLEGMP}    -prof > "${tmp3}" 2>&1
+      123 +
+      124 +    # Strip the "===" header line, keep only per-function rows
+      125 +    grep -v '^===' "${tmp1}" > "${tdata1}"
+      126 +    grep -v '^===' "${tmp2}" > "${tdata2}"
+      127 +    grep -v '^===' "${tmp3}" > "${tdata3}"
+      128 +
+      129 +    echo ""
+      130 +    grep '===' "${tmp1}" | sed 's/profiling report/profiling comparison/'
+      131 +    echo ""
+      132 +
+      133 +    # Merge the three data files side-by-side and format as a table.
+      134 +    # Each data line has the form "  name: cycles cycles".
+      135 +    paste "${tdata1}" "${tdata2}" "${tdata3}" | awk -F'\t' '
+      136 +    BEGIN {
+      137 +        printf "%-14s  %20s  %20s  %20s\n",
+      138 +               "function", "demo (long int)", "demoMyOwn", "demoGMP"
+      139 +        printf "%-14s  %20s  %20s  %20s\n",
+      140 +               "--------------",
+      141 +               "--------------------",
+      142 +               "--------------------",
+      143 +               "--------------------"
+      144 +    }
+      145 +    {
+      146 +        split($1, a, ":"); name = a[1]
+      147 +        gsub(/^[[:space:]]+|[[:space:]]+$/, "", name)
+      148 +        c1 = a[2]
+      149 +        gsub(/[[:space:]]*cycles[[:space:]]*$/, "", c1); gsub(/^[[:space:]]+/, "", c1)
+      150 +        split($2, b, ":"); c2 = b[2]
+      151 +        gsub(/[[:space:]]*cycles[[:space:]]*$/, "", c2); gsub(/^[[:space:]]+/, "", c2)
+      152 +        split($3, c, ":"); c3 = c[2]
+      153 +        gsub(/[[:space:]]*cycles[[:space:]]*$/, "", c3); gsub(/^[[:space:]]+/, "", c3)
+      154 +        printf "%-14s  %20s  %20s  %20s\n", name, c1, c2, c3
+      155 +    }
+      156 +    '
+      157 +
+      158 +    rm -f "${tmp1}" "${tmp2}" "${tmp3}" "${tdata1}" "${tdata2}" "${tdata3}"
+      159 +    return 0
+      160 +}
+      161 +
+      162  printHelp () {
+      163      local retval=0
+      164
+
+● Now update the help text and the case statement:
+
+● Update(test/test.sh)
+  ⎿  Added 3 lines, removed 1 line
+      163      local retval=0
+      164
+      165      local helptext='synopsis:
+      166 -./test.sh  "all"|"help" ["dry"]
+      166 +./test.sh  "all"|"prof"|"help" ["dry"]
+      167
+      168  mandatory 1st arg:
+      169      all           : runs the executables, compares their output
+      170                      (stdout and stderr combined) to a reference
+      171 +    prof          : runs all demo* variants with -prof and shows
+      172 +                    cycle counts side-by-side for easy comparison
+      173      help          : prints this help
+      174
+      175  optional 2nd arg:
+
+● Update(test/test.sh)
+  ⎿  Added 4 lines
+      202                      doAll
+      203                      exitval=$?
+      204                      ;;
+      205 +                prof)
+      206 +                    doProf
+      207 +                    exitval=$?
+      208 +                    ;;
+      209                  help)
+      210                      printHelp
+      211                      exitval=$?
+
+● Let's test it:
+
+● Bash(cd /home/claudeuser/work/mpint/test && ./test.sh prof 2>&1)
+  ⎿  Running in the background (↓ to manage)
+  ⎿  (timeout 1m)
+
+● Bash(cd /home/claudeuser/work/mpint/test && ./test.sh all 2>&1 | tail -5)
+  ⎿  ############################## EXIT  : diff demo.output demo.output.ref : EXITCODE : 0 ##########
+     ############################## START : diff demoMyOwn.output demo.output.ref ##########
+     ############################## EXIT  : diff demoMyOwn.output demo.output.ref : EXITCODE : 0 ##########
+     … +2 lines (ctrl+o to expand)
+
+  Read 1 file (ctrl+o to expand)
+
+● The profiling runs are taking time (100k iterations each). Let me wait for the background command to finish:
+
+● Bash(wait && cat /tmp/claude-500/-home-claudeuser-work-mpint/e9dd3c6f-7b6b-47f3-a3f2-6fc301b9ae37/tasks/b897rglgu.output)
+  ⎿  profiling ../bin/demo ...
+     profiling ../bin/demoMyOwn ...
+     profiling ../bin/demoGMP ...
+     … +11 lines (ctrl+o to expand)
+
+● The table looks exactly right. Let me also verify the dry mode works:
+
+● Bash(./test.sh prof dry)
+  ⎿  DRY: would run ../bin/demo, ../bin/demoMyOwn, ../bin/demoGMP with -prof and display side-by-side
+
+● Everything works. Now commit:
+
+● Bash(cd /home/claudeuser/work/mpint && git add test/test.sh && git commit -m "$(cat <<'EOF'
+      add 'prof' option to test.sh: side-by-side profiling comparison…)
+  ⎿  [master bd5b1e2] add 'prof' option to test.sh: side-by-side profiling comparison
+      1 file changed, 66 insertions(+), 1 deletion(-)
+
+● Done. The output from ./test.sh prof looks like:
+
+  === profiling comparison (rdtsc cpu cycles, avg of 100000 runs) ===
+
+  function             demo (long int)             demoMyOwn               demoGMP
+  --------------  --------------------  --------------------  --------------------
+  claude_main                    8 732                 8 058                12 308
+  basicexpr                     93 603                89 749                94 743
+  moreexpr                      36 713                31 796                36 028
+  extraexpr                     81 542                57 172                88 401
+  detTest                      855 300               743 995             1 172 947
+  strconstr                     23 922                18 434                32 959
+
+✻ Cooked for 5m 52s
+
+● Background command "Run prof option and check output" completed (exit code 0)
+
+● The background task completed successfully — that was the profiling run whose output we already reviewed. Nothing further needed.
+
+❯ /status
+  ⎿  Status dialog dismissed
+
+─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ /exit

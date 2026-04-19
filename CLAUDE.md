@@ -21,11 +21,11 @@ Testing approaches: no prefs so far, tbd later
 ## Important Commands
 Build commands: make
 Test commands: simple stdout/stderr based regression test: cd test; ./test.sh all
+Benchmarking: cd test; ./test.sh prof
 
 ## What I've done in the meantime
-Some of the constants in the tests, i.e. demo.cpp, were bumped up.
-transcript.txt was updated.
-Reference outputs for the regression tests were updated.
+Nothing particular, updated transcript.txt and some minor changes.
 
 ## What to do for you right now
-nothing particular here, will be given by prompt(s) in the repl.
+Please remove the MPintMyOwn variant, i.e. the .cpp, .hpp files and everything in the
+Makefile and subdir test that is related to it.
