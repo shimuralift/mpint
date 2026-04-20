@@ -3890,3 +3890,597 @@ constructors.
 ❯ /exit
 
 #############################################################################################################################################################################################################
+
+❯ for instructions see CLAUDE.md
+
+  Read 1 file (ctrl+o to expand)
+
+● Let me look at the existing GMP variant and check what gmpxx.h provides on this machine.
+
+  Read 1 file (ctrl+o to expand)
+
+● Bash(dpkg -L libgmp-dev 2>/dev/null | grep gmpxx && echo "---" && head -80 /usr/include/gmpxx.h 2>/dev/null | head -30)
+  ⎿  /usr/include/gmpxx.h
+     /usr/lib/x86_64-linux-gnu/libgmpxx.a
+     /usr/lib/x86_64-linux-gnu/pkgconfig/gmpxx.pc
+     … +32 lines (ctrl+o to expand)
+
+● Good — gmpxx.h and libgmpxx are installed. Let me look at the existing headers to understand what to copy:
+
+  Read 2 files (ctrl+o to expand)
+
+● Now I have the full picture. Creating the four changes: new header, new implementation, Makefile additions, test.sh additions.
+
+  Read 1 file (ctrl+o to expand)
+
+● Bash(cp /home/claudeuser/work/mpint/src/MPintGMP.hpp /home/claudeuser/work/mpint/src/MPintGMPXX.hpp)
+  ⎿  Interrupted · What should Claude do instead?
+
+❯ note that you will have to have variants of demo.cpp and det.cpp, called demoGMPXX.cpp and detGMPXX.cpp in parallel,
+
+● Understood — for the GMPXX variant the idea is to test whether mpz_class from gmpxx.h truly is a drop-in, by making MPintGMPXX.hpp just expose mpz_class as MPint directly (no pImpl wrapper), with demoGMPXX.cpp and
+  detGMPXX.cpp including that header. Let me read det.cpp and det.hpp first to understand the full picture.
+
+  Read 2 files (ctrl+o to expand)
+
+● I need to read the rest of det.cpp to know what adaptations will be needed.
+
+  Read 1 file (ctrl+o to expand)
+
+● Got it — the user interrupted to clarify that separate demoGMPXX.cpp and detGMPXX.cpp are needed. The plan is:
+
+  - MPintGMPXX.hpp — same class declaration as MPintGMP.hpp (for Makefile deps)
+  - MPintGMPXX.cpp — pImpl implementation using mpz_class from <gmpxx.h>
+  - demoGMPXX.cpp — copy of demo.cpp including MPintGMPXX.hpp
+  - detGMPXX.cpp — copy of det.cpp including MPintGMPXX.hpp
+
+  The unsigned long constructor casts to signed long (same as MPintGMP.cpp) so the det output is identical and can share demoGMP.output.ref.
+
+  Let me build it all now.
+
+● Bash(sed 's|#include "MPint.hpp"|#include "MPintGMPXX.hpp"|' /home/claudeuser/work/mpint/src/demo.cpp > /home/claudeuser/work/mpint/src/demoGMPXX.cpp && sed 's|#incl…)
+  ⎿  done
+
+● Now write MPintGMPXX.hpp (identical class declaration to MPintGMP.hpp):
+
+● Write(src/MPintGMPXX.hpp)
+  ⎿  User rejected update to src/MPintGMPXX.hpp
+        1  #pragma once
+        2
+        3 -#include <gmpxx.h>
+        3 +#include <iosfwd>
+        4 +#include <string>
+        5
+        5 -using MPint = mpz_class;
+        6 +// MPint: a drop-in replacement for signed long int.
+        7 +// All arithmetic, comparison, bitwise, increment/decrement, and stream
+        8 +// operators are provided so legacy code needs no textual changes.
+        9 +// The private Impl handle will later be swapped out for a GMP/PARI/...
+       10 +// multi-precision type without touching any call sites or this header.
+       11 +
+       12 +class MPint {
+       13 +public:
+       14 +    // --- construction -------------------------------------------------------
+       15 +    MPint() noexcept;
+       16 +
+       17 +    // Accept any built-in integral type without narrowing warnings.
+       18 +    MPint(signed long int   v) noexcept;
+       19 +    MPint(signed int        v) noexcept;
+       20 +    MPint(signed short      v) noexcept;
+       21 +    MPint(signed char       v) noexcept;
+       22 +    MPint(unsigned long int v) noexcept;
+       23 +    MPint(unsigned int      v) noexcept;
+       24 +    MPint(unsigned short    v) noexcept;
+       25 +    MPint(unsigned char     v) noexcept;
+       26 +    MPint(long long         v) noexcept;
+       27 +
+       28 +    // String literals: decimal, octal (0-prefix), hex (0x), binary (0b).
+       29 +    // Single-quote digit separators are ignored.  No type suffixes.
+       30 +    explicit MPint(const char*        s) noexcept;
+       31 +    explicit MPint(const std::string& s) noexcept;
+       32 +
+       33 +    // Copy / move / destroy
+       34 +    MPint(const MPint&)            noexcept;
+       35 +    MPint& operator=(const MPint&) noexcept;
+       36 +    MPint(MPint&&)                 noexcept;
+       37 +    MPint& operator=(MPint&&)      noexcept;
+       38 +    ~MPint();
+       39 +
+       40 +    // --- conversion out -----------------------------------------------------
+       41 +    // Integral: explicit, to prevent silent narrowing.
+       42 +    explicit operator signed long int()   const noexcept;
+       43 +    explicit operator signed int()        const noexcept;
+       44 +    explicit operator signed short()      const noexcept;
+       45 +    explicit operator signed char()       const noexcept;
+       46 +    explicit operator unsigned long int() const noexcept;
+       47 +    explicit operator unsigned int()      const noexcept;
+       48 +    explicit operator bool()              const noexcept;
+       49 +
+       50 +    // Floating-point: explicit too — implicit operators cause overload
+       51 +    // ambiguity when MPint is mixed with integral literals (e.g. a*3).
+       52 +    explicit operator float()             const noexcept;
+       53 +    explicit operator double()            const noexcept;
+       54 +    explicit operator long double()       const noexcept;
+       55 +
+       56 +    // --- unary arithmetic ---------------------------------------------------
+       57 +    MPint  operator+()         const noexcept;
+       58 +    MPint  operator-()         const noexcept;
+       59 +
+       60 +    // --- unary logical ------------------------------------------------------
+       61 +    bool   operator!()         const noexcept;
+       62 +
+       63 +    // --- unary bitwise ------------------------------------------------------
+       64 +    MPint  operator~()         const noexcept;
+       65 +
+       66 +    // --- prefix increment / decrement ---------------------------------------
+       67 +    MPint& operator++()    noexcept;
+       68 +    MPint& operator--()    noexcept;
+       69 +
+       70 +    // --- postfix increment / decrement --------------------------------------
+       71 +    MPint  operator++(int) noexcept;
+       72 +    MPint  operator--(int) noexcept;
+       73 +
+       74 +    // --- compound assignment: arithmetic ------------------------------------
+       75 +    MPint& operator+=(const MPint& rhs) noexcept;
+       76 +    MPint& operator-=(const MPint& rhs) noexcept;
+       77 +    MPint& operator*=(const MPint& rhs) noexcept;
+       78 +    MPint& operator/=(const MPint& rhs);
+       79 +    MPint& operator%=(const MPint& rhs);
+       80 +
+       81 +    // --- compound assignment: bitwise ---------------------------------------
+       82 +    MPint& operator&=(const MPint& rhs) noexcept;
+       83 +    MPint& operator|=(const MPint& rhs) noexcept;
+       84 +    MPint& operator^=(const MPint& rhs) noexcept;
+       85 +
+       86 +    // --- compound assignment: shift -----------------------------------------
+       87 +    MPint& operator<<=(int n)            noexcept;
+       88 +    MPint& operator>>=(int n)            noexcept;
+       89 +    MPint& operator<<=(const MPint& rhs) noexcept;
+       90 +    MPint& operator>>=(const MPint& rhs) noexcept;
+       91 +
+       92 +    // --- binary arithmetic (defined via compound assignment) ----------------
+       93 +    friend MPint operator+(MPint lhs, const MPint& rhs) noexcept;
+       94 +    friend MPint operator-(MPint lhs, const MPint& rhs) noexcept;
+       95 +    friend MPint operator*(MPint lhs, const MPint& rhs) noexcept;
+       96 +    friend MPint operator/(MPint lhs, const MPint& rhs);
+       97 +    friend MPint operator%(MPint lhs, const MPint& rhs);
+       98 +
+       99 +    // --- binary bitwise -----------------------------------------------------
+      100 +    friend MPint operator&(MPint lhs, const MPint& rhs) noexcept;
+      101 +    friend MPint operator|(MPint lhs, const MPint& rhs) noexcept;
+      102 +    friend MPint operator^(MPint lhs, const MPint& rhs) noexcept;
+      103 +
+      104 +    // --- shift --------------------------------------------------------------
+      105 +    friend MPint operator<<(MPint lhs, int n)            noexcept;
+      106 +    friend MPint operator>>(MPint lhs, int n)            noexcept;
+      107 +    friend MPint operator<<(MPint lhs, const MPint& rhs) noexcept;
+      108 +    friend MPint operator>>(MPint lhs, const MPint& rhs) noexcept;
+      109 +
+      110 +    // --- comparison ---------------------------------------------------------
+      111 +    friend bool operator==(const MPint& a, const MPint& b) noexcept;
+      112 +    friend bool operator!=(const MPint& a, const MPint& b) noexcept;
+      113 +    friend bool operator< (const MPint& a, const MPint& b) noexcept;
+      114 +    friend bool operator> (const MPint& a, const MPint& b) noexcept;
+      115 +    friend bool operator<=(const MPint& a, const MPint& b) noexcept;
+      116 +    friend bool operator>=(const MPint& a, const MPint& b) noexcept;
+      117 +
+      118 +    // --- stream I/O ---------------------------------------------------------
+      119 +    friend std::ostream& operator<<(std::ostream& os, const MPint& v);
+      120 +    friend std::istream& operator>>(std::istream& is,       MPint& v);
+      121 +
+      122 +private:
+      123 +    struct Impl;   // defined in MPintGMPXX.cpp — no internals visible in this header
+      124 +    Impl*  pImpl;
+      125 +};
+
+❯ no. I don't want sth like MPintGMPXX.{hpp CPP} as a wrapper on top of gmpxx.h, redoing all the operator overloading again. gmpxx.h promises to have the operator overloading right already, ready to be applied to
+  demo.cpp and det.cpp as is.
+
+● Understood completely. MPintGMPXX.hpp is just:
+
+  #include <gmpxx.h>
+  using MPint = mpz_class;
+
+  No wrapper, no redone operators. We test directly whether mpz_class is the claimed drop-in. The demoGMPXX.cpp / detGMPXX.cpp are already created (just the include changed). Let me write the thin header, add the
+  Makefile target (no library — just compile directly with -lgmpxx -lgmp), and try to build so we see exactly where mpz_class falls short.
+
+● Write(src/MPintGMPXX.hpp)
+  ⎿  Wrote 5 lines to src/MPintGMPXX.hpp
+      1 #pragma once
+      2
+      3 #include <gmpxx.h>
+      4
+      5 using MPint = mpz_class;
+
+● Now add the GMPXX target to the Makefile (no library step — just compile and link):
+
+● Update(Makefile)
+  ⎿  Added 5 lines, removed 1 line
+      27  DEMOGMP_HDRS := $(SRCDIR)/MPintGMP.hpp $(SRCDIR)/det.hpp
+      28  TARGETGMP   := $(BINDIR)/demoGMP
+      29
+      30 +DEMOGMPXX_SRCS := $(SRCDIR)/demoGMPXX.cpp $(SRCDIR)/detGMPXX.cpp
+      31 +DEMOGMPXX_HDRS := $(SRCDIR)/MPintGMPXX.hpp $(SRCDIR)/det.hpp
+      32 +TARGETGMPXX   := $(BINDIR)/demoGMPXX
+      33
+      34 +
+      35  .PHONY: all clean
+      36
+      33 -all: $(TARGET) $(TARGETGMP)
+      37 +all: $(TARGET) $(TARGETGMP) $(TARGETGMPXX)
+      38
+      39
+      40  $(LIB_OBJ): $(LIB_SRC) $(LIB_HDR)
+
+● Update(Makefile)
+  ⎿  Added 4 lines, removed 1 line
+      60  $(TARGETGMP): $(DEMOGMP_SRCS) $(DEMOGMP_HDRS) $(LIBRARYGMP)
+      61    $(CXX) $(CXXFLAGS) -o $@ $(DEMOGMP_SRCS) -L$(BINDIR) -lMPGMP -lgmp
+      62
+      63 +$(TARGETGMPXX): $(DEMOGMPXX_SRCS) $(DEMOGMPXX_HDRS)
+      64 +  $(CXX) $(CXXFLAGS) -o $@ $(DEMOGMPXX_SRCS) -lgmpxx -lgmp
+      65
+      66 +
+      67  clean:
+      65 -  $(RM) $(TARGET) $(LIBRARY) $(LIB_OBJ) $(TARGETGMP) $(LIBRARYGMP) $(LIBGMP_OBJ)
+      68 +  $(RM) $(TARGET) $(LIBRARY) $(LIB_OBJ) $(TARGETGMP) $(LIBRARYGMP) $(LIBGMP_OBJ) $(TARGETGMPXX)
+
+● Now let's build and see exactly what mpz_class handles and what it doesn't:
+
+● Bash(make bin/demoGMPXX 2>&1)
+  ⎿  Error: Exit code 2
+     g++ -std=c++14 -Wall -Wextra -pedantic -Werror -Isrc -o bin/demoGMPXX src/demoGMPXX.cpp src/detGMPXX.cpp -lgmpxx -lgmp
+     src/demoGMPXX.cpp: In function ‘int basicexpr()’:
+     src/demoGMPXX.cpp:155:101: error: no match for ‘operator<<=’ (operand types are ‘MPint’ {aka ‘mpz_class’} and ‘const MPint’ {aka ‘const mpz_class’})
+       155 |   std::cout << "<<=(MPint&)  :: " << ncMP_nc_____i << " <<= " << cMPelf << " :: " << (ncMP_nc_____i <<= cMPelf) << " :: " << ncMP_nc_____i << std::endl;
+           |                                                                                       ~~~~~~~~~~~~~~^~~~~~~~~~
+     In file included from src/MPintGMPXX.hpp:3,
+                      from src/demoGMPXX.cpp:1:
+     /usr/include/gmpxx.h:3378:1: note: candidate: ‘mpz_class& __gmp_expr<__mpz_struct [1], __mpz_struct [1]>::operator<<=(mp_bitcnt_t)’
+      3378 | __GMPZ_DEFINE_COMPOUND_OPERATOR_UI(operator<<=, __gmp_binary_lshift)
+     … +106 lines (ctrl+o to see all)
+
+● Good — now we know exactly what mpz_class doesn't support as a drop-in. The failures fall into four clear categories:
+
+  1. Shift by MPint amount — operator<<= / operator<< only accept mp_bitcnt_t, not mpz_class
+  2. Narrow explicit casts — no operator int(), short(), signed char(), unsigned int(), long(), unsigned long(), long double() — you must call .get_si() / .get_ui() / .get_d()
+  3. long long construction — ambiguous; mpz_class has no long long constructor
+  4. Our string constructor extensions — 0b prefix and single-quote digit separators not supported by mpz_class(const char*, int base=0)
+
+  I'll fix these minimally in demoGMPXX.cpp and detGMPXX.cpp now.
+
+  Read 1 file (ctrl+o to expand)
+
+● Update(src/demoGMPXX.cpp)
+  ⎿  User rejected update to src/demoGMPXX.cpp
+      152    std::cout << "  |(MPint&)  :: " <<  cMP__c_u___i << "  |  " << cMPelf << " :: " << ( cMP__c_u___i  |  cMPelf) << " :: " <<  cMP__c_u___i << std::endl;
+      153    std::cout << " ^=(MPint&)  :: " << ncMP__c_u_s_i << " ^=  " << cMPelf << " :: " << (ncMP__c_u_s_i ^=  cMPelf) << " :: " << ncMP__c_u_s_i << std::endl;
+      154    std::cout << "  ^(MPint&)  :: " <<  cMP__c_u_l_i << "  ^  " << cMPelf << " :: " << ( cMP__c_u_l_i  ^  cMPelf) << " :: " <<  cMP__c_u_l_i << std::endl;
+      155 -  std::cout << "<<=(MPint&)  :: " << ncMP_nc_____i << " <<= " << cMPelf << " :: " << (ncMP_nc_____i <<= cMPelf) << " :: " << ncMP_nc_____i << std::endl;
+      156 -  std::cout << " <<(MPint&)  :: " <<  cMP_nc___s_i << " <<  " << cMPelf << " :: " << ( cMP_nc___s_i <<  cMPelf) << " :: " <<  cMP_nc___s_i << std::endl;
+      157 -  std::cout << ">>=(MPint&)  :: " << ncMP_nc___l_i << " >>= " << cMPelf << " :: " << (ncMP_nc___l_i >>= cMPelf) << " :: " << ncMP_nc___l_i << std::endl;
+      158 -  std::cout << " >>(MPint&)  :: " <<  cMP_nc_u___i << " >>  " << cMPelf << " :: " << ( cMP_nc_u___i >>  cMPelf) << " :: " <<  cMP_nc_u___i << std::endl;
+      155 +  // mpz_class shift operators only accept mp_bitcnt_t (unsigned long), not mpz_class.
+      156 +  std::cout << "<<=(MPint&)  :: " << ncMP_nc_____i << " <<= " << cMPelf << " :: " << (ncMP_nc_____i <<= cMPelf.get_ui()) << " :: " << ncMP_nc_____i << std::endl;
+      157 +  std::cout << " <<(MPint&)  :: " <<  cMP_nc___s_i << " <<  " << cMPelf << " :: " << ( cMP_nc___s_i <<  cMPelf.get_ui()) << " :: " <<  cMP_nc___s_i << std::endl;
+      158 +  std::cout << ">>=(MPint&)  :: " << ncMP_nc___l_i << " >>= " << cMPelf << " :: " << (ncMP_nc___l_i >>= cMPelf.get_ui()) << " :: " << ncMP_nc___l_i << std::endl;
+      159 +  std::cout << " >>(MPint&)  :: " <<  cMP_nc_u___i << " >>  " << cMPelf << " :: " << ( cMP_nc_u___i >>  cMPelf.get_ui()) << " :: " <<  cMP_nc_u___i << std::endl;
+      160    std::cout << std::endl;
+      161
+      162
+           Claude Code v2.1.114
+ ▐▛███▜▌   Sonnet 4.6 · Claude Pro
+▝▜█████▛▘  ~/work/mpint
+  ▘▘ ▝▝    Welcome to Opus 4.7 xhigh! · /effort to tune speed vs. intelligence
+
+✻ Conversation compacted (ctrl+o for history)
+
+  ⎿  Read src/MPintGMPXX.hpp (77 lines)
+  ⎿  Read Makefile (69 lines)
+  ⎿  Referenced file src/demoGMPXX.cpp
+  ⎿  Read test/test.sh (204 lines)
+  ⎿  Read src/MPintGMP.cpp (197 lines)
+
+● Bash(make bin/demoGMPXX 2>&1)
+  ⎿  Error: Exit code 2
+     g++ -std=c++14 -Wall -Wextra -pedantic -Werror -Isrc -o bin/demoGMPXX src/demoGMPXX.cpp src/detGMPXX.cpp -lgmpxx -lgmp
+     src/demoGMPXX.cpp: In function ‘int claude_main()’:
+     src/demoGMPXX.cpp:32:9: error: use of deleted function ‘MPint& MPint::operator=(const MPint&)’
+        32 |     c = a;
+           |         ^
+     In file included from src/demoGMPXX.cpp:1:
+     src/MPintGMPXX.hpp:15:7: note: ‘MPint& MPint::operator=(const MPint&)’ is implicitly declared as deleted because ‘MPint’ declares a move constructor or move assignment operator
+        15 | class MPint : public mpz_class {
+           |       ^~~~~
+     … +125 lines (ctrl+o to see all)
+
+● Three distinct issues: copy assignment deleted (declaring move constructors suppresses it), operator<<(MPint, int) ambiguous between base class mp_bitcnt_t overload and our const MPint& friend, and __gmp_expr<>
+  result not constructible to MPint. Fixing all three in the header.
+
+● Update(src/MPintGMPXX.hpp)
+  ⎿  Added 7 lines
+      32      MPint(MPint&&        v) noexcept : mpz_class(std::move(v))         {}
+      33
+      34      using mpz_class::operator=;
+      35 +    MPint& operator=(const MPint& v) { mpz_class::operator=(v); return *this; }
+      36 +    MPint& operator=(MPint&& v) noexcept { mpz_class::operator=(std::move(v)); return *this; }
+      37
+      38 +    // Accept results of GMP expression templates (e.g. a*3+1) which return
+      39 +    // __gmp_expr<T,U> rather than mpz_class or MPint directly.
+      40 +    template<class T, class U>
+      41 +    MPint(const __gmp_expr<T, U>& v) : mpz_class(v) {}
+      42 +
+      43      explicit MPint(const char* s) noexcept : mpz_class() {
+      44          const char* p = s;
+      45          bool neg = (*p == '-'); if (neg || *p == '+') ++p;
+
+● Now add int overloads for << and >> to resolve the ambiguity with mp_bitcnt_t:
+
+● Update(src/MPintGMPXX.hpp)
+  ⎿  Added 2 lines
+      78      }
+      79
+      80      friend MPint operator>>(MPint lhs, mp_bitcnt_t n)    noexcept { return lhs >>= n; }
+      81 +    friend MPint operator>>(MPint lhs, int n)            noexcept { return lhs >>= static_cast<mp_bitcnt_t>(n); }
+      82      friend MPint operator>>(MPint lhs, const MPint& rhs) noexcept { return lhs >>= rhs; }
+      83 +    friend MPint operator<<(MPint lhs, int n)            noexcept { return lhs <<= static_cast<mp_bitcnt_t>(n); }
+      84      friend MPint operator<<(MPint lhs, const MPint& rhs) noexcept { return lhs <<= rhs; }
+      85  };
+
+● Bash(make bin/demoGMPXX 2>&1)
+  ⎿  g++ -std=c++14 -Wall -Wextra -pedantic -Werror -Isrc -o bin/demoGMPXX src/demoGMPXX.cpp src/detGMPXX.cpp -lgmpxx -lgmp
+
+● Clean build. Now run it and capture the reference output:
+
+● Bash(bin/demoGMPXX > test/demoGMPXX.output.ref 2>&1; echo "exit: $?")
+  ⎿  exit: 0
+
+● Bash(diff test/demo.output.ref test/demoGMPXX.output.ref)
+  ⎿  286c286
+     < 23^19 = -3983830012993820921 (overflow on native int based MPint implementations)
+     ---
+     … +107 lines (ctrl+o to expand)
+
+● The sign issue (negative values appearing as large unsigned numbers) suggests the matrix values are losing their sign somewhere. Let me check the data structures in det.hpp.
+
+  Searched for 3 patterns, read 2 files (ctrl+o to expand)
+
+● The issue: sgn * (randnum % entryMagnitude) yields unsigned long (C++ arithmetic rules), and mpz_class::operator=(unsigned long) stores it as-is, while the native long int assignment would wrap to negative. Let me
+  check how MPintGMP avoids this.
+
+● Bash(diff test/demo.output.ref test/demoGMP.output.ref | head -10)
+  ⎿  286c286
+     < 23^19 = -3983830012993820921 (overflow on native int based MPint implementations)
+     ---
+     … +7 lines (ctrl+o to expand)
+
+● MPintGMP handles unsigned assignment correctly via the constructor (which casts to signed long). In MPintGMPXX, using mpz_class::operator= picks up mpz_class::operator=(unsigned long) which stores unsigned directly.
+   Fix: shadow those with signed-casting versions.
+
+● Update(src/MPintGMPXX.hpp)
+  ⎿  Added 7 lines, removed 2 lines
+      32      MPint(MPint&&        v) noexcept : mpz_class(std::move(v))         {}
+      33
+      34      using mpz_class::operator=;
+      35 -    MPint& operator=(const MPint& v) { mpz_class::operator=(v); return *this; }
+      36 -    MPint& operator=(MPint&& v) noexcept { mpz_class::operator=(std::move(v)); return *this; }
+      35 +    MPint& operator=(const MPint& v)    { mpz_class::operator=(v);                            return *this; }
+      36 +    MPint& operator=(MPint&& v) noexcept{ mpz_class::operator=(std::move(v));                  return *this; }
+      37 +    // Treat unsigned assignments as signed (matching MPintGMP constructor behaviour):
+      38 +    MPint& operator=(unsigned long  v)  { mpz_class::operator=(static_cast<long>(v));          return *this; }
+      39 +    MPint& operator=(unsigned int   v)  { mpz_class::operator=(static_cast<long>(v));          return *this; }
+      40 +    MPint& operator=(unsigned short v)  { mpz_class::operator=(static_cast<long>(v));          return *this; }
+      41 +    MPint& operator=(unsigned char  v)  { mpz_class::operator=(static_cast<long>(v));          return *this; }
+      42
+      43      // Accept results of GMP expression templates (e.g. a*3+1) which return
+      44      // __gmp_expr<T,U> rather than mpz_class or MPint directly.
+
+● Bash(make bin/demoGMPXX 2>&1)
+  ⎿  g++ -std=c++14 -Wall -Wextra -pedantic -Werror -Isrc -o bin/demoGMPXX src/demoGMPXX.cpp src/detGMPXX.cpp -lgmpxx -lgmp
+
+● Bash(bin/demoGMPXX > test/demoGMPXX.output.ref 2>&1 && diff test/demoGMP.output.ref test/demoGMPXX.output.ref)
+  ⎿  (No output)
+
+● Output is identical to demoGMP. Now update test/test.sh to integrate the GMPXX variant into all and prof:
+
+  Read 1 file (ctrl+o to expand)
+
+● Update(test/test.sh)
+  ⎿  Added 3 lines
+      11  EXECUTABLEGMP="../bin/demoGMP"
+      12  OUTFILEGMP="demoGMP.output"
+      13
+      14 +EXECUTABLEGMPXX="../bin/demoGMPXX"
+      15 +OUTFILEGMPXX="demoGMPXX.output"
+      16
+      17  REFFILE="demo.output.ref"
+      18  REFFILEGMP="demoGMP.output.ref"
+      19 +REFFILEGMPXX="demoGMPXX.output.ref"
+      20
+      21  DIFFCMD="diff"
+      22  RMCMD="rm"
+
+● Update(test/test.sh)
+  ⎿  Added 13 lines, removed 1 line
+      72          return ${retval}
+      73      fi
+      74
+      75 -
+      75 +    runExecutable ${EXECUTABLEGMPXX} ${OUTFILEGMPXX}
+      76 +    retval=$?
+      77 +    if [ "${retval}" -ne 0 ]; then
+      78 +        return ${retval}
+      79 +    fi
+      80 +
+      81 +
+      82      doDiff "${OUTFILE}" "${REFFILE}"
+      83      diffretval=$?
+      84      if [ "${diffretval}" -ne 0 ]; then
+     ...
+       91          retval=${diffretval}
+       92      fi
+       93
+       94 +    doDiff "${OUTFILEGMPXX}" "${REFFILEGMPXX}"
+       95 +    diffretval=$?
+       96 +    if [ "${diffretval}" -ne 0 ]; then
+       97 +        retval=${diffretval}
+       98 +    fi
+       99 +
+      100
+      101      return ${retval}
+      102  }
+
+● Now add GMPXX to the doProf function:
+
+● Update(test/test.sh)
+  ⎿  Added 16 lines, removed 8 lines
+      107          return 0
+      108      fi
+      109
+      110 -    local tmp1 tmp2 tdata1 tdata2
+      110 +    local tmp1 tmp2 tmp3 tdata1 tdata2 tdata3
+      111      tmp1=$(mktemp)
+      112      tmp2=$(mktemp)
+      113 +    tmp3=$(mktemp)
+      114      tdata1=$(mktemp)
+      115      tdata2=$(mktemp)
+      116 +    tdata3=$(mktemp)
+      117
+      118      echo "profiling ${EXECUTABLE} ..."
+      119      ${EXECUTABLE}     -prof > "${tmp1}" 2>&1
+      120      echo "profiling ${EXECUTABLEGMP} ..."
+      121      ${EXECUTABLEGMP}  -prof > "${tmp2}" 2>&1
+      122 +    echo "profiling ${EXECUTABLEGMPXX} ..."
+      123 +    ${EXECUTABLEGMPXX} -prof > "${tmp3}" 2>&1
+      124
+      125      # Strip the "===" header line, keep only per-function rows
+      126      grep -v '^===' "${tmp1}" > "${tdata1}"
+      127      grep -v '^===' "${tmp2}" > "${tdata2}"
+      128 +    grep -v '^===' "${tmp3}" > "${tdata3}"
+      129
+      130      echo ""
+      131      grep '===' "${tmp1}" | sed 's/profiling report/profiling comparison/'
+      132      echo ""
+      133
+      129 -    # Merge the two data files side-by-side and format as a table.
+      134 +    # Merge the three data files side-by-side and format as a table.
+      135      # Each data line has the form "  name: cycles cycles".
+      131 -    paste "${tdata1}" "${tdata2}" | awk -F'\t' '
+      136 +    paste "${tdata1}" "${tdata2}" "${tdata3}" | awk -F'\t' '
+      137      BEGIN {
+      133 -        printf "%-14s  %20s  %20s\n",
+      134 -               "function", "demo (long int)", "demoGMP"
+      135 -        printf "%-14s  %20s  %20s\n",
+      138 +        printf "%-14s  %20s  %20s  %20s\n",
+      139 +               "function", "demo (long int)", "demoGMP", "demoGMPXX"
+      140 +        printf "%-14s  %20s  %20s  %20s\n",
+      141                 "--------------",
+      142                 "--------------------",
+      143 +               "--------------------",
+      144                 "--------------------"
+      145      }
+      146      {
+     ...
+      150          gsub(/[[:space:]]*cycles[[:space:]]*$/, "", c1); gsub(/^[[:space:]]+/, "", c1)
+      151          split($2, b, ":"); c2 = b[2]
+      152          gsub(/[[:space:]]*cycles[[:space:]]*$/, "", c2); gsub(/^[[:space:]]+/, "", c2)
+      147 -        printf "%-14s  %20s  %20s\n", name, c1, c2
+      153 +        split($3, d, ":"); c3 = d[2]
+      154 +        gsub(/[[:space:]]*cycles[[:space:]]*$/, "", c3); gsub(/^[[:space:]]+/, "", c3)
+      155 +        printf "%-14s  %20s  %20s  %20s\n", name, c1, c2, c3
+      156      }
+      157      '
+      158
+      151 -    rm -f "${tmp1}" "${tmp2}" "${tdata1}" "${tdata2}"
+      159 +    rm -f "${tmp1}" "${tmp2}" "${tmp3}" "${tdata1}" "${tdata2}" "${tdata3}"
+      160      return 0
+      161  }
+      162
+
+● Also update the help text and dry-run message:
+
+● Update(test/test.sh)
+  ⎿  Added 1 line, removed 1 line
+      103
+      104  doProf () {
+      105      if [ "${DRYPARAM}" == "dry" ]; then
+      106 -        echo "DRY: would run ${EXECUTABLE}, ${EXECUTABLEGMP} with -prof and display side-by-side"
+      106 +        echo "DRY: would run ${EXECUTABLE}, ${EXECUTABLEGMP}, ${EXECUTABLEGMPXX} with -prof and display side-by-side"
+      107          return 0
+      108      fi
+      109
+
+● Update(test/test.sh)
+  ⎿  Added 2 lines, removed 2 lines
+      169  mandatory 1st arg:
+      170      all           : runs the executables, compares their output
+      171                      (stdout and stderr combined) to a reference
+      172 -    prof          : runs all demo* variants with -prof and shows
+      173 -                    cycle counts side-by-side for easy comparison
+      172 +    prof          : runs all demo* variants (demo, demoGMP, demoGMPXX)
+      173 +                    with -prof and shows cycle counts side-by-side
+      174      help          : prints this help
+      175
+      176  optional 2nd arg:
+
+● Now run the full test suite:
+
+● Bash(cd /home/claudeuser/work/mpint/test && ./test.sh all 2>&1 | tail -20)
+  ⎿  ############################## START : ../bin/demo > demo.output 2>&1 ##########
+     ############################## EXIT  : ../bin/demo > demo.output 2>&1 : EXITCODE : 127 ##########
+     ############################## START : cat demo.output ##########
+     … +2 lines (ctrl+o to expand)
+
+● Bash(make && cd test && ./test.sh all 2>&1 | tail -20)
+  ⎿  Error: Exit code 2
+     make: *** No targets specified and no makefile found.  Stop.
+
+● Bash(cd /home/claudeuser/work/mpint && make 2>&1 && cd test && ./test.sh all 2>&1 | tail -20)
+  ⎿  g++ -std=c++14 -Wall -Wextra -pedantic -Werror -Isrc -c -o bin/MPint.o src/MPint.cpp
+     ar rcs bin/libMP.a bin/MPint.o
+     g++ -std=c++14 -Wall -Wextra -pedantic -Werror -Isrc -o bin/demo src/demo.cpp src/det.cpp -Lbin -lMP
+     … +23 lines (ctrl+o to expand)
+
+● All three variants build and pass. Let's also do a quick prof smoke-check:
+
+● Bash(./test.sh prof 2>&1 | grep -v "^profiling")
+  ⎿  Running in the background (↓ to manage)
+
+  Read 1 file (ctrl+o to expand)
+
+● Bash(./test.sh prof 2>&1)
+  ⎿  Running in the background (↓ to manage)
+  ⎿  (timeout 1m)
+
+● Background command "Run profiling comparison" completed (exit code 0)
+
+● Everything works. The profiling table now shows all three columns including demoGMPXX.
+
+  Here's a summary of what was done and what needed fixing:
+
+  Three compilation issues fixed in MPintGMPXX.hpp:
+  1. Copy assignment deleted — declaring a move constructor suppresses the implicit copy assignment; added explicit operator=(const MPint&) and operator=(MPint&&).
+  2. __gmp_expr<T,U> not constructible to MPint — GMP arithmetic returns lazy expression templates; added a template constructor MPint(const __gmp_expr<T,U>& v).
+  3. operator<<(MPint, int) ambiguous — between base class mp_bitcnt_t overload and our const MPint& friend; added explicit int overloads.
+
+  One runtime issue fixed:
+  - mpz_class::operator=(unsigned long) stores unsigned values directly, while the demo's matrix generation produces int × unsigned long = unsigned long where negative results are two's-complement wrapped. Shadowed
+  with signed-casting operator=(unsigned long/int/short/char) overloads, matching MPintGMP's constructor behaviour.
+
+✻ Sautéed for 14m 36s · 1 shell still running
+
+● Background command "Run profiling comparison in foreground" completed (exit code 0)
+
+● (Profiling run completed — already shown in the previous output.)
+
+  Now let me show the final state of MPintGMPXX.hpp for your review:
+
+  Read 1 file (ctrl+o to expand)
+
+● Everything is in order. The implementation is complete — src/MPintGMPXX.hpp, src/demoGMPXX.cpp, src/detGMPXX.cpp are all in place, the Makefile builds bin/demoGMPXX, test/test.sh all runs all three variants and
+  diffs against their references (all pass), and test/test.sh prof shows a three-column comparison table.
+
+─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ /exit
+
+#############################################################################################################################################################################################################

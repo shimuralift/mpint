@@ -1,3 +1,4 @@
+.claude/settings.local.json
 .gitignore
 *.bak/
 *.bak
@@ -8,5 +9,5 @@ bin/*.a
 core
 bin/core
 test/demo.output
-test/demoMyOwn.output
 test/demoGMP.output
+test/demoGMPXX.output
