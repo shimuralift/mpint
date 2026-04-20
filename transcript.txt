@@ -4484,3 +4484,59 @@ constructors.
 ❯ /exit
 
 #############################################################################################################################################################################################################
+[claudeuser@gondwana:test]$ ./test.sh prof
+profiling ../bin/demo ...
+profiling ../bin/demoGMP ...
+profiling ../bin/demoGMPXX ...
+
+=== profiling comparison (rdtsc cpu cycles, avg of 100000 runs) ===
+
+function             demo (long int)               demoGMP             demoGMPXX
+--------------  --------------------  --------------------  --------------------
+claude_main                    7 620                12 884                17 103
+basicexpr                     69 340                96 382               149 464
+moreexpr                      25 069                37 886                41 526
+extraexpr                     48 614                89 810                74 910
+detTest                      621 069             1 068 073               995 508
+strconstr                     17 906                31 942                36 853
+[claudeuser@gondwana:test]$ 
+[claudeuser@gondwana:test]$ 
+[claudeuser@gondwana:test]$ 
+[claudeuser@gondwana:test]$ 
+[claudeuser@gondwana:test]$ ./test.sh prof
+profiling ../bin/demo ...
+profiling ../bin/demoGMP ...
+profiling ../bin/demoGMPXX ...
+
+=== profiling comparison (rdtsc cpu cycles, avg of 100000 runs) ===
+
+function             demo (long int)               demoGMP             demoGMPXX
+--------------  --------------------  --------------------  --------------------
+claude_main                    7 265                12 482                16 954
+basicexpr                     68 962                94 067               150 546
+moreexpr                      25 011                35 998                42 487
+extraexpr                     49 291                87 470                77 357
+detTest                      629 744             1 050 100             1 022 292
+strconstr                     17 957                32 051                38 323
+[claudeuser@gondwana:test]$ 
+[claudeuser@gondwana:test]$ 
+[claudeuser@gondwana:test]$ 
+[claudeuser@gondwana:test]$ 
+[claudeuser@gondwana:test]$ ./test.sh prof
+profiling ../bin/demo ...
+profiling ../bin/demoGMP ...
+profiling ../bin/demoGMPXX ...
+
+=== profiling comparison (rdtsc cpu cycles, avg of 100000 runs) ===
+
+function             demo (long int)               demoGMP             demoGMPXX
+--------------  --------------------  --------------------  --------------------
+claude_main                    7 685                13 239                16 943
+basicexpr                     69 369                95 167               153 987
+moreexpr                      24 925                36 915                44 314
+extraexpr                     48 855                89 649                78 466
+detTest                      623 571             1 049 343               999 511
+strconstr                     17 731                32 362                36 679
+[claudeuser@gondwana:test]$ 
+#############################################################################################################################################################################################################
+
