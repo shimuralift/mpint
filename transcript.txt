@@ -3642,3 +3642,251 @@ constructors.
 
 ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 ❯ /exit
+
+#############################################################################################################################################################################################################
+
+❯ see CLAUDE.md for instructions
+
+  Read 1 file (ctrl+o to expand)
+
+● Let me survey what needs to be removed before touching anything.
+
+  Searched for 1 pattern, read 1 file, listed 1 directory (ctrl+o to expand)
+
+● Good — no demoMyOwn.output.ref to delete. Now make all the changes:
+
+● Bash(rm /home/claudeuser/work/mpint/src/MPintMyOwn.cpp /home/claudeuser/work/mpint/src/MPintMyOwn.hpp)
+  ⎿  Done
+
+● Update(Makefile)
+  ⎿  Removed 4 lines
+      11  LIB_OBJ  := $(BINDIR)/MPint.o
+      12  LIBRARY  := $(BINDIR)/libMP.a
+      13
+      14 -LIBMyOwn_SRC  := $(SRCDIR)/MPintMyOwn.cpp
+      15 -LIBMyOwn_HDR  := $(SRCDIR)/MPintMyOwn.hpp
+      16 -LIBMyOwn_OBJ  := $(BINDIR)/MPintMyOwn.o
+      17 -LIBRARYMyOwn  := $(BINDIR)/libMPMyOwn.a
+      14
+      15  LIBGMP_SRC  := $(SRCDIR)/MPintGMP.cpp
+      16  LIBGMP_HDR  := $(SRCDIR)/MPintGMP.hpp
+
+● Update(Makefile)
+  ⎿  Removed 3 lines
+      22  DEMO_HDRS := $(SRCDIR)/MPint.hpp $(SRCDIR)/det.hpp
+      23  TARGET   := $(BINDIR)/demo
+      24
+      25 -DEMOMyOwn_SRCS := $(SRCDIR)/demo.cpp $(SRCDIR)/det.cpp
+      26 -DEMOMyOwn_HDRS := $(SRCDIR)/MPintMyOwn.hpp $(SRCDIR)/det.hpp
+      27 -TARGETMyOwn   := $(BINDIR)/demoMyOwn
+      25
+      26  DEMOGMP_SRCS := $(SRCDIR)/demo.cpp $(SRCDIR)/det.cpp
+      27  DEMOGMP_HDRS := $(SRCDIR)/MPintGMP.hpp $(SRCDIR)/det.hpp
+
+● Update(Makefile)
+  ⎿  Added 1 line, removed 1 line
+      30
+      31  .PHONY: all clean
+      32
+      33 -all: $(TARGET) $(TARGETMyOwn) $(TARGETGMP)
+      33 +all: $(TARGET) $(TARGETGMP)
+      34
+      35
+      36  $(LIB_OBJ): $(LIB_SRC) $(LIB_HDR)
+
+● Update(Makefile)
+  ⎿  Removed 2 lines
+      36  $(LIB_OBJ): $(LIB_SRC) $(LIB_HDR)
+      37    $(CXX) $(CXXFLAGS) -c -o $@ $<
+      38
+      39 -$(LIBMyOwn_OBJ): $(LIBMyOwn_SRC) $(LIBMyOwn_HDR)
+      40 -  $(CXX) $(CXXFLAGS) -c -o $@ $<
+      39
+      40  $(LIBGMP_OBJ): $(LIBGMP_SRC) $(LIBGMP_HDR)
+      41    $(CXX) $(CXXFLAGS) -c -o $@ $<
+
+● Update(Makefile)
+  ⎿  Removed 2 lines
+      44  $(LIBRARY): $(LIB_OBJ)
+      45    $(AR) $(ARFLAGS) $@ $^
+      46
+      47 -$(LIBRARYMyOwn): $(LIBMyOwn_OBJ)
+      48 -  $(AR) $(ARFLAGS) $@ $^
+      47
+      48  $(LIBRARYGMP): $(LIBGMP_OBJ)
+      49    $(AR) $(ARFLAGS) $@ $^
+
+● Update(Makefile)
+  ⎿  Removed 2 lines
+      52  $(TARGET): $(DEMO_SRCS) $(DEMO_HDRS) $(LIBRARY)
+      53    $(CXX) $(CXXFLAGS) -o $@ $(DEMO_SRCS) -L$(BINDIR) -lMP
+      54
+      55 -$(TARGETMyOwn): $(DEMOMyOwn_SRCS) $(DEMOMyOwn_HDRS) $(LIBRARYMyOwn)
+      56 -  $(CXX) $(CXXFLAGS) -o $@ $(DEMOMyOwn_SRCS) -L$(BINDIR) -lMPMyOwn
+      55
+      56  $(TARGETGMP): $(DEMOGMP_SRCS) $(DEMOGMP_HDRS) $(LIBRARYGMP)
+      57    $(CXX) $(CXXFLAGS) -o $@ $(DEMOGMP_SRCS) -L$(BINDIR) -lMPGMP -lgmp
+
+● Update(Makefile)
+  ⎿  Added 1 line, removed 1 line
+      58
+      59
+      60  clean:
+      61 -  $(RM) $(TARGET) $(LIBRARY) $(LIB_OBJ) $(TARGETMyOwn) $(LIBRARYMyOwn) $(LIBMyOwn_OBJ) $(TARGETGMP) $(LIBRARYGMP) $(LIBGMP_OBJ)
+      61 +  $(RM) $(TARGET) $(LIBRARY) $(LIB_OBJ) $(TARGETGMP) $(LIBRARYGMP) $(LIBGMP_OBJ)
+
+● Now update test.sh — remove the variable declarations, runExecutable/doDiff calls, and the profiling column:
+
+● Update(test/test.sh)
+  ⎿  Removed 2 lines
+       7  EXECUTABLE="../bin/demo"
+       8  OUTFILE="demo.output"
+       9
+      10 -EXECUTABLEMyOwn="../bin/demoMyOwn"
+      11 -OUTFILEMyOwn="demoMyOwn.output"
+      10
+      11  EXECUTABLEGMP="../bin/demoGMP"
+      12  OUTFILEGMP="demoGMP.output"
+
+● Update(test/test.sh)
+  ⎿  Removed 6 lines
+      63          return ${retval}
+      64      fi
+      65
+      66 -    runExecutable ${EXECUTABLEMyOwn} ${OUTFILEMyOwn}
+      67 -    retval=$?
+      68 -    if [ "${retval}" -ne 0 ]; then
+      69 -        return ${retval}
+      70 -    fi
+      71 -
+      66      runExecutable ${EXECUTABLEGMP} ${OUTFILEGMP}
+      67      retval=$?
+      68      if [ "${retval}" -ne 0 ]; then
+
+● Update(test/test.sh)
+  ⎿  Removed 6 lines
+      76          retval=${diffretval}
+      77      fi
+      78
+      79 -    doDiff "${OUTFILEMyOwn}" "${REFFILE}"
+      80 -    diffretval=$?
+      81 -    if [ "${diffretval}" -ne 0 ]; then
+      82 -        retval=${diffretval}
+      83 -    fi
+      84 -
+      79      doDiff "${OUTFILEGMP}" "${REFFILEGMP}"
+      80      diffretval=$?
+      81      if [ "${diffretval}" -ne 0 ]; then
+
+● Now fix the doProf function — remove the MyOwn run and reduce the table to two variant columns:
+
+● Update(test/test.sh)
+  ⎿  Added 11 lines, removed 19 lines
+       88
+       89  doProf () {
+       90      if [ "${DRYPARAM}" == "dry" ]; then
+       91 -        echo "DRY: would run ${EXECUTABLE}, ${EXECUTABLEMyOwn}, ${EXECUTABLEGMP} with -prof and display side-by-side"
+       91 +        echo "DRY: would run ${EXECUTABLE}, ${EXECUTABLEGMP} with -prof and display side-by-side"
+       92          return 0
+       93      fi
+       94
+       95 -    local tmp1 tmp2 tmp3 tdata1 tdata2 tdata3
+       95 +    local tmp1 tmp2 tdata1 tdata2
+       96      tmp1=$(mktemp)
+       97      tmp2=$(mktemp)
+       98 -    tmp3=$(mktemp)
+       98      tdata1=$(mktemp)
+       99      tdata2=$(mktemp)
+      101 -    tdata3=$(mktemp)
+      100
+      101      echo "profiling ${EXECUTABLE} ..."
+      104 -    ${EXECUTABLE}        -prof > "${tmp1}" 2>&1
+      105 -    echo "profiling ${EXECUTABLEMyOwn} ..."
+      106 -    ${EXECUTABLEMyOwn}  -prof > "${tmp2}" 2>&1
+      102 +    ${EXECUTABLE}     -prof > "${tmp1}" 2>&1
+      103      echo "profiling ${EXECUTABLEGMP} ..."
+      108 -    ${EXECUTABLEGMP}    -prof > "${tmp3}" 2>&1
+      104 +    ${EXECUTABLEGMP}  -prof > "${tmp2}" 2>&1
+      105
+      106      # Strip the "===" header line, keep only per-function rows
+      107      grep -v '^===' "${tmp1}" > "${tdata1}"
+      108      grep -v '^===' "${tmp2}" > "${tdata2}"
+      113 -    grep -v '^===' "${tmp3}" > "${tdata3}"
+      109
+      110      echo ""
+      111      grep '===' "${tmp1}" | sed 's/profiling report/profiling comparison/'
+      112      echo ""
+      113
+      119 -    # Merge the three data files side-by-side and format as a table.
+      114 +    # Merge the two data files side-by-side and format as a table.
+      115      # Each data line has the form "  name: cycles cycles".
+      121 -    paste "${tdata1}" "${tdata2}" "${tdata3}" | awk -F'\t' '
+      116 +    paste "${tdata1}" "${tdata2}" | awk -F'\t' '
+      117      BEGIN {
+      123 -        printf "%-14s  %20s  %20s  %20s\n",
+      124 -               "function", "demo (long int)", "demoMyOwn", "demoGMP"
+      125 -        printf "%-14s  %20s  %20s  %20s\n",
+      118 +        printf "%-14s  %20s  %20s\n",
+      119 +               "function", "demo (long int)", "demoGMP"
+      120 +        printf "%-14s  %20s  %20s\n",
+      121                 "--------------",
+      122                 "--------------------",
+      128 -               "--------------------",
+      123                 "--------------------"
+      124      }
+      125      {
+     ...
+      129          gsub(/[[:space:]]*cycles[[:space:]]*$/, "", c1); gsub(/^[[:space:]]+/, "", c1)
+      130          split($2, b, ":"); c2 = b[2]
+      131          gsub(/[[:space:]]*cycles[[:space:]]*$/, "", c2); gsub(/^[[:space:]]+/, "", c2)
+      138 -        split($3, c, ":"); c3 = c[2]
+      139 -        gsub(/[[:space:]]*cycles[[:space:]]*$/, "", c3); gsub(/^[[:space:]]+/, "", c3)
+      140 -        printf "%-14s  %20s  %20s  %20s\n", name, c1, c2, c3
+      132 +        printf "%-14s  %20s  %20s\n", name, c1, c2
+      133      }
+      134      '
+      135
+      144 -    rm -f "${tmp1}" "${tmp2}" "${tmp3}" "${tdata1}" "${tdata2}" "${tdata3}"
+      136 +    rm -f "${tmp1}" "${tmp2}" "${tdata1}" "${tdata2}"
+      137      return 0
+      138  }
+      139
+
+● Now build and test:
+
+● Bash(make 2>&1)
+  ⎿  g++ -std=c++14 -Wall -Wextra -pedantic -Werror -Isrc -c -o bin/MPint.o src/MPint.cpp
+     ar rcs bin/libMP.a bin/MPint.o
+     g++ -std=c++14 -Wall -Wextra -pedantic -Werror -Isrc -o bin/demo src/demo.cpp src/det.cpp -Lbin -lMP
+     … +3 lines (ctrl+o to expand)
+
+● Bash(cd /home/claudeuser/work/mpint/test && ./test.sh all 2>&1 | grep -E "EXIT|diff")
+  ⎿  ############################## EXIT  : ../bin/demo > demo.output 2>&1 : EXITCODE : 0 ##########
+     ############################## EXIT  : cat demo.output : EXITCODE : 0 ##########
+     ############################## EXIT  : ../bin/demoGMP > demoGMP.output 2>&1 : EXITCODE : 0 ##########
+     … +5 lines (ctrl+o to expand)
+
+● Clean. Now commit:
+
+● Bash(cd /home/claudeuser/work/mpint && git add -A && git commit -m "$(cat <<'EOF'
+      remove MPintMyOwn variant…)
+  ⎿  [master 4fb304d] remove MPintMyOwn variant
+      4 files changed, 13 insertions(+), 340 deletions(-)
+      delete mode 100644 src/MPintMyOwn.cpp
+      delete mode 100644 src/MPintMyOwn.hpp
+
+● Done. Removed src/MPintMyOwn.cpp, src/MPintMyOwn.hpp, and all references in the Makefile and test/test.sh (including the profiling table column). The two remaining variants — demo (long int) and demoGMP — build and
+  test cleanly.
+
+✻ Crunched for 2m 30s
+
+❯ /status
+  ⎿  Status dialog dismissed
+
+❯ /status
+  ⎿  Status dialog dismissed
+
+─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ /exit
+
+#############################################################################################################################################################################################################
