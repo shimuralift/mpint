@@ -5,9 +5,12 @@
 *.o
 bin/demo*
 bin/*.a
+*~
 *.*~
 core
 bin/core
 test/demo.output
 test/demoGMP.output
-test/demoGMPXX.output
+.cproject
+.project
+.settings/

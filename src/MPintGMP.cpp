@@ -1,4 +1,4 @@
-#include "MPintGMP.hpp"
+#include "MPint.hpp"
 
 #include <cstdlib>
 #include <cstring>

@@ -4499,10 +4499,10 @@ moreexpr                      25 069                37 886                41 526
 extraexpr                     48 614                89 810                74 910
 detTest                      621 069             1 068 073               995 508
 strconstr                     17 906                31 942                36 853
-[claudeuser@gondwana:test]$ 
-[claudeuser@gondwana:test]$ 
-[claudeuser@gondwana:test]$ 
-[claudeuser@gondwana:test]$ 
+[claudeuser@gondwana:test]$
+[claudeuser@gondwana:test]$
+[claudeuser@gondwana:test]$
+[claudeuser@gondwana:test]$
 [claudeuser@gondwana:test]$ ./test.sh prof
 profiling ../bin/demo ...
 profiling ../bin/demoGMP ...
@@ -4518,10 +4518,10 @@ moreexpr                      25 011                35 998                42 487
 extraexpr                     49 291                87 470                77 357
 detTest                      629 744             1 050 100             1 022 292
 strconstr                     17 957                32 051                38 323
-[claudeuser@gondwana:test]$ 
-[claudeuser@gondwana:test]$ 
-[claudeuser@gondwana:test]$ 
-[claudeuser@gondwana:test]$ 
+[claudeuser@gondwana:test]$
+[claudeuser@gondwana:test]$
+[claudeuser@gondwana:test]$
+[claudeuser@gondwana:test]$
 [claudeuser@gondwana:test]$ ./test.sh prof
 profiling ../bin/demo ...
 profiling ../bin/demoGMP ...
@@ -4537,6 +4537,228 @@ moreexpr                      24 925                36 915                44 314
 extraexpr                     48 855                89 649                78 466
 detTest                      623 571             1 049 343               999 511
 strconstr                     17 731                32 362                36 679
-[claudeuser@gondwana:test]$ 
+[claudeuser@gondwana:test]$
+#############################################################################################################################################################################################################
+
+❯ see CLAUDE.md for instructions
+
+  Read 1 file (ctrl+o to expand)
+
+● Removing the GMPXX variant from src/, Makefile, and test/.
+
+  Listed 1 directory (ctrl+o to expand)
+
+● Bash(rm /home/claudeuser/work/mpint/src/demoGMPXX.cpp /home/claudeuser/work/mpint/src/detGMPXX.cpp /home/claudeuser/work/mpint/src/MPintGMPXX.hpp /home/claudeuser/wo…)
+  ⎿  Done
+
+● Now clean up the Makefile:
+
+● Update(Makefile)
+  ⎿  File must be read first
+
+  Read 1 file (ctrl+o to expand)
+
+● Write(Makefile)
+  ⎿  Added 2 lines, removed 9 lines
+      27  DEMOGMP_HDRS := $(SRCDIR)/MPintGMP.hpp $(SRCDIR)/det.hpp
+      28  TARGETGMP   := $(BINDIR)/demoGMP
+      29
+      30 -DEMOGMPXX_SRCS := $(SRCDIR)/demoGMPXX.cpp $(SRCDIR)/detGMPXX.cpp
+      31 -DEMOGMPXX_HDRS := $(SRCDIR)/MPintGMPXX.hpp $(SRCDIR)/det.hpp
+      32 -TARGETGMPXX   := $(BINDIR)/demoGMPXX
+      30
+      34 -
+      31  .PHONY: all clean
+      32
+      37 -all: $(TARGET) $(TARGETGMP) $(TARGETGMPXX)
+      33 +all: $(TARGET) $(TARGETGMP)
+      34
+      35
+      36  $(LIB_OBJ): $(LIB_SRC) $(LIB_HDR)
+     ...
+      56  $(TARGETGMP): $(DEMOGMP_SRCS) $(DEMOGMP_HDRS) $(LIBRARYGMP)
+      57    $(CXX) $(CXXFLAGS) -o $@ $(DEMOGMP_SRCS) -L$(BINDIR) -lMPGMP -lgmp
+      58
+      63 -$(TARGETGMPXX): $(DEMOGMPXX_SRCS) $(DEMOGMPXX_HDRS)
+      64 -  $(CXX) $(CXXFLAGS) -o $@ $(DEMOGMPXX_SRCS) -lgmpxx -lgmp
+      59
+      66 -
+      60  clean:
+      68 -  $(RM) $(TARGET) $(LIBRARY) $(LIB_OBJ) $(TARGETGMP) $(LIBRARYGMP) $(LIBGMP_OBJ) $(TARGETGMPXX)
+      61 +  $(RM) $(TARGET) $(LIBRARY) $(LIB_OBJ) $(TARGETGMP) $(LIBRARYGMP) $(LIBGMP_OBJ)
+
+● Now clean up test/test.sh:
+
+● Write(test/test.sh)
+  ⎿  Added 12 lines, removed 35 lines
+      11  EXECUTABLEGMP="../bin/demoGMP"
+      12  OUTFILEGMP="demoGMP.output"
+      13
+      14 -EXECUTABLEGMPXX="../bin/demoGMPXX"
+      15 -OUTFILEGMPXX="demoGMPXX.output"
+      14
+      15  REFFILE="demo.output.ref"
+      16  REFFILEGMP="demoGMP.output.ref"
+      19 -REFFILEGMPXX="demoGMPXX.output.ref"
+      17
+      18  DIFFCMD="diff"
+      19  RMCMD="rm"
+     ...
+      56      local retval=0
+      57      local diffretval=0
+      58
+      62 -
+      59 +
+      60      runExecutable ${EXECUTABLE} ${OUTFILE}
+      61      retval=$?
+      62      if [ "${retval}" -ne 0 ]; then
+     ...
+      69          return ${retval}
+      70      fi
+      71
+      75 -    runExecutable ${EXECUTABLEGMPXX} ${OUTFILEGMPXX}
+      76 -    retval=$?
+      77 -    if [ "${retval}" -ne 0 ]; then
+      78 -        return ${retval}
+      79 -    fi
+      72
+      81 -
+      73      doDiff "${OUTFILE}" "${REFFILE}"
+      74      diffretval=$?
+      75      if [ "${diffretval}" -ne 0 ]; then
+     ...
+       82          retval=${diffretval}
+       83      fi
+       84
+       94 -    doDiff "${OUTFILEGMPXX}" "${REFFILEGMPXX}"
+       95 -    diffretval=$?
+       96 -    if [ "${diffretval}" -ne 0 ]; then
+       97 -        retval=${diffretval}
+       98 -    fi
+       85
+      100 -
+       86      return ${retval}
+       87  }
+       88
+       89  doProf () {
+       90      if [ "${DRYPARAM}" == "dry" ]; then
+      106 -        echo "DRY: would run ${EXECUTABLE}, ${EXECUTABLEGMP}, ${EXECUTABLEGMPXX} with -prof and display side-by-side"
+       91 +        echo "DRY: would run ${EXECUTABLE}, ${EXECUTABLEGMP} with -prof and display side-by-side"
+       92          return 0
+       93      fi
+       94
+      110 -    local tmp1 tmp2 tmp3 tdata1 tdata2 tdata3
+       95 +    local tmp1 tmp2 tdata1 tdata2
+       96      tmp1=$(mktemp)
+       97      tmp2=$(mktemp)
+      113 -    tmp3=$(mktemp)
+       98      tdata1=$(mktemp)
+       99      tdata2=$(mktemp)
+      116 -    tdata3=$(mktemp)
+      100
+      101      echo "profiling ${EXECUTABLE} ..."
+      102      ${EXECUTABLE}     -prof > "${tmp1}" 2>&1
+      103      echo "profiling ${EXECUTABLEGMP} ..."
+      104      ${EXECUTABLEGMP}  -prof > "${tmp2}" 2>&1
+      122 -    echo "profiling ${EXECUTABLEGMPXX} ..."
+      123 -    ${EXECUTABLEGMPXX} -prof > "${tmp3}" 2>&1
+      105
+      106      # Strip the "===" header line, keep only per-function rows
+      107      grep -v '^===' "${tmp1}" > "${tdata1}"
+      108      grep -v '^===' "${tmp2}" > "${tdata2}"
+      128 -    grep -v '^===' "${tmp3}" > "${tdata3}"
+      109
+      110      echo ""
+      111      grep '===' "${tmp1}" | sed 's/profiling report/profiling comparison/'
+      112      echo ""
+      113
+      134 -    # Merge the three data files side-by-side and format as a table.
+      114 +    # Merge the two data files side-by-side and format as a table.
+      115      # Each data line has the form "  name: cycles cycles".
+      136 -    paste "${tdata1}" "${tdata2}" "${tdata3}" | awk -F'\t' '
+      116 +    paste "${tdata1}" "${tdata2}" | awk -F'\t' '
+      117      BEGIN {
+      138 -        printf "%-14s  %20s  %20s  %20s\n",
+      139 -               "function", "demo (long int)", "demoGMP", "demoGMPXX"
+      140 -        printf "%-14s  %20s  %20s  %20s\n",
+      118 +        printf "%-14s  %20s  %20s\n",
+      119 +               "function", "demo (long int)", "demoGMP"
+      120 +        printf "%-14s  %20s  %20s\n",
+      121                 "--------------",
+      122                 "--------------------",
+      143 -               "--------------------",
+      123                 "--------------------"
+      124      }
+      125      {
+     ...
+      129          gsub(/[[:space:]]*cycles[[:space:]]*$/, "", c1); gsub(/^[[:space:]]+/, "", c1)
+      130          split($2, b, ":"); c2 = b[2]
+      131          gsub(/[[:space:]]*cycles[[:space:]]*$/, "", c2); gsub(/^[[:space:]]+/, "", c2)
+      153 -        split($3, d, ":"); c3 = d[2]
+      154 -        gsub(/[[:space:]]*cycles[[:space:]]*$/, "", c3); gsub(/^[[:space:]]+/, "", c3)
+      155 -        printf "%-14s  %20s  %20s  %20s\n", name, c1, c2, c3
+      132 +        printf "%-14s  %20s  %20s\n", name, c1, c2
+      133      }
+      134      '
+      135
+      159 -    rm -f "${tmp1}" "${tmp2}" "${tmp3}" "${tdata1}" "${tdata2}" "${tdata3}"
+      136 +    rm -f "${tmp1}" "${tmp2}" "${tdata1}" "${tdata2}"
+      137      return 0
+      138  }
+      139
+     ...
+      146  mandatory 1st arg:
+      147      all           : runs the executables, compares their output
+      148                      (stdout and stderr combined) to a reference
+      172 -    prof          : runs all demo* variants (demo, demoGMP, demoGMPXX)
+      173 -                    with -prof and shows cycle counts side-by-side
+      149 +    prof          : runs all demo* variants with -prof and shows
+      150 +                    cycle counts side-by-side for easy comparison
+      151      help          : prints this help
+      152
+      153  optional 2nd arg:
+
+● Now verify the build and tests still pass:
+
+● Bash(make clean && make 2>&1)
+  ⎿  rm -f bin/demo bin/libMP.a bin/MPint.o bin/demoGMP bin/libMPGMP.a bin/MPintGMP.o
+     g++ -std=c++14 -Wall -Wextra -pedantic -Werror -Isrc -c -o bin/MPint.o src/MPint.cpp
+     ar rcs bin/libMP.a bin/MPint.o
+     … +4 lines (ctrl+o to expand)
+
+● Bash(cd /home/claudeuser/work/mpint/test && ./test.sh all 2>&1 | grep -E "EXIT|diff")
+  ⎿  ############################## EXIT  : ../bin/demo > demo.output 2>&1 : EXITCODE : 0 ##########
+     ############################## EXIT  : cat demo.output : EXITCODE : 0 ##########
+     ############################## EXIT  : ../bin/demoGMP > demoGMP.output 2>&1 : EXITCODE : 0 ##########
+     … +5 lines (ctrl+o to expand)
+
+● Done. The GMPXX variant has been fully removed — src/MPintGMPXX.hpp, src/demoGMPXX.cpp, src/detGMPXX.cpp, test/demoGMPXX.output* are all deleted, Makefile and test/test.sh are back to the two-variant state.
+
+✻ Baked for 1m 20s
+
+❯ ok. commit it then.
+
+● Bash(git -C /home/claudeuser/work/mpint status && git -C /home/claudeuser/work/mpint diff)
+  ⎿  On branch master
+     Changes not staged for commit:
+       (use "git add/rm <file>..." to update what will be committed)
+     … +142 lines (ctrl+o to expand)
+
+● Bash(git -C /home/claudeuser/work/mpint log --oneline -3)
+  ⎿  e669ada updated CLAUDE.md and transcript.txt
+     98135af assessing the gmpxx.h header
+     6781997 only updated transcript.txt and CLAUDE.md (with further instructions)
+
+● Bash(git -C /home/claudeuser/work/mpint add Makefile test/test.sh && git -C /home/claudeuser/work/mpint rm src/MPintGMPXX.hpp src/demoGMPXX.cpp src/detGMPXX.cpp test…)
+  ⎿  rm 'src/MPintGMPXX.hpp'
+     rm 'src/demoGMPXX.cpp'
+     rm 'src/detGMPXX.cpp'
+     … +7 lines (ctrl+o to expand)
+
+● Committed as a83511d.
+
+─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ /exit
+
 #############################################################################################################################################################################################################
 

@@ -12,7 +12,7 @@ struct st_squarematrix_state {
 };
 typedef struct st_squarematrix_state SQState;
 
-static Bint gcd(const Bint a, const Bint b) {
+static Bint gcd(const Bint a, const Bint b) { // @suppress("No return")
   Bint d1;
   Bint d2;
   if (a == 0 && b == 0) {

@@ -13,7 +13,6 @@ LIBRARY  := $(BINDIR)/libMP.a
 
 
 LIBGMP_SRC  := $(SRCDIR)/MPintGMP.cpp
-LIBGMP_HDR  := $(SRCDIR)/MPintGMP.hpp
 LIBGMP_OBJ  := $(BINDIR)/MPintGMP.o
 LIBRARYGMP  := $(BINDIR)/libMPGMP.a
 
@@ -23,8 +22,6 @@ DEMO_HDRS := $(SRCDIR)/MPint.hpp $(SRCDIR)/det.hpp
 TARGET   := $(BINDIR)/demo
 
 
-DEMOGMP_SRCS := $(SRCDIR)/demo.cpp $(SRCDIR)/det.cpp
-DEMOGMP_HDRS := $(SRCDIR)/MPintGMP.hpp $(SRCDIR)/det.hpp
 TARGETGMP   := $(BINDIR)/demoGMP
 
 
@@ -37,7 +34,7 @@ $(LIB_OBJ): $(LIB_SRC) $(LIB_HDR)
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
 
 
-$(LIBGMP_OBJ): $(LIBGMP_SRC) $(LIBGMP_HDR)
+$(LIBGMP_OBJ): $(LIBGMP_SRC) $(LIB_HDR)
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
 
 
@@ -53,8 +50,8 @@ $(TARGET): $(DEMO_SRCS) $(DEMO_HDRS) $(LIBRARY)
 	$(CXX) $(CXXFLAGS) -o $@ $(DEMO_SRCS) -L$(BINDIR) -lMP
 
 
-$(TARGETGMP): $(DEMOGMP_SRCS) $(DEMOGMP_HDRS) $(LIBRARYGMP)
-	$(CXX) $(CXXFLAGS) -o $@ $(DEMOGMP_SRCS) -L$(BINDIR) -lMPGMP -lgmp
+$(TARGETGMP): $(DEMO_SRCS) $(DEMO_HDRS) $(LIBRARYGMP)
+	$(CXX) $(CXXFLAGS) -o $@ $(DEMO_SRCS) -L$(BINDIR) -lMPGMP -lgmp
 
 
 clean:
