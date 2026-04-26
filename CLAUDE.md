@@ -33,8 +33,22 @@ Test commands: simple stdout/stderr based regression test: cd test; ./test.sh al
 Profiling/Benchmarking: cd test; ./test.sh prof
 
 ## What I've done in the meantime
-Only committed your changes wrt GMPXX, and updated transcript.txt and CLAUDE.md.
+In the Makefile a new executable variant MPintNative has been
+implemented. It introduces a preprocessor flag DEMO_NATIVE,
+which, when turned on, produces a demoNative executable which
+does not utilize the MPint header/library at all.
+Instead it typedefs native type signed long int to the types
+MPint/Bint.
+This should serve for comparison of native integer performance
+versus native integer wrapped with operator overloading.
+
 
 ## What to do for you right now
-Please remove the GMPXX variant from the project. I.e. from src/,
-Makefile, and test/.
+There are various minor compile errors left of course.
+One category is initialization/const issues with the native variant.
+The other is construction of integers from strings. For the latter just
+replace the respective test functions with their equivalents in ordinary
+native int literals. Use preprocessor distinctions like near the start of
+demo.cpp to implement this and, if necessary, to resolve the former category
+i have mentioned.
+

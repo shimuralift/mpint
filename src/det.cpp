@@ -2,10 +2,14 @@
 #include <iostream>
 #include <stdlib.h>
 
-#include "MPint.hpp"
 
-//typedef signed long int Bint;
+#ifdef DEMO_NATIVE
+typedef signed long int Bint;
+#else
+#include "MPint.hpp"
 typedef MPint Bint;
+#endif
+
 
 struct st_squarematrix_state {
   Bint *flatMatrix;

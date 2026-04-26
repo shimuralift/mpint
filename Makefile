@@ -1,16 +1,12 @@
-CXX      := g++
-CXXFLAGS := -std=c++14 -Wall -Wextra -pedantic -Werror -Isrc
-AR       := ar
-ARFLAGS  := rcs
 SRCDIR   := src
 BINDIR   := bin
 
 
-LIB_SRC  := $(SRCDIR)/MPint.cpp
 LIB_HDR  := $(SRCDIR)/MPint.hpp
+
+LIB_SRC  := $(SRCDIR)/MPint.cpp
 LIB_OBJ  := $(BINDIR)/MPint.o
 LIBRARY  := $(BINDIR)/libMP.a
-
 
 LIBGMP_SRC  := $(SRCDIR)/MPintGMP.cpp
 LIBGMP_OBJ  := $(BINDIR)/MPintGMP.o
@@ -18,16 +14,25 @@ LIBRARYGMP  := $(BINDIR)/libMPGMP.a
 
 
 DEMO_SRCS := $(SRCDIR)/demo.cpp $(SRCDIR)/det.cpp
-DEMO_HDRS := $(SRCDIR)/MPint.hpp $(SRCDIR)/det.hpp
+DEMO_HDRS := $(SRCDIR)/det.hpp
+
+
 TARGET   := $(BINDIR)/demo
 
-
 TARGETGMP   := $(BINDIR)/demoGMP
+
+TARGETNATIVE   := $(BINDIR)/demoNative
+
+
+CXX      := g++
+CXXFLAGS := -std=c++14 -Wall -Wextra -pedantic -Werror -I$(SRCDIR)
+AR       := ar
+ARFLAGS  := rcs
 
 
 .PHONY: all clean
 
-all: $(TARGET) $(TARGETGMP)
+all: $(TARGET) $(TARGETGMP) $(TARGETNATIVE)
 
 
 $(LIB_OBJ): $(LIB_SRC) $(LIB_HDR)
@@ -53,6 +58,9 @@ $(TARGET): $(DEMO_SRCS) $(DEMO_HDRS) $(LIBRARY)
 $(TARGETGMP): $(DEMO_SRCS) $(DEMO_HDRS) $(LIBRARYGMP)
 	$(CXX) $(CXXFLAGS) -o $@ $(DEMO_SRCS) -L$(BINDIR) -lMPGMP -lgmp
 
+$(TARGETNATIVE): $(DEMO_SRCS) $(DEMO_HDRS)
+	$(CXX) $(CXXFLAGS) -DDEMO_NATIVE -o $@ $(DEMO_SRCS)
+
 
 clean:
-	$(RM) $(TARGET) $(LIBRARY) $(LIB_OBJ) $(TARGETGMP) $(LIBRARYGMP) $(LIBGMP_OBJ)
+	$(RM) $(TARGET) $(LIBRARY) $(LIB_OBJ) $(TARGETGMP) $(TARGETNATIVE) $(LIBRARYGMP) $(LIBGMP_OBJ)

@@ -1,6 +1,3 @@
-#include "MPint.hpp"
-#include "det.hpp"
-
 #include <cassert>
 #include <cstdint>
 #include <cstring>
@@ -8,6 +5,16 @@
 #include <iostream>
 #include <streambuf>
 #include <string>
+
+#include "det.hpp"
+
+#ifdef DEMO_NATIVE
+typedef signed long int MPint;
+#else
+#include "MPint.hpp"
+#endif
+
+
 
 int claude_main() {
     // --- construction from literals -----------------------------------------
