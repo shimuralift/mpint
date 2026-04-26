@@ -11,6 +11,7 @@ core
 bin/core
 test/demo.output
 test/demoGMP.output
+test/demoNative.output
 .cproject
 .project
 .settings/

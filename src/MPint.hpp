@@ -49,8 +49,8 @@ public:
 
     // Floating-point: explicit too — implicit operators cause overload
     // ambiguity when MPint is mixed with integral literals (e.g. a*3).
-    explicit operator float()             const noexcept;
-    explicit operator double()            const noexcept;
+    explicit operator float()             const;   // throws std::overflow_error on ±inf
+    explicit operator double()            const;   // throws std::overflow_error on ±inf
     explicit operator long double()       const noexcept;
 
     // --- unary arithmetic ---------------------------------------------------

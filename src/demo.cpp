@@ -1,8 +1,10 @@
 #include <cassert>
+#include <cmath>
 #include <cstdint>
 #include <cstring>
 #include <iomanip>
 #include <iostream>
+#include <stdexcept>
 #include <streambuf>
 #include <string>
 
@@ -88,7 +90,11 @@ int basicexpr() {
         unsigned short int nc_u_s_i = 42;
         unsigned long  int nc_u_l_i = 43;
 
+#ifdef DEMO_NATIVE
+  const MPint cMP_________ = 0;
+#else
   const MPint cMP_________;
+#endif
   const MPint cMP__c______ = MPint(1);
   const MPint cMP__c_____i = MPint( c_____i);  (void)cMP__c_____i;
   const MPint cMP__c___s_i = MPint( c___s_i);
@@ -102,7 +108,11 @@ int basicexpr() {
   const MPint cMP_nc_u___i = MPint(nc_u___i);
   const MPint cMP_nc_u_s_i = MPint(nc_u_s_i);  (void)cMP_nc_u_s_i;
   const MPint cMP_nc_u_l_i = MPint(nc_u_l_i);
+#ifdef DEMO_NATIVE
+  MPint ncMP_________ = 0;
+#else
   MPint ncMP_________;
+#endif
   MPint ncMP__c______ = MPint(1);
   MPint ncMP__c_____i = MPint( c_____i);
   MPint ncMP__c___s_i = MPint( c___s_i);
@@ -132,14 +142,60 @@ int basicexpr() {
   
   std::cout << "+()       :: " << ncMP_________ << "::" <<  +ncMP_________   << std::endl;
   std::cout << "-()       :: " << ncMP__c______ << "::" <<  -ncMP__c______   << std::endl;
+#ifdef DEMO_NATIVE
+  { auto _b = ncMP__c_____i; auto _r = ++ncMP__c_____i;
+    std::cout << "++()      :: " << _b << "::" << _r << "::" << ncMP__c_____i << std::endl; }
+  { auto _b = ncMP__c___s_i; auto _r = ncMP__c___s_i++;
+    std::cout << "++(int)   :: " << _b << "::" << _r << "::" << ncMP__c___s_i << std::endl; }
+  { auto _b = ncMP__c___l_i; auto _r = --ncMP__c___l_i;
+    std::cout << "--()      :: " << _b << "::" << _r << "::" << ncMP__c___l_i << std::endl; }
+  { auto _b = ncMP__c_u___i; auto _r = ncMP__c_u___i--;
+    std::cout << "--(int)   :: " << _b << "::" << _r << "::" << ncMP__c_u___i << std::endl; }
+#else
   std::cout << "++()      :: " << ncMP__c_____i << "::" << ++ncMP__c_____i   << "::" << ncMP__c_____i << std::endl;
   std::cout << "++(int)   :: " << ncMP__c___s_i << "::" <<   ncMP__c___s_i++ << "::" << ncMP__c___s_i << std::endl;
   std::cout << "--()      :: " << ncMP__c___l_i << "::" << --ncMP__c___l_i   << "::" << ncMP__c___l_i << std::endl;
   std::cout << "--(int)   :: " << ncMP__c_u___i << "::" <<   ncMP__c_u___i-- << "::" << ncMP__c_u___i << std::endl;
+#endif
   std::cout << "!()       :: " << ncMP__c_u_s_i << "::" <<  !ncMP__c_u_s_i   << std::endl;
   std::cout << "~()       :: " << ncMP__c_u_l_i << "::" <<  ~ncMP__c_u_l_i   << std::endl;
   std::cout << std::endl;
 
+#ifdef DEMO_NATIVE
+  { auto _b = ncMP__c_u_l_i; auto _r = (ncMP__c_u_l_i = cMP733);
+    std::cout << "=(MPint&, MPint) :: " << _b << " = " << cMP733 << " :: " << _r << " :: " << ncMP__c_u_l_i << std::endl; }
+  std::cout << std::endl;
+  { auto _b = ncMP__c_____i; auto _r = (ncMP__c_____i +=  cMPsix);
+    std::cout << " +=(MPint&)  :: " << _b << " +=  " << cMPsix << " :: " << _r << " :: " << ncMP__c_____i << std::endl; }
+  std::cout << "  +(MPint&)  :: " <<  cMP__c___s_i << "  +  " << cMPsix << " :: " << ( cMP__c___s_i  +  cMPsix) << " :: " <<  cMP__c___s_i << std::endl;
+  { auto _b = ncMP__c___l_i; auto _r = (ncMP__c___l_i -=  cMPsix);
+    std::cout << " -=(MPint&)  :: " << _b << " -=  " << cMPsix << " :: " << _r << " :: " << ncMP__c___l_i << std::endl; }
+  std::cout << "  -(MPint&)  :: " <<  cMP__c_u___i << "  -  " << cMPsix << " :: " << ( cMP__c_u___i  -  cMPsix) << " :: " <<  cMP__c_u___i << std::endl;
+  { auto _b = ncMP__c_u_s_i; auto _r = (ncMP__c_u_s_i *=  cMPsix);
+    std::cout << " *=(MPint&)  :: " << _b << " *=  " << cMPsix << " :: " << _r << " :: " << ncMP__c_u_s_i << std::endl; }
+  std::cout << "  *(MPint&)  :: " <<  cMP__c_u_l_i << "  *  " << cMPsix << " :: " << ( cMP__c_u_l_i  *  cMPsix) << " :: " <<  cMP__c_u_l_i << std::endl;
+  { auto _b = ncMP_nc_____i; auto _r = (ncMP_nc_____i /=  cMPsix);
+    std::cout << " /=(MPint&)  :: " << _b << " /=  " << cMPsix << " :: " << _r << " :: " << ncMP_nc_____i << std::endl; }
+  std::cout << "  /(MPint&)  :: " <<  cMP_nc___s_i << "  /  " << cMPsix << " :: " << ( cMP_nc___s_i  /  cMPsix) << " :: " <<  cMP_nc___s_i << std::endl;
+  { auto _b = ncMP_nc___l_i; auto _r = (ncMP_nc___l_i %=  cMPsix);
+    std::cout << " %=(MPint&)  :: " << _b << " %=  " << cMPsix << " :: " << _r << " :: " << ncMP_nc___l_i << std::endl; }
+  std::cout << "  %(MPint&)  :: " <<  cMP_nc_u___i << "  %  " << cMPsix << " :: " << ( cMP_nc_u___i  %  cMPsix) << " :: " <<  cMP_nc_u___i << std::endl;
+  { auto _b = ncMP_nc_u_s_i; auto _r = (ncMP_nc_u_s_i &=  cMPelf);
+    std::cout << " &=(MPint&)  :: " << _b << " &=  " << cMPelf << " :: " << _r << " :: " << ncMP_nc_u_s_i << std::endl; }
+  std::cout << "  &(MPint&)  :: " <<  cMP_nc_u_l_i << "  &  " << cMPelf << " :: " << ( cMP_nc_u_l_i  &  cMPelf) << " :: " <<  cMP_nc_u_l_i << std::endl;
+  { auto _b = ncMP__c___l_i; auto _r = (ncMP__c___l_i |=  cMPelf);
+    std::cout << " |=(MPint&)  :: " << _b << " |=  " << cMPelf << " :: " << _r << " :: " << ncMP__c___l_i << std::endl; }
+  std::cout << "  |(MPint&)  :: " <<  cMP__c_u___i << "  |  " << cMPelf << " :: " << ( cMP__c_u___i  |  cMPelf) << " :: " <<  cMP__c_u___i << std::endl;
+  { auto _b = ncMP__c_u_s_i; auto _r = (ncMP__c_u_s_i ^=  cMPelf);
+    std::cout << " ^=(MPint&)  :: " << _b << " ^=  " << cMPelf << " :: " << _r << " :: " << ncMP__c_u_s_i << std::endl; }
+  std::cout << "  ^(MPint&)  :: " <<  cMP__c_u_l_i << "  ^  " << cMPelf << " :: " << ( cMP__c_u_l_i  ^  cMPelf) << " :: " <<  cMP__c_u_l_i << std::endl;
+  { auto _b = ncMP_nc_____i; auto _r = (ncMP_nc_____i <<= cMPelf);
+    std::cout << "<<=(MPint&)  :: " << _b << " <<= " << cMPelf << " :: " << _r << " :: " << ncMP_nc_____i << std::endl; }
+  std::cout << " <<(MPint&)  :: " <<  cMP_nc___s_i << " <<  " << cMPelf << " :: " << ( cMP_nc___s_i <<  cMPelf) << " :: " <<  cMP_nc___s_i << std::endl;
+  { auto _b = ncMP_nc___l_i; auto _r = (ncMP_nc___l_i >>= cMPelf);
+    std::cout << ">>=(MPint&)  :: " << _b << " >>= " << cMPelf << " :: " << _r << " :: " << ncMP_nc___l_i << std::endl; }
+  std::cout << " >>(MPint&)  :: " <<  cMP_nc_u___i << " >>  " << cMPelf << " :: " << ( cMP_nc_u___i >>  cMPelf) << " :: " <<  cMP_nc_u___i << std::endl;
+#else
   std::cout << "=(MPint&, MPint) :: " << ncMP__c_u_l_i << " = " << cMP733 << " :: " << (ncMP__c_u_l_i = cMP733) << " :: " << ncMP__c_u_l_i << std::endl;
   std::cout << std::endl;
 
@@ -163,6 +219,7 @@ int basicexpr() {
   std::cout << " <<(MPint&)  :: " <<  cMP_nc___s_i << " <<  " << cMPelf << " :: " << ( cMP_nc___s_i <<  cMPelf) << " :: " <<  cMP_nc___s_i << std::endl;
   std::cout << ">>=(MPint&)  :: " << ncMP_nc___l_i << " >>= " << cMPelf << " :: " << (ncMP_nc___l_i >>= cMPelf) << " :: " << ncMP_nc___l_i << std::endl;
   std::cout << " >>(MPint&)  :: " <<  cMP_nc_u___i << " >>  " << cMPelf << " :: " << ( cMP_nc_u___i >>  cMPelf) << " :: " <<  cMP_nc_u___i << std::endl;
+#endif
   std::cout << std::endl;
 
 
@@ -485,11 +542,81 @@ int extraexpr() {
     e2 /= 2;
   }
   std::cout << "23^19 = " << result << " (overflow on native int based MPint implementations)" << std::endl;  // 74615470927590710561908487
+#ifndef DEMO_NATIVE
   assert(result == MPint("74615470927590710561908487"));
+#endif
 
   return 0;
 }
 
+#ifdef DEMO_NATIVE
+int strconstr() {
+  std::cout << "--- string constructor: decimal ---" << std::endl;
+  MPint sd0 = 0, sd1 = 42, sd2 = -17, sd3 = 99, sd4 = 1000000;
+  assert(sd0 == MPint(0));   assert(sd1 == MPint(42));
+  assert(sd2 == MPint(-17)); assert(sd3 == MPint(99));
+  assert(sd4 == MPint(1000000));
+  std::cout << "\"0\"          = " << sd0 << std::endl;
+  std::cout << "\"42\"         = " << sd1 << std::endl;
+  std::cout << "\"-17\"        = " << sd2 << std::endl;
+  std::cout << "\"+99\"        = " << sd3 << std::endl;
+  std::cout << "\"1'000'000\"  = " << sd4 << std::endl;
+
+  std::cout << std::endl << "--- string constructor: octal ---" << std::endl;
+  MPint so0 = 0, so1 = 010, so2 = 0755, so3 = -010;
+  assert(so0 == MPint(0)); assert(so1 == MPint(8));
+  assert(so2 == MPint(493)); assert(so3 == MPint(-8));
+  std::cout << "\"0\"      = " << so0 << std::endl;
+  std::cout << "\"010\"    = " << so1 << std::endl;
+  std::cout << "\"0755\"   = " << so2 << std::endl;
+  std::cout << "\"-010\"   = " << so3 << std::endl;
+
+  std::cout << std::endl << "--- string constructor: hexadecimal ---" << std::endl;
+  MPint sh0 = 0xff, sh1 = 0xDEAD, sh2 = 0X1A2B, sh3 = 0xff'ee, sh4 = -0x10;
+  assert(sh0 == MPint(255));   assert(sh1 == MPint(57005));
+  assert(sh2 == MPint(6699));  assert(sh3 == MPint(65518));
+  assert(sh4 == MPint(-16));
+  std::cout << "\"0xff\"      = " << sh0 << std::endl;
+  std::cout << "\"0xDEAD\"    = " << sh1 << std::endl;
+  std::cout << "\"0X1A2B\"    = " << sh2 << std::endl;
+  std::cout << "\"0xff'ee\"   = " << sh3 << std::endl;
+  std::cout << "\"-0x10\"     = " << sh4 << std::endl;
+
+  std::cout << std::endl << "--- string constructor: binary ---" << std::endl;
+  MPint sb0 = 0b1010, sb1 = 0b11111111, sb2 = 0b1111'1111, sb3 = -0b11;
+  assert(sb0 == MPint(10));  assert(sb1 == MPint(255));
+  assert(sb2 == MPint(255)); assert(sb3 == MPint(-3));
+  std::cout << "\"0b1010\"       = " << sb0 << std::endl;
+  std::cout << "\"0B11111111\"   = " << sb1 << std::endl;
+  std::cout << "\"0b1111'1111\"  = " << sb2 << std::endl;
+  std::cout << "\"-0b11\"        = " << sb3 << std::endl;
+
+  std::cout << std::endl << "--- string constructor: std::string ---" << std::endl;
+  MPint fs1 = 12345, fs2 = 0xCAFE;
+  assert(fs1 == MPint(12345)); assert(fs2 == MPint(0xCAFE));
+  std::cout << "std::string(\"12345\")  = " << fs1 << std::endl;
+  std::cout << "std::string(\"0xCAFE\") = " << fs2 << std::endl;
+
+  std::cout << std::endl << "--- string constructor: arithmetic ---" << std::endl;
+  assert(MPint(100) + MPint(200) == MPint(300));
+  std::cout << "\"100\" + \"200\"      = " << (MPint(100) + MPint(200)) << std::endl;
+  assert(MPint(0xFF) * MPint(2) == MPint(510));
+  std::cout << "\"0xFF\" * \"2\"       = " << (MPint(0xFF) * MPint(2)) << std::endl;
+  assert(MPint(0b1010) * MPint(010) == MPint(80));
+  std::cout << "\"0b1010\" * \"010\"   = " << (MPint(0b1010) * MPint(010)) << std::endl;
+  assert(MPint(-0x10) + MPint(0b10000) == MPint(0));
+  std::cout << "\"-0x10\" + \"0b10000\" = " << (MPint(-0x10) + MPint(0b10000)) << std::endl;
+
+  std::cout << std::endl << "--- string constructor: large values fitting in long int ---" << std::endl;
+  MPint big1 = 1000000000000000000LL, big2 = 999999999999999999LL;
+  assert(big1 == MPint(1000000000000000000LL));
+  assert(big2 + MPint(1) == big1);
+  std::cout << "\"1'000'000'000'000'000'000\" = " << big1 << std::endl;
+  std::cout << "\"999'999'999'999'999'999\" + 1 = " << (big2 + MPint(1)) << std::endl;
+
+  return 0;
+}
+#else
 int strconstr() {
   std::cout << "--- string constructor: decimal ---" << std::endl;
   MPint sd0("0");
@@ -583,6 +710,7 @@ int strconstr() {
 
   return 0;
 }
+#endif
 
 static std::string format_cycles(uint64_t n) {
     std::string s = std::to_string(n);
@@ -605,6 +733,71 @@ static inline uint64_t rdtsc_read() {
 #endif
 }
 
+#ifdef DEMO_NATIVE
+int floatconv() {
+  // For signed long int, float/double conversions never overflow;
+  // exercise the same casts so profiling is comparable.
+  MPint v1 = 42, v2 = -100, v3 = 1000000000, v4 = -999999999;
+  float  f1 = static_cast<float>(v1),  f2 = static_cast<float>(v2);
+  float  f3 = static_cast<float>(v3),  f4 = static_cast<float>(v4);
+  double d1 = static_cast<double>(v1), d2 = static_cast<double>(v2);
+  double d3 = static_cast<double>(v3), d4 = static_cast<double>(v4);
+  std::cout << "float(42)           = " << f1 << std::endl;
+  std::cout << "float(-100)         = " << f2 << std::endl;
+  std::cout << "float(1000000000)   = " << f3 << std::endl;
+  std::cout << "float(-999999999)   = " << f4 << std::endl;
+  std::cout << "double(42)          = " << d1 << std::endl;
+  std::cout << "double(-100)        = " << d2 << std::endl;
+  std::cout << "double(1000000000)  = " << d3 << std::endl;
+  std::cout << "double(-999999999)  = " << d4 << std::endl;
+  return 0;
+}
+#else
+int floatconv() {
+  // Normal conversions (no overflow expected)
+  MPint v1 = 42, v2 = -100, v3 = 1000000000, v4 = -999999999;
+  float  f1 = static_cast<float>(v1),  f2 = static_cast<float>(v2);
+  float  f3 = static_cast<float>(v3),  f4 = static_cast<float>(v4);
+  double d1 = static_cast<double>(v1), d2 = static_cast<double>(v2);
+  double d3 = static_cast<double>(v3), d4 = static_cast<double>(v4);
+  std::cout << "float(42)           = " << f1 << std::endl;
+  std::cout << "float(-100)         = " << f2 << std::endl;
+  std::cout << "float(1000000000)   = " << f3 << std::endl;
+  std::cout << "float(-999999999)   = " << f4 << std::endl;
+  std::cout << "double(42)          = " << d1 << std::endl;
+  std::cout << "double(-100)        = " << d2 << std::endl;
+  std::cout << "double(1000000000)  = " << d3 << std::endl;
+  std::cout << "double(-999999999)  = " << d4 << std::endl;
+
+#ifdef DEMO_GMP
+  // Overflow detection only meaningful with GMP backend (arbitrary precision).
+  // The long-int proxy truncates large strings to LLONG_MAX, which never overflows float/double.
+
+  // Value exceeding FLT_MAX (~3.4e38)
+  MPint big_f("400000000000000000000000000000000000000");  // ~4e38
+  bool caught = false;
+  try { float f = static_cast<float>(big_f); (void)f; }
+  catch (const std::overflow_error&) { caught = true; }
+  assert(caught);
+  std::cout << "float overflow detected ok" << std::endl;
+
+  // Value exceeding DBL_MAX (~1.8e308)
+  MPint big_d("1"
+    "000000000000000000000000000000000000000000000000000000000000000000000000000000"
+    "000000000000000000000000000000000000000000000000000000000000000000000000000000"
+    "000000000000000000000000000000000000000000000000000000000000000000000000000000"
+    "000000000000000000000000000000000000000000000000000000000000000000000000000000");  // 10^312
+  caught = false;
+  try { double d = static_cast<double>(big_d); (void)d; }
+  catch (const std::overflow_error&) { caught = true; }
+  assert(caught);
+  std::cout << "double overflow detected ok" << std::endl;
+#endif
+
+  return 0;
+}
+#endif
+
 int main(int argc, char* argv[]) {
   bool prof = false;
   for (int i = 1; i < argc; ++i) {
@@ -612,7 +805,7 @@ int main(int argc, char* argv[]) {
   }
 
   const int PROF_RUNS = 100000;
-  uint64_t total[6] = {0, 0, 0, 0, 0, 0};
+  uint64_t total[7] = {0, 0, 0, 0, 0, 0, 0};
   uint64_t t0, t1;
 
   NullBuf nullbuf;
@@ -642,20 +835,24 @@ int main(int argc, char* argv[]) {
   for (int r = 0; r < (prof ? PROF_RUNS : 1); ++r)
     { t0 = rdtsc_read(); strconstr();   t1 = rdtsc_read(); total[5] += t1 - t0; }
 
+  std::cout << std::endl << "MPint: float/double conversion tests" << std::endl << std::endl;
+  for (int r = 0; r < (prof ? PROF_RUNS : 1); ++r)
+    { t0 = rdtsc_read(); floatconv();   t1 = rdtsc_read(); total[6] += t1 - t0; }
+
   if (prof) {
     std::cout.rdbuf(orig);
-    static const char* const names[6] = {
-      "claude_main", "basicexpr", "moreexpr", "extraexpr", "detTest", "strconstr"
+    static const char* const names[7] = {
+      "claude_main", "basicexpr", "moreexpr", "extraexpr", "detTest", "strconstr", "floatconv"
     };
-    std::string formatted[6];
+    std::string formatted[7];
     std::string::size_type maxcycles = 0, maxname = 0;
-    for (int i = 0; i < 6; ++i) {
+    for (int i = 0; i < 7; ++i) {
       formatted[i] = format_cycles(total[i] / PROF_RUNS);
       if (formatted[i].size() > maxcycles) maxcycles = formatted[i].size();
       if (std::strlen(names[i]) > maxname) maxname = std::strlen(names[i]);
     }
     std::cout << "=== profiling report (rdtsc cpu cycles, avg of " << PROF_RUNS << " runs) ===" << std::endl;
-    for (int i = 0; i < 6; ++i) {
+    for (int i = 0; i < 7; ++i) {
       std::cout << "  " << std::setw(static_cast<int>(maxname)) << std::left  << names[i]
                 << ": " << std::setw(static_cast<int>(maxcycles)) << std::right << formatted[i]
                 << " cycles" << std::endl;

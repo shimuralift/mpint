@@ -735,3 +735,16 @@ std::string("0xCAFE") = 51966
 --- string constructor: large values fitting in long int ---
 "1'000'000'000'000'000'000" = 1000000000000000000
 "999'999'999'999'999'999" + 1 = 1000000000000000000
+
+MPint: float/double conversion tests
+
+float(42)           = 42
+float(-100)         = -100
+float(1000000000)   = 1e+09
+float(-999999999)   = -1e+09
+double(42)          = 42
+double(-100)        = -100
+double(1000000000)  = 1e+09
+double(-999999999)  = -1e+09
+float overflow detected ok
+double overflow detected ok

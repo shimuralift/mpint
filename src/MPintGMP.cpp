@@ -1,8 +1,10 @@
 #include "MPint.hpp"
 
+#include <cmath>
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
+#include <stdexcept>
 #include <string>
 
 #include <gmp.h>
@@ -94,8 +96,16 @@ MPint::operator signed char()       const noexcept { return static_cast<signed c
 MPint::operator unsigned long int() const noexcept { return mpz_get_ui(pImpl->mVal); }
 MPint::operator unsigned int()      const noexcept { return static_cast<unsigned int>(mpz_get_ui(pImpl->mVal)); }
 MPint::operator bool()              const noexcept { return mpz_sgn(pImpl->mVal) != 0; }
-MPint::operator float()             const noexcept { return static_cast<float>(mpz_get_d(pImpl->mVal)); }
-MPint::operator double()            const noexcept { return mpz_get_d(pImpl->mVal); }
+MPint::operator float() const {
+    float f = static_cast<float>(mpz_get_d(pImpl->mVal));
+    if (std::isinf(f)) throw std::overflow_error("MPint->float overflow");
+    return f;
+}
+MPint::operator double() const {
+    double d = mpz_get_d(pImpl->mVal);
+    if (std::isinf(d)) throw std::overflow_error("MPint->double overflow");
+    return d;
+}
 MPint::operator long double()       const noexcept { return static_cast<long double>(mpz_get_d(pImpl->mVal)); }
 
 // --- unary arithmetic -------------------------------------------------------
