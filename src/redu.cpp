@@ -142,20 +142,20 @@ void Long_colchange(int indx1, int indx2, Long ** mat, int dim) {
         }
 }
 
-static void inc_gram_schmidt(Long ** gr, double * ge, double ** mo, double *  a, int k, int dim) {
+static void inc_gram_schmidt(Long ** gr, double * ge, double ** mo, double *  a, int k) {
     int  j;
     int  i;
     Long inter;
 
     for(j = 0; j < k; j++) {
         inter = gr[k][j];
-        a[j] = inter;
+        a[j] = static_cast<double>(inter);
         for(i = 0; i < j; i++)
             a[j] -= mo[j][i] * a[i];
         mo[k][j] = a[j] / ge[j];
     }
     inter = gr[k][k];
-    ge[k] = inter;
+    ge[k] = static_cast<double>(inter);
     for(i = 0; i < k; i++)
         ge[k] -= mo[k][i] * a[i];
 }
@@ -164,9 +164,9 @@ static Long my_round(double r) {
     Long i;
 
     if(r >= 0)
-        i = (2 * r + 1) / 2;
+        i = static_cast<signed long int>((2 * r + 1) / 2);
     else {
-        i = (2 * (-r) + 1) / 2;
+        i = static_cast<signed long int>((2 * (-r) + 1) / 2);
         i *= -1;
     }
     return i;
@@ -184,8 +184,8 @@ static void size_reduction(Long ** gr, Long ** ba, Long ** invba, double ** mo, 
     if(invba != NULL)
         Long_coladd(k, l, q, invba, dim);
     iq = q;
-    mo[k][l] -= iq;
-    double_rowadd(l, k, -iq, mo, l);
+    mo[k][l] -= static_cast<double>(iq);
+    double_rowadd(l, k, static_cast<double>(-iq), mo, l);
 }
 
 static void swap(Long ** gr, Long ** ba, Long ** invba, double ** mo, double * ge, int k, int kmax, int dim) {
@@ -276,17 +276,17 @@ static void shrt_count(int c, double damage, double * ge, double ** mo, int n, L
         x = 0;
         for(j = c + 1; j < n; ++j) {
             help = vec[j];
-            x += help * mo[j][c];
+            x += static_cast<double>(help) * mo[j][c];
         }
         help = my_round(x);
-        i = -help;
+        i = static_cast<int>(-help);
         gec = ge[c];
-        if(gec * (x + i) * (x + i) + damage < my_len + EPS) {
-            while((gec * (x + i) * (x + i) + damage < my_len + EPS) ||
+        if(gec * (x + i) * (x + i) + damage < static_cast<double>(my_len) + EPS) {
+            while((gec * (x + i) * (x + i) + damage < static_cast<double>(my_len) + EPS) ||
                   (x + i <= 0))
                 ++i;
             --i;
-            while((gec * (x + i) * (x + i) + damage < my_len + EPS) &&
+            while((gec * (x + i) * (x + i) + damage < static_cast<double>(my_len) + EPS) &&
                   con == 0) {
                 vec[c] = i;
                 shrt_count(c - 1,
@@ -329,17 +329,17 @@ static void shrt(int c, double damage, double * ge, double ** mo, int n, Long * 
         x = 0;
         for(j = c + 1; j < n; ++j) {
             help = vec[j];
-            x += help * mo[j][c];
+            x += static_cast<double>(help) * mo[j][c];
         }
         help = my_round(x);
-        i = -help;
+        i = static_cast<int>(-help);
         gec = ge[c];
-        if(gec * (x + i) * (x + i) + damage < my_len + EPS) {
-            while((gec * (x + i) * (x + i) + damage < my_len + EPS) ||
+        if(gec * (x + i) * (x + i) + damage < static_cast<double>(my_len) + EPS) {
+            while((gec * (x + i) * (x + i) + damage < static_cast<double>(my_len) + EPS) ||
                   (x + i <= 0))
                 ++i;
             --i;
-            while((gec * (x + i) * (x + i) + damage < my_len + EPS) &&
+            while((gec * (x + i) * (x + i) + damage < static_cast<double>(my_len) + EPS) &&
                   con == 0) {
                 vec[c] = i;
                 shrt(c - 1,
@@ -392,11 +392,11 @@ int triple_l(Long ** gr, Long ** ba, Long ** invba, double * ge, double ** mo, i
     k = 1;
     kmax = 0;
     inter = gr[0][0];
-    ge[0] = inter;
+    ge[0] = static_cast<double>(inter);
     do {
         if(k > kmax) {
             kmax = k;
-            inc_gram_schmidt(gr, ge, mo, a, k, dim);
+            inc_gram_schmidt(gr, ge, mo, a, k);
             if(fabs(ge[k]) < EPS) {
                 fprintf(stderr, "\nredu_utils.c:triple_l:grammatrix not pos.def.\n");
 /*
@@ -420,7 +420,7 @@ int triple_l(Long ** gr, Long ** ba, Long ** invba, double * ge, double ** mo, i
     }
     while(k < dim);
     for(l = 1; l < dim; l++)
-        inc_gram_schmidt(gr, ge, mo, a, l, dim);
+        inc_gram_schmidt(gr, ge, mo, a, l);
     destroy_double_vector(&a);
     return dim;
 }
@@ -462,7 +462,7 @@ int deep_triple_l(Long ** gr, Long ** ba, Long ** invba, double * ge, double ** 
     k = 0;
     flag = 0;
     do {
-        inc_gram_schmidt(gr, ge, mo, a, k, dim);
+        inc_gram_schmidt(gr, ge, mo, a, k);
         if(fabs(ge[k]) < EPS) {
             fprintf(stderr, "\nredu_utils.c:deep_triple_l:grammatrix not pos.def.\n");
             exit(4);
@@ -473,7 +473,7 @@ int deep_triple_l(Long ** gr, Long ** ba, Long ** invba, double * ge, double ** 
             for(l = k - 1; l >= 0; l--)
                 size_reduction(gr, ba, invba, mo, k, l, dim);
             help = gr[k][k];
-            b = help;
+            b = static_cast<double>(help);
             i = 0;
             while(i != k) {
                 if(3 * ge[i] <= 4 * b)
@@ -486,7 +486,7 @@ int deep_triple_l(Long ** gr, Long ** ba, Long ** invba, double * ge, double ** 
                     if(i > 0) {
                         k = i - 1;
                         help = gr[k][k];
-                        b = help;
+                        b = static_cast<double>(help);
                         i = 0;
                     }
                     else {
@@ -503,7 +503,7 @@ int deep_triple_l(Long ** gr, Long ** ba, Long ** invba, double * ge, double ** 
     }
     while(k < dim);
     for(l = 1; l < dim; l++)
-        inc_gram_schmidt(gr, ge, mo, a, l, dim);
+        inc_gram_schmidt(gr, ge, mo, a, l);
     destroy_Long_vector(&inter);
     destroy_double_vector(&a);
     return dim;
