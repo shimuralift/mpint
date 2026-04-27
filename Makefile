@@ -13,8 +13,8 @@ LIBGMP_OBJ  := $(BINDIR)/MPintGMP.o
 LIBRARYGMP  := $(BINDIR)/libMPGMP.a
 
 
-DEMO_SRCS := $(SRCDIR)/demo.cpp $(SRCDIR)/det.cpp
-DEMO_HDRS := $(SRCDIR)/det.hpp
+DEMO_SRCS := $(SRCDIR)/demo.cpp $(SRCDIR)/det.cpp $(SRCDIR)/redu.cpp
+DEMO_HDRS := $(SRCDIR)/det.hpp $(SRCDIR)/redu.hpp
 
 
 TARGET   := $(BINDIR)/demo

@@ -4762,3 +4762,886 @@ strconstr                     17 731                32 362                36 679
 
 #############################################################################################################################################################################################################
 
+❯ see CLAUDE.md for instructions. If unsure what to do or how, please ask me.
+
+  Read 1 file (ctrl+o to expand)
+
+● Let me try building first to see the actual errors.
+
+● Bash(make 2>&1)
+  ⎿  Error: Exit code 2
+     g++ -std=c++14 -Wall -Wextra -pedantic -Werror -Isrc -DDEMO_NATIVE -o bin/demoNative src/demo.cpp src/det.cpp
+     src/demo.cpp: In function ‘int basicexpr()’:
+     src/demo.cpp:91:15: error: uninitialized ‘const cMP_________’ [-fpermissive]
+        91 |   const MPint cMP_________;
+           |               ^~~~~~~~~~~~
+     src/demo.cpp:135:60: error: operation on ‘ncMP__c_____i’ may be undefined [-Werror=sequence-point]
+       135 |   std::cout << "++()      :: " << ncMP__c_____i << "::" << ++ncMP__c_____i   << "::" << ncMP__c_____i << std::endl;
+           |                                                            ^~~~~~~~~~~~~~~
+     src/demo.cpp:136:75: error: operation on ‘ncMP__c___s_i’ may be undefined [-Werror=sequence-point]
+     … +147 lines (ctrl+o to see all)
+
+● Two categories to fix. Let me read the relevant sections of demo.cpp.
+
+  Read 1 file (ctrl+o to expand)
+
+● Now I have a clear picture. Let me read the exact lines I need to modify.
+
+  Read 1 file (ctrl+o to expand)
+
+● Let me also check det.cpp to make sure it handles DEMO_NATIVE properly.
+
+  Read 1 file (ctrl+o to expand)
+
+● Good, det.cpp already handles DEMO_NATIVE correctly. Now I'll apply all fixes to demo.cpp.
+
+  Fix 1: Uninitialized const MPint cMP_________; (also add = 0 to ncMP_________ since native long int is otherwise uninitialized):
+
+● Update(src/demo.cpp)
+  ⎿  Added 4 lines
+      88          unsigned short int nc_u_s_i = 42;
+      89          unsigned long  int nc_u_l_i = 43;
+      90
+      91 +#ifdef DEMO_NATIVE
+      92 +  const MPint cMP_________ = 0;
+      93 +#else
+      94    const MPint cMP_________;
+      95 +#endif
+      96    const MPint cMP__c______ = MPint(1);
+      97    const MPint cMP__c_____i = MPint( c_____i);  (void)cMP__c_____i;
+      98    const MPint cMP__c___s_i = MPint( c___s_i);
+
+● Update(src/demo.cpp)
+  ⎿  Added 4 lines
+      106    const MPint cMP_nc_u___i = MPint(nc_u___i);
+      107    const MPint cMP_nc_u_s_i = MPint(nc_u_s_i);  (void)cMP_nc_u_s_i;
+      108    const MPint cMP_nc_u_l_i = MPint(nc_u_l_i);
+      109 +#ifdef DEMO_NATIVE
+      110 +  MPint ncMP_________ = 0;
+      111 +#else
+      112    MPint ncMP_________;
+      113 +#endif
+      114    MPint ncMP__c______ = MPint(1);
+      115    MPint ncMP__c_____i = MPint( c_____i);
+      116    MPint ncMP__c___s_i = MPint( c___s_i);
+
+● Fix 2: Increment/decrement lines (sequence-point violations):
+
+● Update(src/demo.cpp)
+  ⎿  Added 11 lines
+      140
+      141    std::cout << "+()       :: " << ncMP_________ << "::" <<  +ncMP_________   << std::endl;
+      142    std::cout << "-()       :: " << ncMP__c______ << "::" <<  -ncMP__c______   << std::endl;
+      143 +#ifdef DEMO_NATIVE
+      144 +  { auto _b = ncMP__c_____i; auto _r = ++ncMP__c_____i;
+      145 +    std::cout << "++()      :: " << _b << "::" << _r << "::" << ncMP__c_____i << std::endl; }
+      146 +  { auto _b = ncMP__c___s_i; auto _r = ncMP__c___s_i++;
+      147 +    std::cout << "++(int)   :: " << _b << "::" << _r << "::" << ncMP__c___s_i << std::endl; }
+      148 +  { auto _b = ncMP__c___l_i; auto _r = --ncMP__c___l_i;
+      149 +    std::cout << "--()      :: " << _b << "::" << _r << "::" << ncMP__c___l_i << std::endl; }
+      150 +  { auto _b = ncMP__c_u___i; auto _r = ncMP__c_u___i--;
+      151 +    std::cout << "--(int)   :: " << _b << "::" << _r << "::" << ncMP__c_u___i << std::endl; }
+      152 +#else
+      153    std::cout << "++()      :: " << ncMP__c_____i << "::" << ++ncMP__c_____i   << "::" << ncMP__c_____i << std::endl;
+      154    std::cout << "++(int)   :: " << ncMP__c___s_i << "::" <<   ncMP__c___s_i++ << "::" << ncMP__c___s_i << std::endl;
+      155    std::cout << "--()      :: " << ncMP__c___l_i << "::" << --ncMP__c___l_i   << "::" << ncMP__c___l_i << std::endl;
+      156    std::cout << "--(int)   :: " << ncMP__c_u___i << "::" <<   ncMP__c_u___i-- << "::" << ncMP__c_u___i << std::endl;
+      157 +#endif
+      158    std::cout << "!()       :: " << ncMP__c_u_s_i << "::" <<  !ncMP__c_u_s_i   << std::endl;
+      159    std::cout << "~()       :: " << ncMP__c_u_l_i << "::" <<  ~ncMP__c_u_l_i   << std::endl;
+      160    std::cout << std::endl;
+
+● Fix 3: Assignment and all compound-assignment lines — wrap with #ifdef DEMO_NATIVE using captured temporaries:
+
+● Update(src/demo.cpp)
+  ⎿  Added 36 lines
+      159    std::cout << "~()       :: " << ncMP__c_u_l_i << "::" <<  ~ncMP__c_u_l_i   << std::endl;
+      160    std::cout << std::endl;
+      161
+      162 +#ifdef DEMO_NATIVE
+      163 +  { auto _b = ncMP__c_u_l_i; auto _r = (ncMP__c_u_l_i = cMP733);
+      164 +    std::cout << "=(MPint&, MPint) :: " << _b << " = " << cMP733 << " :: " << _r << " :: " << ncMP__c_u_l_i << std::endl; }
+      165 +  std::cout << std::endl;
+      166 +  { auto _b = ncMP__c_____i; auto _r = (ncMP__c_____i +=  cMPsix);
+      167 +    std::cout << " +=(MPint&)  :: " << _b << " +=  " << cMPsix << " :: " << _r << " :: " << ncMP__c_____i << std::endl; }
+      168 +  std::cout << "  +(MPint&)  :: " <<  cMP__c___s_i << "  +  " << cMPsix << " :: " << ( cMP__c___s_i  +  cMPsix) << " :: " <<  cMP__c___s_i << std::endl;
+      169 +  { auto _b = ncMP__c___l_i; auto _r = (ncMP__c___l_i -=  cMPsix);
+      170 +    std::cout << " -=(MPint&)  :: " << _b << " -=  " << cMPsix << " :: " << _r << " :: " << ncMP__c___l_i << std::endl; }
+      171 +  std::cout << "  -(MPint&)  :: " <<  cMP__c_u___i << "  -  " << cMPsix << " :: " << ( cMP__c_u___i  -  cMPsix) << " :: " <<  cMP__c_u___i << std::endl;
+      172 +  { auto _b = ncMP__c_u_s_i; auto _r = (ncMP__c_u_s_i *=  cMPsix);
+      173 +    std::cout << " *=(MPint&)  :: " << _b << " *=  " << cMPsix << " :: " << _r << " :: " << ncMP__c_u_s_i << std::endl; }
+      174 +  std::cout << "  *(MPint&)  :: " <<  cMP__c_u_l_i << "  *  " << cMPsix << " :: " << ( cMP__c_u_l_i  *  cMPsix) << " :: " <<  cMP__c_u_l_i << std::endl;
+      175 +  { auto _b = ncMP_nc_____i; auto _r = (ncMP_nc_____i /=  cMPsix);
+      176 +    std::cout << " /=(MPint&)  :: " << _b << " /=  " << cMPsix << " :: " << _r << " :: " << ncMP_nc_____i << std::endl; }
+      177 +  std::cout << "  /(MPint&)  :: " <<  cMP_nc___s_i << "  /  " << cMPsix << " :: " << ( cMP_nc___s_i  /  cMPsix) << " :: " <<  cMP_nc___s_i << std::endl;
+      178 +  { auto _b = ncMP_nc___l_i; auto _r = (ncMP_nc___l_i %=  cMPsix);
+      179 +    std::cout << " %=(MPint&)  :: " << _b << " %=  " << cMPsix << " :: " << _r << " :: " << ncMP_nc___l_i << std::endl; }
+      180 +  std::cout << "  %(MPint&)  :: " <<  cMP_nc_u___i << "  %  " << cMPsix << " :: " << ( cMP_nc_u___i  %  cMPsix) << " :: " <<  cMP_nc_u___i << std::endl;
+      181 +  { auto _b = ncMP_nc_u_s_i; auto _r = (ncMP_nc_u_s_i &=  cMPelf);
+      182 +    std::cout << " &=(MPint&)  :: " << _b << " &=  " << cMPelf << " :: " << _r << " :: " << ncMP_nc_u_s_i << std::endl; }
+      183 +  std::cout << "  &(MPint&)  :: " <<  cMP_nc_u_l_i << "  &  " << cMPelf << " :: " << ( cMP_nc_u_l_i  &  cMPelf) << " :: " <<  cMP_nc_u_l_i << std::endl;
+      184 +  { auto _b = ncMP__c___l_i; auto _r = (ncMP__c___l_i |=  cMPelf);
+      185 +    std::cout << " |=(MPint&)  :: " << _b << " |=  " << cMPelf << " :: " << _r << " :: " << ncMP__c___l_i << std::endl; }
+      186 +  std::cout << "  |(MPint&)  :: " <<  cMP__c_u___i << "  |  " << cMPelf << " :: " << ( cMP__c_u___i  |  cMPelf) << " :: " <<  cMP__c_u___i << std::endl;
+      187 +  { auto _b = ncMP__c_u_s_i; auto _r = (ncMP__c_u_s_i ^=  cMPelf);
+      188 +    std::cout << " ^=(MPint&)  :: " << _b << " ^=  " << cMPelf << " :: " << _r << " :: " << ncMP__c_u_s_i << std::endl; }
+      189 +  std::cout << "  ^(MPint&)  :: " <<  cMP__c_u_l_i << "  ^  " << cMPelf << " :: " << ( cMP__c_u_l_i  ^  cMPelf) << " :: " <<  cMP__c_u_l_i << std::endl;
+      190 +  { auto _b = ncMP_nc_____i; auto _r = (ncMP_nc_____i <<= cMPelf);
+      191 +    std::cout << "<<=(MPint&)  :: " << _b << " <<= " << cMPelf << " :: " << _r << " :: " << ncMP_nc_____i << std::endl; }
+      192 +  std::cout << " <<(MPint&)  :: " <<  cMP_nc___s_i << " <<  " << cMPelf << " :: " << ( cMP_nc___s_i <<  cMPelf) << " :: " <<  cMP_nc___s_i << std::endl;
+      193 +  { auto _b = ncMP_nc___l_i; auto _r = (ncMP_nc___l_i >>= cMPelf);
+      194 +    std::cout << ">>=(MPint&)  :: " << _b << " >>= " << cMPelf << " :: " << _r << " :: " << ncMP_nc___l_i << std::endl; }
+      195 +  std::cout << " >>(MPint&)  :: " <<  cMP_nc_u___i << " >>  " << cMPelf << " :: " << ( cMP_nc_u___i >>  cMPelf) << " :: " <<  cMP_nc_u___i << std::endl;
+      196 +#else
+      197    std::cout << "=(MPint&, MPint) :: " << ncMP__c_u_l_i << " = " << cMP733 << " :: " << (ncMP__c_u_l_i = cMP733) << " :: " << ncMP__c_u_l_i << std::endl;
+      198    std::cout << std::endl;
+      199
+     ...
+      217    std::cout << " <<(MPint&)  :: " <<  cMP_nc___s_i << " <<  " << cMPelf << " :: " << ( cMP_nc___s_i <<  cMPelf) << " :: " <<  cMP_nc___s_i << std::endl;
+      218    std::cout << ">>=(MPint&)  :: " << ncMP_nc___l_i << " >>= " << cMPelf << " :: " << (ncMP_nc___l_i >>= cMPelf) << " :: " << ncMP_nc___l_i << std::endl;
+      219    std::cout << " >>(MPint&)  :: " <<  cMP_nc_u___i << " >>  " << cMPelf << " :: " << ( cMP_nc_u___i >>  cMPelf) << " :: " <<  cMP_nc_u___i << std::endl;
+      220 +#endif
+      221    std::cout << std::endl;
+      222
+      223
+
+● Fix 4: Skip the string-based assert in moreexpr():
+
+● Update(src/demo.cpp)
+  ⎿  Added 2 lines
+      540      e2 /= 2;
+      541    }
+      542    std::cout << "23^19 = " << result << " (overflow on native int based MPint implementations)" << std::endl;  // 74615470927590710561908487
+      543 +#ifndef DEMO_NATIVE
+      544    assert(result == MPint("74615470927590710561908487"));
+      545 +#endif
+      546
+      547    return 0;
+      548  }
+
+● Fix 5: Replace strconstr() with a DEMO_NATIVE-compatible version using integer literals:
+
+● Update(src/demo.cpp)
+  ⎿  Added 69 lines
+      547    return 0;
+      548  }
+      549
+      550 +#ifdef DEMO_NATIVE
+      551  int strconstr() {
+      552    std::cout << "--- string constructor: decimal ---" << std::endl;
+      553 +  MPint sd0 = 0, sd1 = 42, sd2 = -17, sd3 = 99, sd4 = 1000000;
+      554 +  assert(sd0 == MPint(0));   assert(sd1 == MPint(42));
+      555 +  assert(sd2 == MPint(-17)); assert(sd3 == MPint(99));
+      556 +  assert(sd4 == MPint(1000000));
+      557 +  std::cout << "\"0\"          = " << sd0 << std::endl;
+      558 +  std::cout << "\"42\"         = " << sd1 << std::endl;
+      559 +  std::cout << "\"-17\"        = " << sd2 << std::endl;
+      560 +  std::cout << "\"+99\"        = " << sd3 << std::endl;
+      561 +  std::cout << "\"1'000'000\"  = " << sd4 << std::endl;
+      562 +
+      563 +  std::cout << std::endl << "--- string constructor: octal ---" << std::endl;
+      564 +  MPint so0 = 0, so1 = 010, so2 = 0755, so3 = -010;
+      565 +  assert(so0 == MPint(0)); assert(so1 == MPint(8));
+      566 +  assert(so2 == MPint(493)); assert(so3 == MPint(-8));
+      567 +  std::cout << "\"0\"      = " << so0 << std::endl;
+      568 +  std::cout << "\"010\"    = " << so1 << std::endl;
+      569 +  std::cout << "\"0755\"   = " << so2 << std::endl;
+      570 +  std::cout << "\"-010\"   = " << so3 << std::endl;
+      571 +
+      572 +  std::cout << std::endl << "--- string constructor: hexadecimal ---" << std::endl;
+      573 +  MPint sh0 = 0xff, sh1 = 0xDEAD, sh2 = 0X1A2B, sh3 = 0xff'ee, sh4 = -0x10;
+      574 +  assert(sh0 == MPint(255));   assert(sh1 == MPint(57005));
+      575 +  assert(sh2 == MPint(6699));  assert(sh3 == MPint(65518));
+      576 +  assert(sh4 == MPint(-16));
+      577 +  std::cout << "\"0xff\"      = " << sh0 << std::endl;
+      578 +  std::cout << "\"0xDEAD\"    = " << sh1 << std::endl;
+      579 +  std::cout << "\"0X1A2B\"    = " << sh2 << std::endl;
+      580 +  std::cout << "\"0xff'ee\"   = " << sh3 << std::endl;
+      581 +  std::cout << "\"-0x10\"     = " << sh4 << std::endl;
+      582 +
+      583 +  std::cout << std::endl << "--- string constructor: binary ---" << std::endl;
+      584 +  MPint sb0 = 0b1010, sb1 = 0b11111111, sb2 = 0b1111'1111, sb3 = -0b11;
+      585 +  assert(sb0 == MPint(10));  assert(sb1 == MPint(255));
+      586 +  assert(sb2 == MPint(255)); assert(sb3 == MPint(-3));
+      587 +  std::cout << "\"0b1010\"       = " << sb0 << std::endl;
+      588 +  std::cout << "\"0B11111111\"   = " << sb1 << std::endl;
+      589 +  std::cout << "\"0b1111'1111\"  = " << sb2 << std::endl;
+      590 +  std::cout << "\"-0b11\"        = " << sb3 << std::endl;
+      591 +
+      592 +  std::cout << std::endl << "--- string constructor: std::string ---" << std::endl;
+      593 +  MPint fs1 = 12345, fs2 = 0xCAFE;
+      594 +  assert(fs1 == MPint(12345)); assert(fs2 == MPint(0xCAFE));
+      595 +  std::cout << "std::string(\"12345\")  = " << fs1 << std::endl;
+      596 +  std::cout << "std::string(\"0xCAFE\") = " << fs2 << std::endl;
+      597 +
+      598 +  std::cout << std::endl << "--- string constructor: arithmetic ---" << std::endl;
+      599 +  assert(MPint(100) + MPint(200) == MPint(300));
+      600 +  std::cout << "\"100\" + \"200\"      = " << (MPint(100) + MPint(200)) << std::endl;
+      601 +  assert(MPint(0xFF) * MPint(2) == MPint(510));
+      602 +  std::cout << "\"0xFF\" * \"2\"       = " << (MPint(0xFF) * MPint(2)) << std::endl;
+      603 +  assert(MPint(0b1010) * MPint(010) == MPint(80));
+      604 +  std::cout << "\"0b1010\" * \"010\"   = " << (MPint(0b1010) * MPint(010)) << std::endl;
+      605 +  assert(MPint(-0x10) + MPint(0b10000) == MPint(0));
+      606 +  std::cout << "\"-0x10\" + \"0b10000\" = " << (MPint(-0x10) + MPint(0b10000)) << std::endl;
+      607 +
+      608 +  std::cout << std::endl << "--- string constructor: large values fitting in long int ---" << std::endl;
+      609 +  MPint big1 = 1000000000000000000LL, big2 = 999999999999999999LL;
+      610 +  assert(big1 == MPint(1000000000000000000LL));
+      611 +  assert(big2 + MPint(1) == big1);
+      612 +  std::cout << "\"1'000'000'000'000'000'000\" = " << big1 << std::endl;
+      613 +  std::cout << "\"999'999'999'999'999'999\" + 1 = " << (big2 + MPint(1)) << std::endl;
+      614 +
+      615 +  return 0;
+      616 +}
+      617 +#else
+      618 +int strconstr() {
+      619 +  std::cout << "--- string constructor: decimal ---" << std::endl;
+      620    MPint sd0("0");
+      621    MPint sd1("42");
+      622    MPint sd2("-17");
+     ...
+      708
+      709    return 0;
+      710  }
+      711 +#endif
+      712
+      713  static std::string format_cycles(uint64_t n) {
+      714      std::string s = std::to_string(n);
+
+● Now try building:
+
+● Bash(make 2>&1)
+  ⎿  g++ -std=c++14 -Wall -Wextra -pedantic -Werror -Isrc -o bin/demo src/demo.cpp src/det.cpp -Lbin -lMP
+     g++ -std=c++14 -Wall -Wextra -pedantic -Werror -Isrc -o bin/demoGMP src/demo.cpp src/det.cpp -Lbin -lMPGMP -lgmp
+     g++ -std=c++14 -Wall -Wextra -pedantic -Werror -Isrc -DDEMO_NATIVE -o bin/demoNative src/demo.cpp src/det.cpp
+
+● Clean build. Now run the full test suite and create the native reference file:
+
+● Bash(bin/demoNative > test/demoNative.output.ref 2>&1 && echo "exit: $?")
+  ⎿  exit: 0
+
+● Bash(cd /home/claudeuser/work/mpint/test && ./test.sh all 2>&1 | grep -E "EXIT|diff")
+  ⎿  ############################## EXIT  : ../bin/demo > demo.output 2>&1 : EXITCODE : 0 ##########
+     ############################## EXIT  : cat demo.output : EXITCODE : 0 ##########
+     ############################## EXIT  : ../bin/demoGMP > demoGMP.output 2>&1 : EXITCODE : 0 ##########
+     … +5 lines (ctrl+o to expand)
+
+● Existing tests still pass. Now update test/test.sh to add demoNative to all and prof:
+
+  Read 1 file (ctrl+o to expand)
+
+● Update(test.sh)
+  ⎿  Added 3 lines
+      11  EXECUTABLEGMP="../bin/demoGMP"
+      12  OUTFILEGMP="demoGMP.output"
+      13
+      14 +EXECUTABLENATIVE="../bin/demoNative"
+      15 +OUTFILENATIVE="demoNative.output"
+      16
+      17  REFFILE="demo.output.ref"
+      18  REFFILEGMP="demoGMP.output.ref"
+      19 +REFFILENATIVE="demoNative.output.ref"
+      20
+      21  DIFFCMD="diff"
+      22  RMCMD="rm"
+
+● Update(test.sh)
+  ⎿  Added 12 lines
+      72          return ${retval}
+      73      fi
+      74
+      75 +    runExecutable ${EXECUTABLENATIVE} ${OUTFILENATIVE}
+      76 +    retval=$?
+      77 +    if [ "${retval}" -ne 0 ]; then
+      78 +        return ${retval}
+      79 +    fi
+      80
+      81 +
+      82      doDiff "${OUTFILE}" "${REFFILE}"
+      83      diffretval=$?
+      84      if [ "${diffretval}" -ne 0 ]; then
+     ...
+       91          retval=${diffretval}
+       92      fi
+       93
+       94 +    doDiff "${OUTFILENATIVE}" "${REFFILENATIVE}"
+       95 +    diffretval=$?
+       96 +    if [ "${diffretval}" -ne 0 ]; then
+       97 +        retval=${diffretval}
+       98 +    fi
+       99
+      100 +
+      101      return ${retval}
+      102  }
+      103
+
+● Update(test.sh)
+  ⎿  Added 1 line, removed 1 line
+      103
+      104  doProf () {
+      105      if [ "${DRYPARAM}" == "dry" ]; then
+      106 -        echo "DRY: would run ${EXECUTABLE}, ${EXECUTABLEGMP} with -prof and display side-by-side"
+      106 +        echo "DRY: would run ${EXECUTABLE}, ${EXECUTABLEGMP}, ${EXECUTABLENATIVE} with -prof and display side-by-side"
+      107          return 0
+      108      fi
+      109
+
+● Now add demoNative column to doProf:
+
+● Update(test.sh)
+  ⎿  Added 18 lines, removed 10 lines
+      107          return 0
+      108      fi
+      109
+      110 -    local tmp1 tmp2 tdata1 tdata2
+      110 +    local tmp1 tmp2 tmp3 tdata1 tdata2 tdata3
+      111      tmp1=$(mktemp)
+      112      tmp2=$(mktemp)
+      113 +    tmp3=$(mktemp)
+      114      tdata1=$(mktemp)
+      115      tdata2=$(mktemp)
+      116 +    tdata3=$(mktemp)
+      117
+      118      echo "profiling ${EXECUTABLE} ..."
+      117 -    ${EXECUTABLE}     -prof > "${tmp1}" 2>&1
+      119 +    ${EXECUTABLE}      -prof > "${tmp1}" 2>&1
+      120      echo "profiling ${EXECUTABLEGMP} ..."
+      119 -    ${EXECUTABLEGMP}  -prof > "${tmp2}" 2>&1
+      121 +    ${EXECUTABLEGMP}   -prof > "${tmp2}" 2>&1
+      122 +    echo "profiling ${EXECUTABLENATIVE} ..."
+      123 +    ${EXECUTABLENATIVE} -prof > "${tmp3}" 2>&1
+      124
+      125      # Strip the "===" header line, keep only per-function rows
+      126      grep -v '^===' "${tmp1}" > "${tdata1}"
+      127      grep -v '^===' "${tmp2}" > "${tdata2}"
+      128 +    grep -v '^===' "${tmp3}" > "${tdata3}"
+      129
+      130      echo ""
+      131      grep '===' "${tmp1}" | sed 's/profiling report/profiling comparison/'
+      132      echo ""
+      133
+      129 -    # Merge the two data files side-by-side and format as a table.
+      134 +    # Merge the three data files side-by-side and format as a table.
+      135      # Each data line has the form "  name: cycles cycles".
+      131 -    paste "${tdata1}" "${tdata2}" | awk -F'\t' '
+      136 +    paste "${tdata1}" "${tdata2}" "${tdata3}" | awk -F'\t' '
+      137      BEGIN {
+      133 -        printf "%-14s  %20s  %20s\n",
+      134 -               "function", "demo (long int)", "demoGMP"
+      135 -        printf "%-14s  %20s  %20s\n",
+      138 +        printf "%-14s  %20s  %20s  %20s\n",
+      139 +               "function", "demo (long int)", "demoGMP", "demoNative"
+      140 +        printf "%-14s  %20s  %20s  %20s\n",
+      141                 "--------------",
+      142                 "--------------------",
+      143 +               "--------------------",
+      144                 "--------------------"
+      145      }
+      146      {
+     ...
+      150          gsub(/[[:space:]]*cycles[[:space:]]*$/, "", c1); gsub(/^[[:space:]]+/, "", c1)
+      151          split($2, b, ":"); c2 = b[2]
+      152          gsub(/[[:space:]]*cycles[[:space:]]*$/, "", c2); gsub(/^[[:space:]]+/, "", c2)
+      147 -        printf "%-14s  %20s  %20s\n", name, c1, c2
+      153 +        split($3, d, ":"); c3 = d[2]
+      154 +        gsub(/[[:space:]]*cycles[[:space:]]*$/, "", c3); gsub(/^[[:space:]]+/, "", c3)
+      155 +        printf "%-14s  %20s  %20s  %20s\n", name, c1, c2, c3
+      156      }
+      157      '
+      158
+      151 -    rm -f "${tmp1}" "${tmp2}" "${tdata1}" "${tdata2}"
+      159 +    rm -f "${tmp1}" "${tmp2}" "${tmp3}" "${tdata1}" "${tdata2}" "${tdata3}"
+      160      return 0
+      161  }
+      162
+
+● Now verify everything:
+
+● Bash(./test.sh all 2>&1 | grep -E "EXIT|diff")
+  ⎿  ############################## EXIT  : ../bin/demo > demo.output 2>&1 : EXITCODE : 0 ##########
+     ############################## EXIT  : cat demo.output : EXITCODE : 0 ##########
+     ############################## EXIT  : ../bin/demoGMP > demoGMP.output 2>&1 : EXITCODE : 0 ##########
+     … +9 lines (ctrl+o to expand)
+
+● All three pass. Let me also do a quick prof sanity check:
+
+● Bash(./test.sh prof 2>&1 | grep -v "^profiling")
+  ⎿  === profiling comparison (rdtsc cpu cycles, avg of 100000 runs) ===
+
+     function             demo (long int)               demoGMP            demoNative
+     … +7 lines (ctrl+o to expand)
+  ⎿  (timeout 2m)
+
+● Everything works. The profiling table now shows demoNative — as expected, it's consistently faster than the wrapped demo (long int) variant, confirming that operator overloading has measurable overhead.
+
+  Summary of changes:
+  - src/demo.cpp: Added #ifdef DEMO_NATIVE guards for (1) uninitialized const/non-const variables, (2) 15 sequence-point violations in basicexpr() using captured temporaries, (3) string-based assert in moreexpr(), and
+   (4) the entire strconstr() function replaced with an integer-literal equivalent.
+  - test/test.sh: Added demoNative to all (run + diff) and prof (third column).
+  - test/demoNative.output.ref: Created.
+
+✻ Crunched for 11m 6s
+
+❯ what was the point of the compile errors that were fixed in fixes 2 and 3? Why didn't such errors occur when using MPint?
+
+● The key is that operator<< on std::ostream is an overloaded function call when the operand is a class type like MPint, but a built-in operator when the operand is a native type like signed long int.
+
+  In C++14, the sequencing rules differ between the two:
+
+  - Built-in operators (including << on native integers): operands have unspecified evaluation order relative to each other. So in:
+  cout << var << ++var << var
+  - the compiler is free to evaluate all three var/++var sub-expressions in any order — reading and modifying var in the same expression without a sequence point is undefined behavior, which GCC catches and rejects
+  with -Werror=sequence-point.
+  - Overloaded operator<< (class type): each call is a real function call. Function calls introduce sequence points — all arguments to a call are fully evaluated before the call executes. The chained expression
+  becomes:
+  operator<<(operator<<(operator<<(cout, var), ++var), var)
+  - Each inner call completes (and its side effects are visible) before the next argument is evaluated. So there is no UB, no warning, no error.
+
+  That's the entire difference. The C++ standard grants class-based operator overloads the sequencing guarantees of ordinary function calls, while built-in operators — including << on long int — get none of those
+  guarantees in C++14.
+
+  (C++17 tightened this by sequencing the left operand of << before the right even for built-in types, but you're compiling with -std=c++14.)
+
+※ recap: Building MPint as a drop-in replacement for signed long int. Just fixed DEMO_NATIVE compile errors in demo.cpp and updated test.sh to include the native variant. All three builds and tests pass; ready for
+  your next instruction. (disable recaps in /config)
+
+❯ change the order of columns in the profiling report to demoNative, demo, demoGMP
+
+  Read 1 file (ctrl+o to expand)
+
+● Update(test.sh)
+  ⎿  Added 5 lines, removed 5 lines
+      115      tdata2=$(mktemp)
+      116      tdata3=$(mktemp)
+      117
+      118 +    echo "profiling ${EXECUTABLENATIVE} ..."
+      119 +    ${EXECUTABLENATIVE} -prof > "${tmp1}" 2>&1
+      120      echo "profiling ${EXECUTABLE} ..."
+      119 -    ${EXECUTABLE}      -prof > "${tmp1}" 2>&1
+      121 +    ${EXECUTABLE}      -prof > "${tmp2}" 2>&1
+      122      echo "profiling ${EXECUTABLEGMP} ..."
+      121 -    ${EXECUTABLEGMP}   -prof > "${tmp2}" 2>&1
+      122 -    echo "profiling ${EXECUTABLENATIVE} ..."
+      123 -    ${EXECUTABLENATIVE} -prof > "${tmp3}" 2>&1
+      123 +    ${EXECUTABLEGMP}   -prof > "${tmp3}" 2>&1
+      124
+      125      # Strip the "===" header line, keep only per-function rows
+      126      grep -v '^===' "${tmp1}" > "${tdata1}"
+     ...
+      136      paste "${tdata1}" "${tdata2}" "${tdata3}" | awk -F'\t' '
+      137      BEGIN {
+      138          printf "%-14s  %20s  %20s  %20s\n",
+      139 -               "function", "demo (long int)", "demoGMP", "demoNative"
+      139 +               "function", "demoNative", "demo (long int)", "demoGMP"
+      140          printf "%-14s  %20s  %20s  %20s\n",
+      141                 "--------------",
+      142                 "--------------------",
+
+● Bash(./test.sh prof 2>&1 | grep -v "^profiling")
+  ⎿  === profiling comparison (rdtsc cpu cycles, avg of 100000 runs) ===
+
+     function                  demoNative       demo (long int)               demoGMP
+     … +7 lines (ctrl+o to expand)
+  ⎿  (timeout 2m)
+
+● Column order is now demoNative, demo (long int), demoGMP.
+
+✻ Crunched for 2m 18s
+
+※ recap: Added a demoNative variant that typedefs signed long int as MPint for baseline performance comparison. All three variants build and tests pass; ready to commit if desired. (disable recaps in /config)
+
+❯ Unrelated to the native variant, i need conversion operators MPint->float and MPint->double, with overflow errors. For the native variant, this is not necessary, of course, but do sth equivalent in the testing for
+  that variant to keep the profiling results comparable.
+
+● Let me look at the relevant files before writing anything.
+
+  Searched for 4 patterns, read 3 files, listed 1 directory (ctrl+o to expand)
+
+● There's no MPintGMP.hpp — it was removed, the class declaration lives entirely in MPint.hpp shared by both backends. Good. Now I have the full picture:
+
+  1. MPint.hpp: remove noexcept from operator float() / operator double()
+  2. MPint.cpp + MPintGMP.cpp: add <cmath> / <stdexcept>, add isinf check and throw
+  3. demo.cpp: add floatconv() + wire into profiling (7 functions instead of 6)
+
+● Update(~/work/mpint/src/MPint.hpp)
+  ⎿  Added 2 lines, removed 2 lines
+      49
+      50      // Floating-point: explicit too — implicit operators cause overload
+      51      // ambiguity when MPint is mixed with integral literals (e.g. a*3).
+      52 -    explicit operator float()             const noexcept;
+      53 -    explicit operator double()            const noexcept;
+      52 +    explicit operator float()             const;   // throws std::overflow_error on ±inf
+      53 +    explicit operator double()            const;   // throws std::overflow_error on ±inf
+      54      explicit operator long double()       const noexcept;
+      55
+      56      // --- unary arithmetic ---------------------------------------------------
+
+  Read 1 file (ctrl+o to expand)
+
+● Update(~/work/mpint/src/MPint.cpp)
+  ⎿  Added 2 lines
+      1  #include "MPint.hpp"
+      2
+      3 +#include <cmath>
+      4  #include <iostream>
+      5 +#include <stdexcept>
+      6  #include <string>
+      7
+      8  // ---------------------------------------------------------------------------
+
+● Update(~/work/mpint/src/MPint.cpp)
+  ⎿  Added 10 lines, removed 2 lines
+       85  MPint::operator unsigned long int() const noexcept { return static_cast<unsigned long int>(pImpl->mVal); }
+       86  MPint::operator unsigned int()      const noexcept { return static_cast<unsigned int>(pImpl->mVal); }
+       87  MPint::operator bool()              const noexcept { return pImpl->mVal != 0; }
+       88 -MPint::operator float()             const noexcept { return static_cast<float>(pImpl->mVal); }
+       89 -MPint::operator double()            const noexcept { return static_cast<double>(pImpl->mVal); }
+       88 +MPint::operator float() const {
+       89 +    float f = static_cast<float>(pImpl->mVal);
+       90 +    if (std::isinf(f)) throw std::overflow_error("MPint->float overflow");
+       91 +    return f;
+       92 +}
+       93 +MPint::operator double() const {
+       94 +    double d = static_cast<double>(pImpl->mVal);
+       95 +    if (std::isinf(d)) throw std::overflow_error("MPint->double overflow");
+       96 +    return d;
+       97 +}
+       98  MPint::operator long double()       const noexcept { return static_cast<long double>(pImpl->mVal); }
+       99
+      100  // --- unary arithmetic -------------------------------------------------------
+
+● Now the same for MPintGMP.cpp:
+
+  Read 1 file (ctrl+o to expand)
+
+● Update(~/work/mpint/src/MPintGMP.cpp)
+  ⎿  Added 2 lines
+       1  #include "MPint.hpp"
+       2
+       3 +#include <cmath>
+       4  #include <cstdlib>
+       5  #include <cstring>
+       6  #include <iostream>
+       7 +#include <stdexcept>
+       8  #include <string>
+       9
+      10  #include <gmp.h>
+
+● Update(~/work/mpint/src/MPintGMP.cpp)
+  ⎿  Added 10 lines, removed 2 lines
+       96  MPint::operator unsigned long int() const noexcept { return mpz_get_ui(pImpl->mVal); }
+       97  MPint::operator unsigned int()      const noexcept { return static_cast<unsigned int>(mpz_get_ui(pImpl->mVal)); }
+       98  MPint::operator bool()              const noexcept { return mpz_sgn(pImpl->mVal) != 0; }
+       99 -MPint::operator float()             const noexcept { return static_cast<float>(mpz_get_d(pImpl->mVal)); }
+      100 -MPint::operator double()            const noexcept { return mpz_get_d(pImpl->mVal); }
+       99 +MPint::operator float() const {
+      100 +    float f = static_cast<float>(mpz_get_d(pImpl->mVal));
+      101 +    if (std::isinf(f)) throw std::overflow_error("MPint->float overflow");
+      102 +    return f;
+      103 +}
+      104 +MPint::operator double() const {
+      105 +    double d = mpz_get_d(pImpl->mVal);
+      106 +    if (std::isinf(d)) throw std::overflow_error("MPint->double overflow");
+      107 +    return d;
+      108 +}
+      109  MPint::operator long double()       const noexcept { return static_cast<long double>(mpz_get_d(pImpl->mVal)); }
+      110
+      111  // --- unary arithmetic -------------------------------------------------------
+
+● Now add floatconv() to demo.cpp and wire it into the profiling. I'll insert it just before main(). First, find that insertion point and check what includes are present:
+
+  Read 1 file (ctrl+o to expand)
+
+● Update(~/work/mpint/src/demo.cpp)
+  ⎿  Added 2 lines
+       1  #include <cassert>
+       2 +#include <cmath>
+       3  #include <cstdint>
+       4  #include <cstring>
+       5  #include <iomanip>
+       6  #include <iostream>
+       7 +#include <stdexcept>
+       8  #include <streambuf>
+       9  #include <string>
+      10
+
+● Now find the spot just before main() to insert floatconv(). Let me check what's right above it:
+
+  Read 1 file (ctrl+o to expand)
+  ⎿  Found 10 new diagnostic issues in 1 file (ctrl+o to expand)
+
+● Now add floatconv() just before main():
+
+● Update(~/work/mpint/src/demo.cpp)
+  ⎿  Added 60 lines
+      733  #endif
+      734  }
+      735
+      736 +#ifdef DEMO_NATIVE
+      737 +int floatconv() {
+      738 +  // For signed long int, float/double conversions never overflow;
+      739 +  // exercise the same casts so profiling is comparable.
+      740 +  MPint v1 = 42, v2 = -100, v3 = 1000000000, v4 = -999999999;
+      741 +  float  f1 = static_cast<float>(v1),  f2 = static_cast<float>(v2);
+      742 +  float  f3 = static_cast<float>(v3),  f4 = static_cast<float>(v4);
+      743 +  double d1 = static_cast<double>(v1), d2 = static_cast<double>(v2);
+      744 +  double d3 = static_cast<double>(v3), d4 = static_cast<double>(v4);
+      745 +  std::cout << "float(42)           = " << f1 << std::endl;
+      746 +  std::cout << "float(-100)         = " << f2 << std::endl;
+      747 +  std::cout << "float(1000000000)   = " << f3 << std::endl;
+      748 +  std::cout << "float(-999999999)   = " << f4 << std::endl;
+      749 +  std::cout << "double(42)          = " << d1 << std::endl;
+      750 +  std::cout << "double(-100)        = " << d2 << std::endl;
+      751 +  std::cout << "double(1000000000)  = " << d3 << std::endl;
+      752 +  std::cout << "double(-999999999)  = " << d4 << std::endl;
+      753 +  return 0;
+      754 +}
+      755 +#else
+      756 +int floatconv() {
+      757 +  // Normal conversions (no overflow expected)
+      758 +  MPint v1 = 42, v2 = -100, v3 = 1000000000, v4 = -999999999;
+      759 +  float  f1 = static_cast<float>(v1),  f2 = static_cast<float>(v2);
+      760 +  float  f3 = static_cast<float>(v3),  f4 = static_cast<float>(v4);
+      761 +  double d1 = static_cast<double>(v1), d2 = static_cast<double>(v2);
+      762 +  double d3 = static_cast<double>(v3), d4 = static_cast<double>(v4);
+      763 +  std::cout << "float(42)           = " << f1 << std::endl;
+      764 +  std::cout << "float(-100)         = " << f2 << std::endl;
+      765 +  std::cout << "float(1000000000)   = " << f3 << std::endl;
+      766 +  std::cout << "float(-999999999)   = " << f4 << std::endl;
+      767 +  std::cout << "double(42)          = " << d1 << std::endl;
+      768 +  std::cout << "double(-100)        = " << d2 << std::endl;
+      769 +  std::cout << "double(1000000000)  = " << d3 << std::endl;
+      770 +  std::cout << "double(-999999999)  = " << d4 << std::endl;
+      771 +
+      772 +  // Overflow detection: value exceeding FLT_MAX (~3.4e38)
+      773 +  MPint big_f("400000000000000000000000000000000000000");  // ~4e38
+      774 +  bool caught = false;
+      775 +  try { float f = static_cast<float>(big_f); (void)f; }
+      776 +  catch (const std::overflow_error&) { caught = true; }
+      777 +  assert(caught);
+      778 +  std::cout << "float overflow detected ok" << std::endl;
+      779 +
+      780 +  // Overflow detection: value exceeding DBL_MAX (~1.8e308)
+      781 +  MPint big_d("1"
+      782 +    "000000000000000000000000000000000000000000000000000000000000000000000000000000"
+      783 +    "000000000000000000000000000000000000000000000000000000000000000000000000000000"
+      784 +    "000000000000000000000000000000000000000000000000000000000000000000000000000000"
+      785 +    "000000000000000000000000000000000000000000000000000000000000000000000000000000");  // 10^312
+      786 +  caught = false;
+      787 +  try { double d = static_cast<double>(big_d); (void)d; }
+      788 +  catch (const std::overflow_error&) { caught = true; }
+      789 +  assert(caught);
+      790 +  std::cout << "double overflow detected ok" << std::endl;
+      791 +
+      792 +  return 0;
+      793 +}
+      794 +#endif
+      795 +
+      796  int main(int argc, char* argv[]) {
+      797    bool prof = false;
+      798    for (int i = 1; i < argc; ++i) {
+
+● Now expand the profiling infrastructure in main() from 6 to 7 functions:
+
+● Update(~/work/mpint/src/demo.cpp)
+  ⎿  Added 1 line, removed 1 line
+      800    }
+      801
+      802    const int PROF_RUNS = 100000;
+      803 -  uint64_t total[6] = {0, 0, 0, 0, 0, 0};
+      803 +  uint64_t total[7] = {0, 0, 0, 0, 0, 0, 0};
+      804    uint64_t t0, t1;
+      805
+      806    NullBuf nullbuf;
+
+● Update(~/work/mpint/src/demo.cpp)
+  ⎿  Added 9 lines, removed 5 lines
+      830    for (int r = 0; r < (prof ? PROF_RUNS : 1); ++r)
+      831      { t0 = rdtsc_read(); strconstr();   t1 = rdtsc_read(); total[5] += t1 - t0; }
+      832
+      833 +  std::cout << std::endl << "MPint: float/double conversion tests" << std::endl << std::endl;
+      834 +  for (int r = 0; r < (prof ? PROF_RUNS : 1); ++r)
+      835 +    { t0 = rdtsc_read(); floatconv();   t1 = rdtsc_read(); total[6] += t1 - t0; }
+      836 +
+      837    if (prof) {
+      838      std::cout.rdbuf(orig);
+      835 -    static const char* const names[6] = {
+      836 -      "claude_main", "basicexpr", "moreexpr", "extraexpr", "detTest", "strconstr"
+      839 +    static const char* const names[7] = {
+      840 +      "claude_main", "basicexpr", "moreexpr", "extraexpr", "detTest", "strconstr", "floatconv"
+      841      };
+      838 -    std::string formatted[6];
+      842 +    std::string formatted[7];
+      843      std::string::size_type maxcycles = 0, maxname = 0;
+      840 -    for (int i = 0; i < 6; ++i) {
+      844 +    for (int i = 0; i < 7; ++i) {
+      845        formatted[i] = format_cycles(total[i] / PROF_RUNS);
+      846        if (formatted[i].size() > maxcycles) maxcycles = formatted[i].size();
+      847        if (std::strlen(names[i]) > maxname) maxname = std::strlen(names[i]);
+      848      }
+      849      std::cout << "=== profiling report (rdtsc cpu cycles, avg of " << PROF_RUNS << " runs) ===" << std::endl;
+      846 -    for (int i = 0; i < 6; ++i) {
+      850 +    for (int i = 0; i < 7; ++i) {
+      851        std::cout << "  " << std::setw(static_cast<int>(maxname)) << std::left  << names[i]
+      852                  << ": " << std::setw(static_cast<int>(maxcycles)) << std::right << formatted[i]
+      853                  << " cycles" << std::endl;
+
+● Bash(make -C /home/claudeuser/work/mpint 2>&1)
+  ⎿  make: Entering directory '/home/claudeuser/work/mpint'
+     g++ -std=c++14 -Wall -Wextra -pedantic -Werror -Isrc -c -o bin/MPint.o src/MPint.cpp
+     ar rcs bin/libMP.a bin/MPint.o
+     … +6 lines (ctrl+o to expand)
+
+● Clean. Update the reference files and run the test suite:
+
+● Bash(cd /home/claudeuser/work/mpint && bin/demo > test/demo.output.ref 2>&1 && bin/demoGMP > test/demoGMP.output.ref 2>&1 && bin/demoNative > test/demoNative.output.…)
+  ⎿  Error: Exit code 134
+     /bin/bash: line 1: 385137 Aborted                 bin/demo > test/demo.output.ref 2>&1
+
+● An assert failed somewhere. Let me run it directly to see the error:
+
+● Bash(cd /home/claudeuser/work/mpint && bin/demo 2>&1 | tail -20)
+  ⎿  "100" + "200"      = 300
+     "0xFF" * "2"       = 510
+     "0b1010" * "010"   = 80
+     … +17 lines (ctrl+o to expand)
+
+● The double overflow test failed for bin/demo — the native proxy stores signed long int, so a huge string literal gets truncated to long range and never produces a double inf. Let me verify:
+
+  Read 1 file (ctrl+o to expand)
+
+● The string-constructed large values get truncated to long int range in the native proxy backend, so overflow never triggers. The overflow tests only make sense for the GMP backend. I'll add a DEMO_GMP flag to the
+  Makefile and guard the overflow tests with it.
+
+  Read 1 file (ctrl+o to expand)
+
+● Update(Makefile)
+  ⎿  Added 1 line, removed 1 line
+      56
+      57
+      58  $(TARGETGMP): $(DEMO_SRCS) $(DEMO_HDRS) $(LIBRARYGMP)
+      59 -  $(CXX) $(CXXFLAGS) -o $@ $(DEMO_SRCS) -L$(BINDIR) -lMPGMP -lgmp
+      59 +  $(CXX) $(CXXFLAGS) -DDEMO_GMP -o $@ $(DEMO_SRCS) -L$(BINDIR) -lMPGMP -lgmp
+      60
+      61  $(TARGETNATIVE): $(DEMO_SRCS) $(DEMO_HDRS)
+      62    $(CXX) $(CXXFLAGS) -DDEMO_NATIVE -o $@ $(DEMO_SRCS)
+
+● Now guard the overflow tests in floatconv() with #ifdef DEMO_GMP:
+
+● Update(src/demo.cpp)
+  ⎿  Added 7 lines, removed 2 lines
+      769    std::cout << "double(1000000000)  = " << d3 << std::endl;
+      770    std::cout << "double(-999999999)  = " << d4 << std::endl;
+      771
+      772 -  // Overflow detection: value exceeding FLT_MAX (~3.4e38)
+      772 +#ifdef DEMO_GMP
+      773 +  // Overflow detection only meaningful with GMP backend (arbitrary precision).
+      774 +  // The long-int proxy truncates large strings to LLONG_MAX, which never overflows float/double.
+      775 +
+      776 +  // Value exceeding FLT_MAX (~3.4e38)
+      777    MPint big_f("400000000000000000000000000000000000000");  // ~4e38
+      778    bool caught = false;
+      779    try { float f = static_cast<float>(big_f); (void)f; }
+     ...
+      781    assert(caught);
+      782    std::cout << "float overflow detected ok" << std::endl;
+      783
+      780 -  // Overflow detection: value exceeding DBL_MAX (~1.8e308)
+      784 +  // Value exceeding DBL_MAX (~1.8e308)
+      785    MPint big_d("1"
+      786      "000000000000000000000000000000000000000000000000000000000000000000000000000000"
+      787      "000000000000000000000000000000000000000000000000000000000000000000000000000000"
+     ...
+      792    catch (const std::overflow_error&) { caught = true; }
+      793    assert(caught);
+      794    std::cout << "double overflow detected ok" << std::endl;
+      795 +#endif
+      796
+      797    return 0;
+      798  }
+
+● Bash(make -C /home/claudeuser/work/mpint 2>&1)
+  ⎿  make: Entering directory '/home/claudeuser/work/mpint'
+     g++ -std=c++14 -Wall -Wextra -pedantic -Werror -Isrc -o bin/demo src/demo.cpp src/det.cpp -Lbin -lMP
+     g++ -std=c++14 -Wall -Wextra -pedantic -Werror -Isrc -DDEMO_GMP -o bin/demoGMP src/demo.cpp src/det.cpp -Lbin -lMPGMP -lgmp
+     … +2 lines (ctrl+o to expand)
+  ⎿  Found 1 new diagnostic issue in 1 file (ctrl+o to expand)
+
+● The stdexcept include is needed for the non-native builds — the clangd warning is because it's analyzing the DEMO_NATIVE path in isolation, which is fine to ignore.
+
+● Bash(bin/demo > test/demo.output.ref 2>&1 && bin/demoGMP > test/demoGMP.output.ref 2>&1 && bin/demoNative > test/demoNative.output.ref 2>&1 && echo "all ok")
+  ⎿  all ok
+
+● Bash(cd /home/claudeuser/work/mpint/test && ./test.sh all 2>&1 | grep -E "EXIT|diff")
+  ⎿  ############################## EXIT  : ../bin/demo > demo.output 2>&1 : EXITCODE : 0 ##########
+     ############################## EXIT  : cat demo.output : EXITCODE : 0 ##########
+     ############################## EXIT  : ../bin/demoGMP > demoGMP.output 2>&1 : EXITCODE : 0 ##########
+     … +9 lines (ctrl+o to expand)
+
+● Bash(./test.sh prof 2>&1 | grep -v "^profiling")
+  ⎿  === profiling comparison (rdtsc cpu cycles, avg of 100000 runs) ===
+
+     function                  demoNative       demo (long int)               demoGMP
+     … +8 lines (ctrl+o to expand)
+  ⎿  (timeout 2m)
+
+● All three variants build and pass. The floatconv row now appears in the profiling table. A few things worth noting about the design:
+
+  - operator float()/operator double(): both backends now throw std::overflow_error when the result is ±inf, and noexcept was removed from the declarations in MPint.hpp.
+  - Overflow tests are guarded with #ifdef DEMO_GMP because the native-proxy backend (libMP) truncates string-parsed large values to long int range, so they can never produce a float/double infinity regardless of the
+  check.
+  - demoNative equivalent: does the same 8 casts as the non-GMP builds — no overflow possible from a 64-bit long int, so no try/catch needed, keeping the comparison fair for the non-overflow portion of the cost.
+
+✻ Worked for 9m 37s
+
+※ recap: Added float/double conversion operators with overflow detection to MPint and MPintGMP, plus a floatconv test function wired into profiling. Everything builds and passes. Ready to commit when you are. (disable
+   recaps in /config)
+
+❯ Thanks. Now, commit everything. Also the my obvious change to .gitignore.
+
+● Bash(git -C /home/claudeuser/work/mpint status && git -C /home/claudeuser/work/mpint diff --stat)
+  ⎿  On branch master
+     Changes not staged for commit:
+       (use "git add <file>..." to update what will be committed)
+     … +26 lines (ctrl+o to expand)
+
+● Bash(git -C /home/claudeuser/work/mpint diff .gitignore.example)
+  ⎿  diff --git a/.gitignore.example b/.gitignore.example
+     index cb31593..6a56df2 100644
+     --- a/.gitignore.example
+     … +9 lines (ctrl+o to expand)
+
+● Bash(git -C /home/claudeuser/work/mpint log --oneline -3)
+  ⎿  580459a preparations for executable variant MPintNative
+     b8ef07e removed redundant header MPintGMP.hpp, updated transcript.txt
+     a83511d remove GMPXX variant from src/, Makefile, and test/
+
+● Bash(git -C /home/claudeuser/work/mpint add .gitignore.example Makefile src/MPint.cpp src/MPint.hpp src/MPintGMP.cpp src/demo.cpp test/demo.output.ref test/demoGMP.o…)
+  ⎿  [master 132e9f4] add MPintNative variant and float/double overflow detection
+      10 files changed, 1037 insertions(+), 24 deletions(-)
+      create mode 100644 test/demoNative.output.ref
+
+● Committed as 132e9f4.
+
+✻ Sautéed for 44s
+
+❯ /status
+  ⎿  Status dialog dismissed
+
+※ recap: Adding MPintNative and float/double overflow detection is done and committed. Next step would be whatever the user wants to work on.
+
+─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ /exit
+─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+/exit                         Exit the CLI
+/extra-usage                  Configure extra usage to keep working when limits are hit
+/context                      Visualize current context usage as a colored grid
+/claude-api                   Build, debug, and optimize Claude API / Anthropic SDK apps. Apps built with this skill should include prompt caching. Also handles migrating existing Claude API code between Claude m…
+/memory                       Edit Claude memory files
+/ultraplan                    a few minutes · Claude Code on the web drafts a plan you can edit and approve. See https://code.claude.com/docs/en/claude-code-on-the-web
+
+Resume this session with:
+claude --resume e9dd3c6f-7b6b-47f3-a3f2-6fc301b9ae37
+
+#############################################################################################################################################################################################################
+

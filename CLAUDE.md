@@ -33,22 +33,17 @@ Test commands: simple stdout/stderr based regression test: cd test; ./test.sh al
 Profiling/Benchmarking: cd test; ./test.sh prof
 
 ## What I've done in the meantime
-In the Makefile a new executable variant MPintNative has been
-implemented. It introduces a preprocessor flag DEMO_NATIVE,
-which, when turned on, produces a demoNative executable which
-does not utilize the MPint header/library at all.
-Instead it typedefs native type signed long int to the types
-MPint/Bint.
-This should serve for comparison of native integer performance
-versus native integer wrapped with operator overloading.
-
+I've introduced redu.cpp and redu.hpp to the sources for testing/profiling.
+The code provides four algorithms for LLL reduction of integral gram matrices
+(integral and positive definite) and for computing shortest lattice vectors
+if those gram matrices are considered to define an integral lattice.
+That should not go into the MPint* libs, only into teh various demo*
+executables. So far, they are only compiled, but not called in demo.
 
 ## What to do for you right now
-There are various minor compile errors left of course.
-One category is initialization/const issues with the native variant.
-The other is construction of integers from strings. For the latter just
-replace the respective test functions with their equivalents in ordinary
-native int literals. Use preprocessor distinctions like near the start of
-demo.cpp to implement this and, if necessary, to resolve the former category
-i have mentioned.
+There are various compile errors left of course.
+Resolve them, prefereably in the MPint implementation, not by workarounds
+in redu itself. Please do not integrate that with demo yet. It should just
+compile so far.
+
 
