@@ -1,8 +1,6 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <math.h>
+#include <cmath>
+#include <cstdlib>
 #include <iostream>
-using namespace std;
 
 #include "redu.hpp"
 
@@ -11,17 +9,14 @@ using namespace std;
 
 void make_Long_vector(Long ** vec, int dim) {
     if((*vec = new Long[dim]) == 0) {
-        fprintf(stderr,
-                "data_utils.c:make_Long_vector:not enough space (dim = %d)\n",
-                dim);
+        std::cerr << "data_utils.c:make_Long_vector:not enough space (dim = " << dim << ")\n";
         exit(1);
     }
 }
 
 void destroy_Long_vector(Long ** vec) {
     if(*vec == (Long *)NULL) {
-        fprintf(stderr,
-                "data_utils:destroy_Long_vector:pointer is already NULL\n");
+        std::cerr << "data_utils:destroy_Long_vector:pointer is already NULL\n";
         exit(2);
     }
     delete[](*vec);
@@ -32,9 +27,7 @@ void make_Long_rectmatrix(Long *** mat, int rows, int cols) {
     int i;
 
     if((*mat = (Long **)malloc(rows * sizeof(Long *))) == 0) {
-        fprintf(stderr,
-                "data_utils.c:make_Long_rectmatrix:not enough space (rows = %d)\n",
-                rows);
+        std::cerr << "data_utils.c:make_Long_rectmatrix:not enough space (rows = " << rows << ")\n";
         exit(1);
     }
     for(i = 0; i < rows; i++)
@@ -45,8 +38,7 @@ void destroy_Long_matrix(Long *** mat, int rows) {
     int i;
 
     if(*mat == (Long **)NULL) {
-        fprintf(stderr,
-                "data_utils:destroy_Long_matrix:pointer is already NULL\n");
+        std::cerr << "data_utils:destroy_Long_matrix:pointer is already NULL\n";
         exit(2);
     }
     for(i = 0; i < rows; i++)
@@ -61,17 +53,14 @@ void make_Long_squarematrix(Long *** mat, int n) {
 
 void make_double_vector(double ** vec, int dim) {
     if((*vec = (double *)malloc(dim * sizeof(double))) == 0) {
-        fprintf(stderr,
-                "data_utils.c:make_double_vector:not enough space (dim = %d)\n",
-                dim);
+        std::cerr << "data_utils.c:make_double_vector:not enough space (dim = " << dim << ")\n";
         exit(1);
     }
 }
 
 void destroy_double_vector(double ** vec) {
     if(*vec == (double *)NULL) {
-        fprintf(stderr,
-                "data_utils:destroy_double_vector:pointer is already NULL\n");
+        std::cerr << "data_utils:destroy_double_vector:pointer is already NULL\n";
         exit(2);
     }
     free(*vec);
@@ -84,7 +73,7 @@ void Long_rowadd(int from, int to, Long lam, Long ** mat, int dim) {
     int i;
 
     if(from == to)
-        fprintf(stderr, "\nla_utils:Long_rowadd:warning:not unimodular\n");
+        std::cerr << "\nla_utils:Long_rowadd:warning:not unimodular\n";
     if(lam != 0)
         for(i = 0; i < dim; i++)
             mat[to][i] += lam * mat[from][i];
@@ -96,7 +85,7 @@ void double_rowadd(int from, int to, double lam, double ** mat, int dim) {
     int i;
 
     if(from == to)
-        fprintf(stderr, "\nla_utils:double_rowadd:warning:not unimodular\n");
+        std::cerr << "\nla_utils:double_rowadd:warning:not unimodular\n";
     if(lam != 0.0)
         for(i = 0; i < dim; i++)
             mat[to][i] += lam * mat[from][i];
@@ -108,7 +97,7 @@ void Long_coladd(int from, int to, Long lam, Long ** mat, int dim) {
     int i;
 
     if(from == to)
-        fprintf(stderr, "\nla_utils:Long_coladd:warning:not unimodular\n");
+        std::cerr << "\nla_utils:Long_coladd:warning:not unimodular\n";
     if(lam != 0)
         for(i = 0; i < dim; i++)
             mat[i][to] += lam * mat[i][from];
@@ -385,7 +374,7 @@ int triple_l(Long ** gr, Long ** ba, Long ** invba, double * ge, double ** mo, i
     Long     inter;
 
     if(dim <= 1) {
-        fprintf(stderr, "\nredu_utils.c:triple_l:dimension smaller than two\n");
+        std::cerr << "\nredu_utils.c:triple_l:dimension smaller than two\n";
         exit(3);
     }
     make_double_vector(&a, dim);
@@ -398,7 +387,7 @@ int triple_l(Long ** gr, Long ** ba, Long ** invba, double * ge, double ** mo, i
             kmax = k;
             inc_gram_schmidt(gr, ge, mo, a, k);
             if(fabs(ge[k]) < EPS) {
-                fprintf(stderr, "\nredu_utils.c:triple_l:grammatrix not pos.def.\n");
+                std::cerr << "\nredu_utils.c:triple_l:grammatrix not pos.def.\n";
 /*
                 exit(4);
 */
@@ -454,7 +443,7 @@ int deep_triple_l(Long ** gr, Long ** ba, Long ** invba, double * ge, double ** 
     Long     help;
 
     if(dim <= 1) {
-        fprintf(stderr, "\nredu_utils.c:deep_triple_l:dimension smaller than two\n");
+        std::cerr << "\nredu_utils.c:deep_triple_l:dimension smaller than two\n";
         exit(3);
     }
     make_double_vector(&a, dim);
@@ -464,7 +453,7 @@ int deep_triple_l(Long ** gr, Long ** ba, Long ** invba, double * ge, double ** 
     do {
         inc_gram_schmidt(gr, ge, mo, a, k);
         if(fabs(ge[k]) < EPS) {
-            fprintf(stderr, "\nredu_utils.c:deep_triple_l:grammatrix not pos.def.\n");
+            std::cerr << "\nredu_utils.c:deep_triple_l:grammatrix not pos.def.\n";
             exit(4);
         }
         if(k == 0)
