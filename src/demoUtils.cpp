@@ -10,6 +10,7 @@ typedef signed long int MPint;
 #endif
 
 #include "demoUtils.hpp"
+#include "det.hpp"
 
 
 // ---------------------------------------------------------------------------
@@ -60,26 +61,52 @@ PosDefState::PosDefState(const unsigned int dim,
 		const unsigned int sparsity) :
     SQState(new SQState::SQStateImpl{dim, new MPint[dim * dim], new MPint * [dim],
               new long double * [dim], new unsigned int[dim]}) {
-	for (unsigned int ridx = 0; ridx < pImpl->mDim; ridx++) {
+	for (unsigned int ridx = 0; ridx < dim; ridx++) {
 		pImpl->mMatrix[ridx] = new MPint[dim];
 		pImpl->mDmatrix[ridx] = new long double[dim];
 	}
-	for (unsigned int flatidx = 0; flatidx < dim * dim; flatidx++) {
-		unsigned long int randint = lrand48();
-		randint %= 100;
-		randint += 1;
-		MPint entry = 0;
-		if (randint > sparsity) {
-			unsigned long int randnumHigh = mrand48();
-			randnumHigh <<= 32;
-			unsigned long int randnumLow = mrand48();
-			unsigned long int randnum = (randnumHigh | randnumLow);
-			int sgn = (mrand48() < 0) ? -1 : 1;
-			entry = sgn * (randnum % entryMagnitude);
+
+	const unsigned int cols = 3 * dim;
+	MPint* Lflat = new MPint[dim * cols];
+	MPint** L = new MPint*[dim];
+	for (unsigned int ridx = 0; ridx < dim; ridx++)
+		L[ridx] = Lflat + ridx * cols;
+
+	for (;;) {
+		for (unsigned int flatidx = 0; flatidx < dim * cols; flatidx++) {
+			unsigned long int randint = lrand48();
+			randint %= 100;
+			randint += 1;
+			MPint entry = 0;
+			if (randint > sparsity) {
+				unsigned long int randnumHigh = mrand48();
+				randnumHigh <<= 32;
+				unsigned long int randnumLow = mrand48();
+				unsigned long int randnum = (randnumHigh | randnumLow);
+				int sgn = (mrand48() < 0) ? -1 : 1;
+				entry = sgn * (randnum % entryMagnitude);
+			}
+			Lflat[flatidx] = entry;
 		}
-		pImpl->mFlatMatrix[flatidx] = entry;
+
+		for (unsigned int ridx = 0; ridx < dim; ridx++) {
+			for (unsigned int cidx = 0; cidx < dim; cidx++) {
+				MPint sum = 0;
+				for (unsigned int k = 0; k < cols; k++)
+					sum += L[ridx][k] * L[cidx][k];
+				pImpl->mFlatMatrix[ridx * dim + cidx] = sum;
+			}
+		}
+
+		reinitializeCurrentState();
+		if (!isSingular(dim, pImpl->mMatrix, pImpl->mPerm)) {
+			reinitializeCurrentState();
+			break;
+		}
 	}
-	this->reinitializeCurrentState();
+
+	delete[] L;
+	delete[] Lflat;
 }
 
 SQState::~SQState() {

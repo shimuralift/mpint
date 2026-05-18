@@ -151,6 +151,12 @@ static void computeDetGaussFloat(const unsigned int dim, long double **matrix,
   return;
 }
 
+bool isSingular(const unsigned int dim, Bint** matrix, unsigned int* perm) {
+  Bint det = 0;
+  computeDetGaussInt(dim, matrix, perm, &det);
+  return det == 0;
+}
+
 static void printDeterminants(const Bint detDodgson, const Bint detGaussInt,
                               const long double detGaussFloat) {
   std::cout << "Dodgson:    " << detDodgson << std::endl;
