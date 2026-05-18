@@ -38,12 +38,20 @@ The code provides four algorithms for LLL reduction of integral gram matrices
 (integral and positive definite) and for computing shortest lattice vectors
 if those gram matrices are considered to define an integral lattice.
 That should not go into the MPint* libs, only into teh various demo*
-executables. So far, they are only compiled, but not called in demo.
+executables. So far, they are not called in demo.
+SQState and, as a subclass, PosDefState have been factored out into
+demoutils. They should provide a set of square resp. positive
+definite random matrices for use in various matrix algorithms, which
+act destructively on them, e.g. gaussian elimination. Once instantiated,
+these matrices can be restored.
+PosDefState is intended to have the same public interface as SQState,
+these classes should only differ in their ctor implementations.
+They follow the pimpl idiom, so the header does not reveal the
+implementation details. Unforunately, the protected pImpl aggregate
+in superclass SQState is not recognized by the compiler in the
+PosDefState ctor.
+
 
 ## What to do for you right now
-There are various compile errors left of course.
-Resolve them, prefereably in the MPint implementation, not by workarounds
-in redu itself. Please do not integrate that with demo yet. It should just
-compile so far.
-
-
+Why is pImpl from Superclass SQState not recognized in the PosDefState
+ctor, and how could it be fixed?
