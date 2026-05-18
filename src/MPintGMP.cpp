@@ -14,15 +14,15 @@
 // the operator bodies below are unchanged in structure from the long-int
 // variant — only the primitive operations differ.
 // ---------------------------------------------------------------------------
-struct MPint::Impl {
+struct MPint::MPintImpl {
     mpz_t mVal;
 
-    Impl()                             { mpz_init(mVal); }
-    explicit Impl(signed long int   v) { mpz_init_set_si(mVal, v); }
-    explicit Impl(unsigned long int v) { mpz_init_set_ui(mVal, v); }
-    Impl(const Impl& o)                { mpz_init_set(mVal, o.mVal); }
-    ~Impl()                            { mpz_clear(mVal); }
-    Impl& operator=(const Impl&) = delete;
+    MPintImpl()                             { mpz_init(mVal); }
+    explicit MPintImpl(signed long int   v) { mpz_init_set_si(mVal, v); }
+    explicit MPintImpl(unsigned long int v) { mpz_init_set_ui(mVal, v); }
+    MPintImpl(const MPintImpl& o)                { mpz_init_set(mVal, o.mVal); }
+    ~MPintImpl()                            { mpz_clear(mVal); }
+    MPintImpl& operator=(const MPintImpl&) = delete;
 };
 
 // --- string parsing helper --------------------------------------------------
@@ -58,21 +58,21 @@ static void mpz_set_mpint_str(mpz_t dest, const char* s) {
 
 // --- construction -----------------------------------------------------------
 
-MPint::MPint()                    noexcept : pImpl(new Impl()) {}
-MPint::MPint(signed long int   v) noexcept : pImpl(new Impl(v)) {}
-MPint::MPint(signed int        v) noexcept : pImpl(new Impl(static_cast<signed long int>(v))) {}
-MPint::MPint(signed short      v) noexcept : pImpl(new Impl(static_cast<signed long int>(v))) {}
-MPint::MPint(signed char       v) noexcept : pImpl(new Impl(static_cast<signed long int>(v))) {}
-MPint::MPint(unsigned long int v) noexcept : pImpl(new Impl(static_cast<signed long int>(v))) {}
-MPint::MPint(unsigned int      v) noexcept : pImpl(new Impl(static_cast<signed long int>(v))) {}
-MPint::MPint(unsigned short    v) noexcept : pImpl(new Impl(static_cast<signed long int>(v))) {}
-MPint::MPint(unsigned char     v) noexcept : pImpl(new Impl(static_cast<signed long int>(v))) {}
-MPint::MPint(long long         v) noexcept : pImpl(new Impl(static_cast<signed long int>(v))) {}
+MPint::MPint()                    noexcept : pImpl(new MPintImpl()) {}
+MPint::MPint(signed long int   v) noexcept : pImpl(new MPintImpl(v)) {}
+MPint::MPint(signed int        v) noexcept : pImpl(new MPintImpl(static_cast<signed long int>(v))) {}
+MPint::MPint(signed short      v) noexcept : pImpl(new MPintImpl(static_cast<signed long int>(v))) {}
+MPint::MPint(signed char       v) noexcept : pImpl(new MPintImpl(static_cast<signed long int>(v))) {}
+MPint::MPint(unsigned long int v) noexcept : pImpl(new MPintImpl(static_cast<signed long int>(v))) {}
+MPint::MPint(unsigned int      v) noexcept : pImpl(new MPintImpl(static_cast<signed long int>(v))) {}
+MPint::MPint(unsigned short    v) noexcept : pImpl(new MPintImpl(static_cast<signed long int>(v))) {}
+MPint::MPint(unsigned char     v) noexcept : pImpl(new MPintImpl(static_cast<signed long int>(v))) {}
+MPint::MPint(long long         v) noexcept : pImpl(new MPintImpl(static_cast<signed long int>(v))) {}
 
-MPint::MPint(const char*        s) noexcept : pImpl(new Impl()) { mpz_set_mpint_str(pImpl->mVal, s); }
-MPint::MPint(const std::string& s) noexcept : pImpl(new Impl()) { mpz_set_mpint_str(pImpl->mVal, s.c_str()); }
+MPint::MPint(const char*        s) noexcept : pImpl(new MPintImpl()) { mpz_set_mpint_str(pImpl->mVal, s); }
+MPint::MPint(const std::string& s) noexcept : pImpl(new MPintImpl()) { mpz_set_mpint_str(pImpl->mVal, s.c_str()); }
 
-MPint::MPint(const MPint& other)  noexcept : pImpl(new Impl(*other.pImpl)) {}
+MPint::MPint(const MPint& other)  noexcept : pImpl(new MPintImpl(*other.pImpl)) {}
 MPint::MPint(MPint&&      other)  noexcept : pImpl(other.pImpl) { other.pImpl = nullptr; }
 
 MPint& MPint::operator=(const MPint& other) noexcept {

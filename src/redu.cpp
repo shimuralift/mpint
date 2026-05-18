@@ -2,9 +2,11 @@
 #include <cstdlib>
 #include <iostream>
 
-#include "redu.hpp"
+#include "demoUtils.hpp"
 
 #define EPS 0.0000001
+
+typedef MPint Long;
 
 
 void make_Long_vector(Long ** vec, int dim) {
@@ -510,8 +512,7 @@ int shortvecs_count(double * ge, double ** mo, Long len, int dim) {
     return anzahl ;
 }
 
-void shortvecs(double * ge, double ** mo, Long len, Long ** vecs, int dim)
-{
+void shortvecs(double * ge, double ** mo, Long len, Long ** vecs, int dim) {
     Long * vec;
     int    con    = 0;
     int    anzahl = 1;
@@ -521,4 +522,53 @@ void shortvecs(double * ge, double ** mo, Long len, Long ** vecs, int dim)
     shrt(dim - 1, 0.0, ge, mo, dim, vec, con, &anzahl, vecs, len);
     destroy_Long_vector(&vec);
     return;
+}
+
+void reduTest() {
+	  const int runsPerCase = 2;
+	  const int dimLow = 2;
+	  const int dimHigh = 8;
+	  const int dimStep = 1;
+	  const int sparsityLow = 70;
+	  const int sparsityHigh = 100;
+	  const int sparsityStep = 10;
+	  const unsigned long int entryMagnitude = 300;
+	  const long int rand48Seed = 4713;
+
+	  const int dimRangeSize = getRangeSize(dimLow, dimHigh, dimStep);
+	  const int sparsityRangeSize =
+	      getRangeSize(sparsityLow, sparsityHigh, sparsityStep);
+	  const int cases = dimRangeSize * sparsityRangeSize;
+
+	  int run = 0;
+
+	  srand48(rand48Seed);
+	  printProgressHeader(runsPerCase, dimRangeSize, sparsityRangeSize);
+	  for (unsigned int dim = dimLow; dim < dimHigh; dim += dimStep) {
+		  for (int sparsity = sparsityLow; sparsity < sparsityHigh; sparsity += sparsityStep) {
+			  for (int runIdx = 0; runIdx < runsPerCase; runIdx++) {
+				  SQState *sqState = new SQState(dim, entryMagnitude, sparsity);
+				  printProgress(++run, runsPerCase * cases, dim, sparsity);
+
+				  sqState->printMatrix();
+				  ///triple_l(matrix, Long ** ba, Long ** invba, double * ge, double ** mo, dim);
+
+				  sqState->reinitializeCurrentState();
+				  sqState->printMatrix();
+				  //deep_triple_l(matrix, Long ** ba, Long ** invba, double * ge, double ** mo, dim);
+
+				  sqState->reinitializeCurrentState();
+				  sqState->printMatrix();
+				  //shortvecs_count(double * ge, double ** mo, Long len, dim);
+
+				  sqState->reinitializeCurrentState();
+				  sqState->printMatrix();
+				  //shortvecs(double * ge, double ** mo, Long len, Long ** vecs, dim);
+
+				  //printDeterminants(detDodgson, detGaussInt, detGaussFloat);
+				  delete sqState;
+			  } /* for(int runIdx = 0; runIdx < runsPerCase; runIdx++) {... */
+		  } /* for(int sparsity = sparsityLow;...) {... */
+	  } /* for(unsigned int dim = dimLow;...) {... */
+	  return;
 }

@@ -9,6 +9,7 @@
 #include <string>
 
 #include "det.hpp"
+#include "redu.hpp"
 
 #ifdef DEMO_NATIVE
 typedef signed long int MPint;
@@ -617,6 +618,7 @@ int strconstr() {
   return 0;
 }
 #else
+
 int strconstr() {
   std::cout << "--- string constructor: decimal ---" << std::endl;
   MPint sd0("0");

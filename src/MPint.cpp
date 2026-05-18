@@ -9,8 +9,11 @@
 // The only implementation detail: what an MPint actually stores.
 // To switch to GMP, replace this struct and adjust the operator bodies below.
 // Nothing outside this file needs to change.
+// struct MPint::MPintImpl is an 'aggregate', i.e. it does not have a
+// user defined ctor. On construction with 'new', an ordered list of
+// member initializations may be provided, e.g. 'new MPintImpl{0L}', see below.
 // ---------------------------------------------------------------------------
-struct MPint::Impl {
+struct MPint::MPintImpl {
     signed long int mVal;
 };
 
@@ -47,21 +50,21 @@ static signed long int parse_str(const char* s) {
 
 // --- construction -----------------------------------------------------------
 
-MPint::MPint()                    noexcept : pImpl(new Impl{0L}) {}
-MPint::MPint(signed long int   v) noexcept : pImpl(new Impl{v}) {}
-MPint::MPint(signed int        v) noexcept : pImpl(new Impl{v}) {}
-MPint::MPint(signed short      v) noexcept : pImpl(new Impl{v}) {}
-MPint::MPint(signed char       v) noexcept : pImpl(new Impl{v}) {}
-MPint::MPint(unsigned long int v) noexcept : pImpl(new Impl{static_cast<signed long int>(v)}) {}
-MPint::MPint(unsigned int      v) noexcept : pImpl(new Impl{static_cast<signed long int>(v)}) {}
-MPint::MPint(unsigned short    v) noexcept : pImpl(new Impl{static_cast<signed long int>(v)}) {}
-MPint::MPint(unsigned char     v) noexcept : pImpl(new Impl{static_cast<signed long int>(v)}) {}
-MPint::MPint(long long         v) noexcept : pImpl(new Impl{static_cast<signed long int>(v)}) {}
+MPint::MPint()                    noexcept : pImpl(new MPintImpl{0L}) {}
+MPint::MPint(signed long int   v) noexcept : pImpl(new MPintImpl{v}) {}
+MPint::MPint(signed int        v) noexcept : pImpl(new MPintImpl{v}) {}
+MPint::MPint(signed short      v) noexcept : pImpl(new MPintImpl{v}) {}
+MPint::MPint(signed char       v) noexcept : pImpl(new MPintImpl{v}) {}
+MPint::MPint(unsigned long int v) noexcept : pImpl(new MPintImpl{static_cast<signed long int>(v)}) {}
+MPint::MPint(unsigned int      v) noexcept : pImpl(new MPintImpl{static_cast<signed long int>(v)}) {}
+MPint::MPint(unsigned short    v) noexcept : pImpl(new MPintImpl{static_cast<signed long int>(v)}) {}
+MPint::MPint(unsigned char     v) noexcept : pImpl(new MPintImpl{static_cast<signed long int>(v)}) {}
+MPint::MPint(long long         v) noexcept : pImpl(new MPintImpl{static_cast<signed long int>(v)}) {}
 
-MPint::MPint(const char*        s) noexcept : pImpl(new Impl{parse_str(s)}) {}
-MPint::MPint(const std::string& s) noexcept : pImpl(new Impl{parse_str(s.c_str())}) {}
+MPint::MPint(const char*        s) noexcept : pImpl(new MPintImpl{parse_str(s)}) {}
+MPint::MPint(const std::string& s) noexcept : pImpl(new MPintImpl{parse_str(s.c_str())}) {}
 
-MPint::MPint(const MPint& other)  noexcept : pImpl(new Impl{other.pImpl->mVal}) {}
+MPint::MPint(const MPint& other)  noexcept : pImpl(new MPintImpl{other.pImpl->mVal}) {}
 MPint::MPint(MPint&&      other)  noexcept : pImpl(other.pImpl) { other.pImpl = nullptr; }
 
 MPint& MPint::operator=(const MPint& other) noexcept {

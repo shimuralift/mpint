@@ -120,6 +120,6 @@ public:
     friend std::istream& operator>>(std::istream& is,       MPint& v);
 
 private:
-    struct Impl;   // defined in MPint.cpp — no internals visible in this header
-    Impl*  pImpl;
+    struct MPintImpl;   // defined in MPint.cpp — no internals visible in this header
+    MPintImpl*  pImpl;
 };

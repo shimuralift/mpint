@@ -10,11 +10,8 @@ typedef signed long int Bint;
 typedef MPint Bint;
 #endif
 
+#include "demoUtils.hpp"
 
-struct st_squarematrix_state {
-  Bint *flatMatrix;
-};
-typedef struct st_squarematrix_state SQState;
 
 static Bint gcd(const Bint a, const Bint b) { // @suppress("No return")
   Bint d1;
@@ -154,152 +151,12 @@ static void computeDetGaussFloat(const unsigned int dim, long double **matrix,
   return;
 }
 
-static void exitNoMem() {
-  std::cerr << "det.cpp: exiting: could not calloc/malloc." << std::endl;
-  exit(-1);
-}
-
-static void initRandomMatrix(const unsigned int dim, SQState **stateHnd,
-                             Bint ***matrixPtr, long double ***dmatrixPtr,
-                             unsigned int **perm) {
-  SQState *statePtr = NULL;
-  Bint **matrix = NULL;
-  long double **dmatrix = NULL;
-  if (0 == (statePtr = (SQState *)malloc(sizeof(SQState)))) {
-    exitNoMem();
-  }
-  statePtr->flatMatrix = new Bint[dim * dim]();
-  if (0 == (matrix = (Bint **)calloc(dim, sizeof(Bint *)))) {
-    exitNoMem();
-  }
-  if (0 == (dmatrix = (long double **)calloc(dim, sizeof(long double *)))) {
-    exitNoMem();
-  }
-  for (unsigned int ridx = 0; ridx < dim; ridx++) {
-    matrix[ridx] = new Bint[dim]();
-    if (0 ==
-        (dmatrix[ridx] = (long double *)calloc(dim, sizeof(long double)))) {
-      exitNoMem();
-    }
-    if (0 == (*perm = (unsigned int *)calloc(dim, sizeof(unsigned int)))) {
-      exitNoMem();
-    }
-  }
-  *stateHnd = statePtr;
-  *matrixPtr = matrix;
-  *dmatrixPtr = dmatrix;
-}
-
-static void sameRandomMatrix(const unsigned int dim, const SQState *statePtr,
-                             Bint **matrix, long double **dmatrix,
-                             unsigned int *perm) {
-  for (unsigned int ridx = 0; ridx < dim; ridx++) {
-    perm[ridx] = ridx;
-    for (unsigned int cidx = 0; cidx < dim; cidx++) {
-      matrix[ridx][cidx] = statePtr->flatMatrix[ridx * dim + cidx];
-      dmatrix[ridx][cidx] = static_cast<long double>(statePtr->flatMatrix[ridx * dim + cidx]);
-    }
-  }
-}
-
-static void nextRandomMatrix(const unsigned int dim,
-                             const unsigned int sparsity,
-                             const SQState *statePtr, Bint **matrix,
-                             long double **dmatrix, unsigned int *perm,
-                             const unsigned long int entryMagnitude) {
-  for (unsigned int flatidx = 0; flatidx < dim * dim; flatidx++) {
-    unsigned long int randint = lrand48();
-    randint %= 100;
-    randint += 1;
-    Bint entry = 0;
-    if (randint > sparsity) {
-      unsigned long int randnumHigh = mrand48();
-      randnumHigh <<= 32;
-      unsigned long int randnumLow = mrand48();
-      unsigned long int randnum = (randnumHigh | randnumLow);
-      int sgn = (mrand48() < 0) ? -1 : 1;
-      entry = sgn * (randnum % entryMagnitude);
-    }
-    statePtr->flatMatrix[flatidx] = entry;
-  }
-  sameRandomMatrix(dim, statePtr, matrix, dmatrix, perm);
-}
-
-static void freeRandomMatrix(const unsigned int dim, SQState *statePtr,
-                             Bint **matrix, long double **dmatrix,
-                             unsigned int *perm) {
-  for (unsigned int ridx = 0; ridx < dim; ridx++) {
-    delete[] matrix[ridx];
-    free(dmatrix[ridx]);
-  }
-  free(matrix);
-  free(dmatrix);
-  free(perm);
-  delete[] statePtr->flatMatrix;
-  free(statePtr);
-}
-
-static void printProgressHeader(const int runsPerCase, const int dimensions,
-                                const int sparsities) {
-  std::cout << " "
-            << "number of cases  ==  dimensions x sparsities:" << std::endl;
-  std::cout << "  " << (dimensions * sparsities) << " == " << dimensions
-            << " x " << sparsities << std::endl;
-  std::cout << " " << "number of runs  ==  runs per case x cases:" << std::endl;
-  std::cout << "  " << (runsPerCase * dimensions * sparsities)
-            << " == " << runsPerCase << " x " << (dimensions * sparsities)
-            << std::endl;
-  std::cout << std::endl;
-  std::cout << std::endl;
-}
-
-static void printProgress(const int run, const int runs, const unsigned int dim,
-                          const int sparsity) {
-  std::cout << "run " << run << " of " << runs << ", dimension == " << dim
-            << ", sparsity == " << sparsity << "%" << std::endl;
-}
-
 static void printDeterminants(const Bint detDodgson, const Bint detGaussInt,
                               const long double detGaussFloat) {
   std::cout << "Dodgson:    " << detDodgson << std::endl;
   std::cout << "GaussInt:   " << detGaussInt << std::endl;
   std::cout << "GaussFloat: " << detGaussFloat << std::endl;
   std::cout << std::endl;
-}
-
-static void printMatrix(Bint **matrix, const unsigned int dim) {
-  std::cout << "[";
-  for (unsigned int ridx = 0; ridx < dim; ridx++) {
-    const char *openRowParen = (ridx == 0) ? "[" : " [";
-    std::cout << openRowParen;
-    for (unsigned int cidx = 0; cidx < dim; cidx++) {
-      const char *entryTrailer =
-          (cidx < dim - 1) ? " " : ((ridx < dim - 1) ? "]\n" : "]]\n");
-      std::cout << matrix[ridx][cidx] << entryTrailer;
-    }
-  }
-}
-
-static void printMatrix(long double **matrix, const unsigned int dim) {
-  std::cout << "[";
-  for (unsigned int ridx = 0; ridx < dim; ridx++) {
-    const char *openRowParen = (ridx == 0) ? "[" : " [";
-    std::cout << openRowParen;
-    for (unsigned int cidx = 0; cidx < dim; cidx++) {
-      const char *entryTrailer =
-          (cidx < dim - 1) ? " " : ((ridx < dim - 1) ? "]\n" : "]]\n");
-      std::cout << matrix[ridx][cidx] << entryTrailer;
-    }
-  }
-}
-
-static int getRangeSize(const int low, const int high, const int step) {
-  int range = high - low;
-  int retval = range / step;
-  if (retval * step < range) {
-    retval++;
-  }
-  return retval;
 }
 
 void detTest() {
@@ -323,35 +180,30 @@ void detTest() {
   srand48(rand48Seed);
   printProgressHeader(runsPerCase, dimRangeSize, sparsityRangeSize);
   for (unsigned int dim = dimLow; dim < dimHigh; dim += dimStep) {
-    for (int sparsity = sparsityLow; sparsity < sparsityHigh;
-         sparsity += sparsityStep) {
-      SQState *state = NULL;
-      Bint **matrix = NULL;
-      long double **dmatrix = NULL;
-      unsigned int *perm = NULL;
-      initRandomMatrix(dim, &state, &matrix, &dmatrix, &perm);
+    for (int sparsity = sparsityLow; sparsity < sparsityHigh; sparsity += sparsityStep) {
       for (int runIdx = 0; runIdx < runsPerCase; runIdx++) {
+        SQState *sqState = new SQState(dim, entryMagnitude, sparsity);
         Bint detDodgson = 0;
         Bint detGaussInt = 0;
         long double detGaussFloat = 0.0L;
         printProgress(++run, runsPerCase * cases, dim, sparsity);
 
-        nextRandomMatrix(dim, sparsity, state, matrix, dmatrix, perm,
-                         entryMagnitude);
-        printMatrix(matrix, dim);
-        computeDetDodgson(dim, matrix, perm, &detDodgson);
 
-        sameRandomMatrix(dim, state, matrix, dmatrix, perm);
-        printMatrix(matrix, dim);
-        computeDetGaussInt(dim, matrix, perm, &detGaussInt);
+        sqState->printMatrix();
+        computeDetDodgson(dim, sqState->getMatrix(), sqState->getPermutationVector(), &detDodgson);
 
-        sameRandomMatrix(dim, state, matrix, dmatrix, perm);
-        printMatrix(dmatrix, dim);
-        computeDetGaussFloat(dim, dmatrix, perm, &detGaussFloat);
+        sqState->reinitializeCurrentState();
+        sqState->printMatrix();
+        computeDetGaussInt(dim, sqState->getMatrix(), sqState->getPermutationVector(), &detGaussInt);
+
+        sqState->reinitializeCurrentState();
+        sqState->printDoubleMatrix();
+        computeDetGaussFloat(dim, sqState->getDoubleMatrix(), sqState->getPermutationVector(), &detGaussFloat);
+
 
         printDeterminants(detDodgson, detGaussInt, detGaussFloat);
+        delete sqState;
       } /* for(int runIdx = 0; runIdx < runsPerCase; runIdx++) {... */
-      freeRandomMatrix(dim, state, matrix, dmatrix, perm);
     } /* for(int sparsity = sparsityLow;...) {... */
   } /* for(unsigned int dim = dimLow;...) {... */
   return;
