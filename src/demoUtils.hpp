@@ -24,6 +24,7 @@ public:
 
 protected:
     struct SQStateImpl;
+    SQState(SQStateImpl* impl) noexcept;   // for use by derived-class ctors
     SQStateImpl*  pImpl;
 };
 

@@ -26,6 +26,8 @@ struct SQState::SQStateImpl {
     unsigned int    *       mPerm;
 };
 
+SQState::SQState(SQStateImpl* impl) noexcept : pImpl(impl) {}
+
 SQState::SQState(const unsigned int dim,
 		const unsigned long int entryMagnitude,
 		const unsigned int sparsity) :
@@ -56,8 +58,8 @@ SQState::SQState(const unsigned int dim,
 PosDefState::PosDefState(const unsigned int dim,
 		const unsigned long int entryMagnitude,
 		const unsigned int sparsity) :
-				  pImpl(new SQStateImpl{dim, new MPint[dim * dim], new MPint * [dim],
-	              new long double * [dim], new unsigned int[dim]}) {
+    SQState(new SQState::SQStateImpl{dim, new MPint[dim * dim], new MPint * [dim],
+              new long double * [dim], new unsigned int[dim]}) {
 	for (unsigned int ridx = 0; ridx < pImpl->mDim; ridx++) {
 		pImpl->mMatrix[ridx] = new MPint[dim];
 		pImpl->mDmatrix[ridx] = new long double[dim];
