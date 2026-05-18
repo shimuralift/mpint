@@ -53,5 +53,27 @@ PosDefState ctor.
 
 
 ## What to do for you right now
-Why is pImpl from Superclass SQState not recognized in the PosDefState
-ctor, and how could it be fixed?
+PosDefState::PosDefState currently generates a plain random matrix,
+identical to SQState. It needs to produce a positive definite integer
+matrix instead.
+
+Algorithm for the PosDefState ctor:
+1. Allocate a temporary dim x (n*dim) matrix L (n=3 is fine), filling
+   it with random integers the same way SQState fills its square matrix
+   (using entryMagnitude and sparsity).
+2. Compute G = L * L^T, a dim x dim symmetric positive semi-definite
+   integer matrix.
+3. Write G row-wise into pImpl->mFlatMatrix (dim^2 entries) and call
+   reinitializeCurrentState() to populate mMatrix from mFlatMatrix.
+4. Check whether G is singular using one of the integral determinant
+   algorithms from det.cpp (computeDetDodgson or computeDetGaussInt).
+   Note: these functions are currently static in det.cpp, so a small
+   non-static wrapper (e.g. bool isSingular(...)) must be added to
+   det.cpp and declared in det.hpp before demoUtils.cpp can call it.
+   The det functions operate destructively on mMatrix, so after a
+   non-singular result call reinitializeCurrentState() again to restore
+   mMatrix from mFlatMatrix. No manual copy is needed.
+5. If G is singular, discard it and repeat from step 1.
+
+Note: sparsity must not be too small or L will be all zeros; the caller
+is responsible for choosing a sensible value.
