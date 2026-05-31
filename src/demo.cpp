@@ -807,7 +807,7 @@ int main(int argc, char* argv[]) {
   }
 
   const int PROF_RUNS = 100000;
-  uint64_t total[7] = {0, 0, 0, 0, 0, 0, 0};
+  uint64_t total[8] = {0, 0, 0, 0, 0, 0, 0, 0};
   uint64_t t0, t1;
 
   NullBuf nullbuf;
@@ -841,20 +841,24 @@ int main(int argc, char* argv[]) {
   for (int r = 0; r < (prof ? PROF_RUNS : 1); ++r)
     { t0 = rdtsc_read(); floatconv();   t1 = rdtsc_read(); total[6] += t1 - t0; }
 
+  std::cout << std::endl << "MPint: integral lattice example" << std::endl << std::endl;
+  for (int r = 0; r < (prof ? PROF_RUNS : 1); ++r)
+    { t0 = rdtsc_read(); reduTest();     t1 = rdtsc_read(); total[7] += t1 - t0; }
+
   if (prof) {
     std::cout.rdbuf(orig);
-    static const char* const names[7] = {
-      "claude_main", "basicexpr", "moreexpr", "extraexpr", "detTest", "strconstr", "floatconv"
+    static const char* const names[8] = {
+      "claude_main", "basicexpr", "moreexpr", "extraexpr", "detTest", "strconstr", "floatconv", "reduTest"
     };
-    std::string formatted[7];
+    std::string formatted[8];
     std::string::size_type maxcycles = 0, maxname = 0;
-    for (int i = 0; i < 7; ++i) {
+    for (int i = 0; i < 8; ++i) {
       formatted[i] = format_cycles(total[i] / PROF_RUNS);
       if (formatted[i].size() > maxcycles) maxcycles = formatted[i].size();
       if (std::strlen(names[i]) > maxname) maxname = std::strlen(names[i]);
     }
     std::cout << "=== profiling report (rdtsc cpu cycles, avg of " << PROF_RUNS << " runs) ===" << std::endl;
-    for (int i = 0; i < 7; ++i) {
+    for (int i = 0; i < 8; ++i) {
       std::cout << "  " << std::setw(static_cast<int>(maxname)) << std::left  << names[i]
                 << ": " << std::setw(static_cast<int>(maxcycles)) << std::right << formatted[i]
                 << " cycles" << std::endl;

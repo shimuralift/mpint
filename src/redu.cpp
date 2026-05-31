@@ -25,32 +25,34 @@ void destroy_Long_vector(Long ** vec) {
     *vec = (Long *)NULL;
 }
 
-void make_Long_rectmatrix(Long *** mat, int rows, int cols) {
+void make_Long_rectmatrix(Long *** mat,
+                          int      rows,
+                          int      cols) {
     int i;
 
     if((*mat = (Long **)malloc(rows * sizeof(Long *))) == 0) {
-        std::cerr << "data_utils.c:make_Long_rectmatrix:not enough space (rows = " << rows << ")\n";
+        fprintf(stderr,
+                "data_utils.c:make_Long_rectmatrix:not enough space (rows = %d)\n",
+                rows);
         exit(1);
     }
     for(i = 0; i < rows; i++)
         make_Long_vector(&((*mat)[i]), cols);
 }
 
-void destroy_Long_matrix(Long *** mat, int rows) {
+void destroy_Long_matrix(Long *** mat,
+                         int      rows) {
     int i;
 
     if(*mat == (Long **)NULL) {
-        std::cerr << "data_utils:destroy_Long_matrix:pointer is already NULL\n";
+        fprintf(stderr,
+                "data_utils:destroy_Long_matrix:pointer is already NULL\n");
         exit(2);
     }
     for(i = 0; i < rows; i++)
         destroy_Long_vector(&((*mat)[i]));
     free(*mat);
     *mat = (Long **)NULL;
-}
-
-void make_Long_squarematrix(Long *** mat, int n) {
-    make_Long_rectmatrix(mat, n, n);
 }
 
 void make_double_vector(double ** vec, int dim) {
@@ -67,6 +69,35 @@ void destroy_double_vector(double ** vec) {
     }
     free(*vec);
     *vec = (double *)NULL;
+}
+
+static void make_double_squarematrix(double *** mat,
+                                     int        dim) {
+    int i;
+
+    if((*mat = (double **)malloc(dim * sizeof(double *))) == 0) {
+        fprintf(stderr,
+                "data_utils.c:make_double_rectmatrix:not enough space (rows = %d)\n",
+                dim);
+        exit(1);
+    }
+    for(i = 0; i < dim; i++)
+        make_double_vector(&((*mat)[i]), dim);
+}
+
+void destroy_double_matrix(double *** mat,
+                           int        dim) {
+    int i;
+
+    if(*mat == (double **)NULL) {
+        fprintf(stderr,
+                "data_utils:destroy_double_matrix:pointer is already NULL\n");
+        exit(2);
+    }
+    for(i = 0; i < dim; i++)
+        destroy_double_vector(&((*mat)[i]));
+    free(*mat);
+    *mat = (double **)NULL;
 }
 
 /* adds <from>-th row <lam>-times to <to>-th row
@@ -524,13 +555,14 @@ void shortvecs(double * ge, double ** mo, Long len, Long ** vecs, int dim) {
     return;
 }
 
+
 void reduTest() {
 	  const int runsPerCase = 2;
 	  const int dimLow = 2;
-	  const int dimHigh = 8;
+	  const int dimHigh = 5;
 	  const int dimStep = 1;
-	  const int sparsityLow = 70;
-	  const int sparsityHigh = 100;
+	  const int sparsityLow = 10;
+	  const int sparsityHigh = 30;
 	  const int sparsityStep = 10;
 	  const unsigned long int entryMagnitude = 300;
 	  const long int rand48Seed = 4713;
@@ -547,26 +579,29 @@ void reduTest() {
 	  for (unsigned int dim = dimLow; dim < dimHigh; dim += dimStep) {
 		  for (int sparsity = sparsityLow; sparsity < sparsityHigh; sparsity += sparsityStep) {
 			  for (int runIdx = 0; runIdx < runsPerCase; runIdx++) {
-				  SQState *sqState = new SQState(dim, entryMagnitude, sparsity);
+				  PosDefState *pdState = new PosDefState(dim, entryMagnitude, sparsity);
 				  printProgress(++run, runsPerCase * cases, dim, sparsity);
 
-				  sqState->printMatrix();
-				  ///triple_l(matrix, Long ** ba, Long ** invba, double * ge, double ** mo, dim);
+				  double * ge;
+				  double ** mo;
+				  Long len = entryMagnitude*dim;
+				  Long ** vecs;
+				  unsigned int shortvec_numb;
 
-				  sqState->reinitializeCurrentState();
-				  sqState->printMatrix();
-				  //deep_triple_l(matrix, Long ** ba, Long ** invba, double * ge, double ** mo, dim);
+				  pdState->printMatrix();
+				  make_double_vector(&ge, dim);
+				  make_double_squarematrix(&mo, dim);
+				  triple_l(pdState->getMatrix(), (Long **)NULL, (Long **)NULL, ge, mo, dim);
 
-				  sqState->reinitializeCurrentState();
-				  sqState->printMatrix();
-				  //shortvecs_count(double * ge, double ** mo, Long len, dim);
+				  pdState->printMatrix();
+				  shortvec_numb = shortvecs_count(ge, mo, len, dim);
+				  make_Long_rectmatrix(&vecs, shortvec_numb + 1, dim + 1);
+				  shortvecs(ge, mo, len, vecs, dim);
+				  destroy_double_vector(&ge);
+				  destroy_double_matrix(&mo, dim);
+				  destroy_Long_matrix(&vecs, shortvec_numb + 1);
 
-				  sqState->reinitializeCurrentState();
-				  sqState->printMatrix();
-				  //shortvecs(double * ge, double ** mo, Long len, Long ** vecs, dim);
-
-				  //printDeterminants(detDodgson, detGaussInt, detGaussFloat);
-				  delete sqState;
+				  delete pdState;
 			  } /* for(int runIdx = 0; runIdx < runsPerCase; runIdx++) {... */
 		  } /* for(int sparsity = sparsityLow;...) {... */
 	  } /* for(unsigned int dim = dimLow;...) {... */
