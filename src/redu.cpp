@@ -403,9 +403,7 @@ int triple_l(Long ** gr, Long ** ba, Long ** invba, double * ge, double ** mo, i
             inc_gram_schmidt(gr, ge, mo, a, k);
             if(fabs(ge[k]) < EPS) {
                 std::cerr << "\nredu_utils.c:triple_l:grammatrix not pos.def.\n";
-/*
-                exit(4);
-*/
+                destroy_double_vector(&a);
                 return -1;
             }
         }
