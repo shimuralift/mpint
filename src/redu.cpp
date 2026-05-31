@@ -1,6 +1,7 @@
 #include <cmath>
 #include <cstdlib>
 #include <iostream>
+#include <map>
 
 #include "demoUtils.hpp"
 
@@ -577,6 +578,11 @@ void reduTest() {
 				  shortvec_numb = shortvecs_count(ge, mo, len, dim);
 				  make_Long_rectmatrix(&vecs, shortvec_numb + 1, dim + 1);
 				  shortvecs(ge, mo, len, vecs, dim);
+				  std::map<Long, int> shells;
+				  for (unsigned int i = 1; i <= shortvec_numb; i++)
+					  shells[vecs[i][dim]]++;
+				  for (auto& kv : shells)
+					  std::cout << kv.first << " " << kv.second << "\n";
 				  destroy_double_vector(&ge);
 				  destroy_double_matrix(&mo, dim);
 				  destroy_Long_matrix(&vecs, shortvec_numb + 1);
