@@ -10,19 +10,16 @@ typedef MPint Long;
 
 
 void make_Long_vector(Long ** vec, int dim) {
-    if((*vec = new Long[dim]) == 0) {
-        std::cerr << "data_utils.c:make_Long_vector:not enough space (dim = " << dim << ")\n";
-        exit(1);
-    }
+    *vec = new Long[dim];
 }
 
 void destroy_Long_vector(Long ** vec) {
-    if(*vec == (Long *)NULL) {
+    if(*vec == nullptr) {
         std::cerr << "data_utils:destroy_Long_vector:pointer is already NULL\n";
         exit(2);
     }
-    delete[](*vec);
-    *vec = (Long *)NULL;
+    delete[] *vec;
+    *vec = nullptr;
 }
 
 void make_Long_rectmatrix(Long *** mat,
@@ -30,12 +27,7 @@ void make_Long_rectmatrix(Long *** mat,
                           int      cols) {
     int i;
 
-    if((*mat = (Long **)malloc(rows * sizeof(Long *))) == 0) {
-        fprintf(stderr,
-                "data_utils.c:make_Long_rectmatrix:not enough space (rows = %d)\n",
-                rows);
-        exit(1);
-    }
+    *mat = new Long*[rows];
     for(i = 0; i < rows; i++)
         make_Long_vector(&((*mat)[i]), cols);
 }
@@ -44,43 +36,34 @@ void destroy_Long_matrix(Long *** mat,
                          int      rows) {
     int i;
 
-    if(*mat == (Long **)NULL) {
-        fprintf(stderr,
-                "data_utils:destroy_Long_matrix:pointer is already NULL\n");
+    if(*mat == nullptr) {
+        std::cerr << "data_utils:destroy_Long_matrix:pointer is already NULL\n";
         exit(2);
     }
     for(i = 0; i < rows; i++)
         destroy_Long_vector(&((*mat)[i]));
-    free(*mat);
-    *mat = (Long **)NULL;
+    delete[] *mat;
+    *mat = nullptr;
 }
 
 void make_double_vector(double ** vec, int dim) {
-    if((*vec = (double *)malloc(dim * sizeof(double))) == 0) {
-        std::cerr << "data_utils.c:make_double_vector:not enough space (dim = " << dim << ")\n";
-        exit(1);
-    }
+    *vec = new double[dim];
 }
 
 void destroy_double_vector(double ** vec) {
-    if(*vec == (double *)NULL) {
+    if(*vec == nullptr) {
         std::cerr << "data_utils:destroy_double_vector:pointer is already NULL\n";
         exit(2);
     }
-    free(*vec);
-    *vec = (double *)NULL;
+    delete[] *vec;
+    *vec = nullptr;
 }
 
 static void make_double_squarematrix(double *** mat,
                                      int        dim) {
     int i;
 
-    if((*mat = (double **)malloc(dim * sizeof(double *))) == 0) {
-        fprintf(stderr,
-                "data_utils.c:make_double_rectmatrix:not enough space (rows = %d)\n",
-                dim);
-        exit(1);
-    }
+    *mat = new double*[dim];
     for(i = 0; i < dim; i++)
         make_double_vector(&((*mat)[i]), dim);
 }
@@ -89,15 +72,14 @@ void destroy_double_matrix(double *** mat,
                            int        dim) {
     int i;
 
-    if(*mat == (double **)NULL) {
-        fprintf(stderr,
-                "data_utils:destroy_double_matrix:pointer is already NULL\n");
+    if(*mat == nullptr) {
+        std::cerr << "data_utils:destroy_double_matrix:pointer is already NULL\n";
         exit(2);
     }
     for(i = 0; i < dim; i++)
         destroy_double_vector(&((*mat)[i]));
-    free(*mat);
-    *mat = (double **)NULL;
+    delete[] *mat;
+    *mat = nullptr;
 }
 
 /* adds <from>-th row <lam>-times to <to>-th row
@@ -591,7 +573,7 @@ void reduTest() {
 				  pdState->printMatrix();
 				  make_double_vector(&ge, dim);
 				  make_double_squarematrix(&mo, dim);
-				  triple_l(pdState->getMatrix(), (Long **)NULL, (Long **)NULL, ge, mo, dim);
+				  triple_l(pdState->getMatrix(), nullptr, nullptr, ge, mo, dim);
 
 				  pdState->printMatrix();
 				  shortvec_numb = shortvecs_count(ge, mo, len, dim);
