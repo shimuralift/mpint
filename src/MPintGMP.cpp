@@ -29,7 +29,7 @@ struct MPint::MPintImpl {
 // Strips single-quote separators and handles the 0b/0B binary prefix that
 // GMP's mpz_set_str does not recognise natively.
 
-static void mpz_set_mpint_str(mpz_t dest, const char* s) {
+static void mpz_set_mpint_str(mpz_t dest, const char* const s) {
     const char* p = s;
 
     // Preserve leading sign for the clean buffer
@@ -40,7 +40,7 @@ static void mpz_set_mpint_str(mpz_t dest, const char* s) {
     // Detect base and advance past any prefix
     int base = 0; // 0 → GMP auto-detects 0x (hex) and 0 (octal)
     if (*p == '0') {
-        const char* q = p + 1;
+        const char* const q = p + 1;
         if (*q == 'b' || *q == 'B') { base = 2; p += 2; }
         // 0x and 0-prefix are left for GMP's base-0 auto-detection
     }
@@ -58,21 +58,21 @@ static void mpz_set_mpint_str(mpz_t dest, const char* s) {
 
 // --- construction -----------------------------------------------------------
 
-MPint::MPint()                    noexcept : pImpl(new MPintImpl()) {}
-MPint::MPint(signed long int   v) noexcept : pImpl(new MPintImpl(v)) {}
-MPint::MPint(signed int        v) noexcept : pImpl(new MPintImpl(static_cast<signed long int>(v))) {}
-MPint::MPint(signed short      v) noexcept : pImpl(new MPintImpl(static_cast<signed long int>(v))) {}
-MPint::MPint(signed char       v) noexcept : pImpl(new MPintImpl(static_cast<signed long int>(v))) {}
-MPint::MPint(unsigned long int v) noexcept : pImpl(new MPintImpl(static_cast<signed long int>(v))) {}
-MPint::MPint(unsigned int      v) noexcept : pImpl(new MPintImpl(static_cast<signed long int>(v))) {}
-MPint::MPint(unsigned short    v) noexcept : pImpl(new MPintImpl(static_cast<signed long int>(v))) {}
-MPint::MPint(unsigned char     v) noexcept : pImpl(new MPintImpl(static_cast<signed long int>(v))) {}
-MPint::MPint(long long         v) noexcept : pImpl(new MPintImpl(static_cast<signed long int>(v))) {}
+MPint::MPint()                    : pImpl(new MPintImpl()) {}
+MPint::MPint(signed long int   v) : pImpl(new MPintImpl(v)) {}
+MPint::MPint(signed int        v) : pImpl(new MPintImpl(static_cast<signed long int>(v))) {}
+MPint::MPint(signed short      v) : pImpl(new MPintImpl(static_cast<signed long int>(v))) {}
+MPint::MPint(signed char       v) : pImpl(new MPintImpl(static_cast<signed long int>(v))) {}
+MPint::MPint(unsigned long int v) : pImpl(new MPintImpl(static_cast<signed long int>(v))) {}
+MPint::MPint(unsigned int      v) : pImpl(new MPintImpl(static_cast<signed long int>(v))) {}
+MPint::MPint(unsigned short    v) : pImpl(new MPintImpl(static_cast<signed long int>(v))) {}
+MPint::MPint(unsigned char     v) : pImpl(new MPintImpl(static_cast<signed long int>(v))) {}
+MPint::MPint(long long         v) : pImpl(new MPintImpl(static_cast<signed long int>(v))) {}
 
-MPint::MPint(const char*        s) noexcept : pImpl(new MPintImpl()) { mpz_set_mpint_str(pImpl->mVal, s); }
-MPint::MPint(const std::string& s) noexcept : pImpl(new MPintImpl()) { mpz_set_mpint_str(pImpl->mVal, s.c_str()); }
+MPint::MPint(const char*        s) : pImpl(new MPintImpl()) { mpz_set_mpint_str(pImpl->mVal, s); }
+MPint::MPint(const std::string& s) : pImpl(new MPintImpl()) { mpz_set_mpint_str(pImpl->mVal, s.c_str()); }
 
-MPint::MPint(const MPint& other)  noexcept : pImpl(new MPintImpl(*other.pImpl)) {}
+MPint::MPint(const MPint& other)  : pImpl(new MPintImpl(*other.pImpl)) {}
 MPint::MPint(MPint&&      other)  noexcept : pImpl(other.pImpl) { other.pImpl = nullptr; }
 
 MPint& MPint::operator=(const MPint& other) noexcept {
@@ -97,12 +97,12 @@ MPint::operator unsigned long int() const noexcept { return mpz_get_ui(pImpl->mV
 MPint::operator unsigned int()      const noexcept { return static_cast<unsigned int>(mpz_get_ui(pImpl->mVal)); }
 MPint::operator bool()              const noexcept { return mpz_sgn(pImpl->mVal) != 0; }
 MPint::operator float() const {
-    float f = static_cast<float>(mpz_get_d(pImpl->mVal));
+    const float f = static_cast<float>(mpz_get_d(pImpl->mVal));
     if (std::isinf(f)) throw std::overflow_error("MPint->float overflow");
     return f;
 }
 MPint::operator double() const {
-    double d = mpz_get_d(pImpl->mVal);
+    const double d = mpz_get_d(pImpl->mVal);
     if (std::isinf(d)) throw std::overflow_error("MPint->double overflow");
     return d;
 }
@@ -160,27 +160,6 @@ MPint& MPint::operator>>=(int n)            noexcept { mpz_fdiv_q_2exp(pImpl->mV
 MPint& MPint::operator<<=(const MPint& rhs) noexcept { mpz_mul_2exp(pImpl->mVal, pImpl->mVal, static_cast<mp_bitcnt_t>(mpz_get_ui(rhs.pImpl->mVal))); return *this; }
 MPint& MPint::operator>>=(const MPint& rhs) noexcept { mpz_fdiv_q_2exp(pImpl->mVal, pImpl->mVal, static_cast<mp_bitcnt_t>(mpz_get_ui(rhs.pImpl->mVal))); return *this; }
 
-// --- binary arithmetic ------------------------------------------------------
-
-MPint operator+(MPint lhs, const MPint& rhs) noexcept { return lhs += rhs; }
-MPint operator-(MPint lhs, const MPint& rhs) noexcept { return lhs -= rhs; }
-MPint operator*(MPint lhs, const MPint& rhs) noexcept { return lhs *= rhs; }
-MPint operator/(MPint lhs, const MPint& rhs)           { return lhs /= rhs; }
-MPint operator%(MPint lhs, const MPint& rhs)           { return lhs %= rhs; }
-
-// --- binary bitwise ---------------------------------------------------------
-
-MPint operator&(MPint lhs, const MPint& rhs) noexcept { return lhs &= rhs; }
-MPint operator|(MPint lhs, const MPint& rhs) noexcept { return lhs |= rhs; }
-MPint operator^(MPint lhs, const MPint& rhs) noexcept { return lhs ^= rhs; }
-
-// --- shift ------------------------------------------------------------------
-
-MPint operator<<(MPint lhs, int n)            noexcept { return lhs <<= n; }
-MPint operator>>(MPint lhs, int n)            noexcept { return lhs >>= n; }
-MPint operator<<(MPint lhs, const MPint& rhs) noexcept { return lhs <<= rhs; }
-MPint operator>>(MPint lhs, const MPint& rhs) noexcept { return lhs >>= rhs; }
-
 // --- comparison -------------------------------------------------------------
 
 bool operator==(const MPint& a, const MPint& b) noexcept { return mpz_cmp(a.pImpl->mVal, b.pImpl->mVal) == 0; }
@@ -193,7 +172,7 @@ bool operator>=(const MPint& a, const MPint& b) noexcept { return mpz_cmp(a.pImp
 // --- stream I/O -------------------------------------------------------------
 
 std::ostream& operator<<(std::ostream& os, const MPint& v) {
-    char* s = mpz_get_str(nullptr, 10, v.pImpl->mVal);
+    char* const s = mpz_get_str(nullptr, 10, v.pImpl->mVal);
     os << s;
     std::free(s);
     return os;

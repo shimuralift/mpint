@@ -19,7 +19,7 @@ struct MPint::MPintImpl {
 
 // --- string parsing helper --------------------------------------------------
 
-static signed long int parse_str(const char* s) {
+static signed long int parse_str(const char* const s) {
     const char* p = s;
     bool negative = false;
     if (*p == '-')      { negative = true; ++p; }
@@ -27,7 +27,7 @@ static signed long int parse_str(const char* s) {
 
     int base = 10;
     if (*p == '0') {
-        const char* q = p + 1;
+        const char* const q = p + 1;
         if      (*q == 'x' || *q == 'X') { base = 16; p += 2; }
         else if (*q == 'b' || *q == 'B') { base =  2; p += 2; }
         else                             { base =  8; p += 1; }
@@ -37,7 +37,7 @@ static signed long int parse_str(const char* s) {
     for (; *p; ++p) {
         if (*p == '\'') continue;
         unsigned int digit;
-        char c = *p;
+        const char c = *p;
         if      (c >= '0' && c <= '9') digit = static_cast<unsigned int>(c - '0');
         else if (c >= 'a' && c <= 'f') digit = static_cast<unsigned int>(c - 'a') + 10u;
         else if (c >= 'A' && c <= 'F') digit = static_cast<unsigned int>(c - 'A') + 10u;
@@ -50,21 +50,21 @@ static signed long int parse_str(const char* s) {
 
 // --- construction -----------------------------------------------------------
 
-MPint::MPint()                    noexcept : pImpl(new MPintImpl{0L}) {}
-MPint::MPint(signed long int   v) noexcept : pImpl(new MPintImpl{v}) {}
-MPint::MPint(signed int        v) noexcept : pImpl(new MPintImpl{v}) {}
-MPint::MPint(signed short      v) noexcept : pImpl(new MPintImpl{v}) {}
-MPint::MPint(signed char       v) noexcept : pImpl(new MPintImpl{v}) {}
-MPint::MPint(unsigned long int v) noexcept : pImpl(new MPintImpl{static_cast<signed long int>(v)}) {}
-MPint::MPint(unsigned int      v) noexcept : pImpl(new MPintImpl{static_cast<signed long int>(v)}) {}
-MPint::MPint(unsigned short    v) noexcept : pImpl(new MPintImpl{static_cast<signed long int>(v)}) {}
-MPint::MPint(unsigned char     v) noexcept : pImpl(new MPintImpl{static_cast<signed long int>(v)}) {}
-MPint::MPint(long long         v) noexcept : pImpl(new MPintImpl{static_cast<signed long int>(v)}) {}
+MPint::MPint()                    : pImpl(new MPintImpl{0L}) {}
+MPint::MPint(signed long int   v) : pImpl(new MPintImpl{v}) {}
+MPint::MPint(signed int        v) : pImpl(new MPintImpl{v}) {}
+MPint::MPint(signed short      v) : pImpl(new MPintImpl{v}) {}
+MPint::MPint(signed char       v) : pImpl(new MPintImpl{v}) {}
+MPint::MPint(unsigned long int v) : pImpl(new MPintImpl{static_cast<signed long int>(v)}) {}
+MPint::MPint(unsigned int      v) : pImpl(new MPintImpl{static_cast<signed long int>(v)}) {}
+MPint::MPint(unsigned short    v) : pImpl(new MPintImpl{static_cast<signed long int>(v)}) {}
+MPint::MPint(unsigned char     v) : pImpl(new MPintImpl{static_cast<signed long int>(v)}) {}
+MPint::MPint(long long         v) : pImpl(new MPintImpl{static_cast<signed long int>(v)}) {}
 
-MPint::MPint(const char*        s) noexcept : pImpl(new MPintImpl{parse_str(s)}) {}
-MPint::MPint(const std::string& s) noexcept : pImpl(new MPintImpl{parse_str(s.c_str())}) {}
+MPint::MPint(const char*        s) : pImpl(new MPintImpl{parse_str(s)}) {}
+MPint::MPint(const std::string& s) : pImpl(new MPintImpl{parse_str(s.c_str())}) {}
 
-MPint::MPint(const MPint& other)  noexcept : pImpl(new MPintImpl{other.pImpl->mVal}) {}
+MPint::MPint(const MPint& other)  : pImpl(new MPintImpl{other.pImpl->mVal}) {}
 MPint::MPint(MPint&&      other)  noexcept : pImpl(other.pImpl) { other.pImpl = nullptr; }
 
 MPint& MPint::operator=(const MPint& other) noexcept {
@@ -89,12 +89,12 @@ MPint::operator unsigned long int() const noexcept { return static_cast<unsigned
 MPint::operator unsigned int()      const noexcept { return static_cast<unsigned int>(pImpl->mVal); }
 MPint::operator bool()              const noexcept { return pImpl->mVal != 0; }
 MPint::operator float() const {
-    float f = static_cast<float>(pImpl->mVal);
+    const float f = static_cast<float>(pImpl->mVal);
     if (std::isinf(f)) throw std::overflow_error("MPint->float overflow");
     return f;
 }
 MPint::operator double() const {
-    double d = static_cast<double>(pImpl->mVal);
+    const double d = static_cast<double>(pImpl->mVal);
     if (std::isinf(d)) throw std::overflow_error("MPint->double overflow");
     return d;
 }
@@ -143,27 +143,6 @@ MPint& MPint::operator<<=(int n)            noexcept { pImpl->mVal <<= n;       
 MPint& MPint::operator>>=(int n)            noexcept { pImpl->mVal >>= n;              return *this; }
 MPint& MPint::operator<<=(const MPint& rhs) noexcept { pImpl->mVal <<= rhs.pImpl->mVal; return *this; }
 MPint& MPint::operator>>=(const MPint& rhs) noexcept { pImpl->mVal >>= rhs.pImpl->mVal; return *this; }
-
-// --- binary arithmetic ------------------------------------------------------
-
-MPint operator+(MPint lhs, const MPint& rhs) noexcept { return lhs += rhs; }
-MPint operator-(MPint lhs, const MPint& rhs) noexcept { return lhs -= rhs; }
-MPint operator*(MPint lhs, const MPint& rhs) noexcept { return lhs *= rhs; }
-MPint operator/(MPint lhs, const MPint& rhs)           { return lhs /= rhs; }
-MPint operator%(MPint lhs, const MPint& rhs)           { return lhs %= rhs; }
-
-// --- binary bitwise ---------------------------------------------------------
-
-MPint operator&(MPint lhs, const MPint& rhs) noexcept { return lhs &= rhs; }
-MPint operator|(MPint lhs, const MPint& rhs) noexcept { return lhs |= rhs; }
-MPint operator^(MPint lhs, const MPint& rhs) noexcept { return lhs ^= rhs; }
-
-// --- shift ------------------------------------------------------------------
-
-MPint operator<<(MPint lhs, int n)            noexcept { return lhs <<= n; }
-MPint operator>>(MPint lhs, int n)            noexcept { return lhs >>= n; }
-MPint operator<<(MPint lhs, const MPint& rhs) noexcept { return lhs <<= rhs; }
-MPint operator>>(MPint lhs, const MPint& rhs) noexcept { return lhs >>= rhs; }
 
 // --- comparison -------------------------------------------------------------
 

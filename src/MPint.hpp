@@ -12,26 +12,26 @@
 class MPint {
 public:
     // --- construction -------------------------------------------------------
-    MPint() noexcept;
+    MPint();
 
     // Accept any built-in integral type without narrowing warnings.
-    MPint(signed long int   v) noexcept;
-    MPint(signed int        v) noexcept;
-    MPint(signed short      v) noexcept;
-    MPint(signed char       v) noexcept;
-    MPint(unsigned long int v) noexcept;
-    MPint(unsigned int      v) noexcept;
-    MPint(unsigned short    v) noexcept;
-    MPint(unsigned char     v) noexcept;
-    MPint(long long         v) noexcept;
+    MPint(signed long int   v);
+    MPint(signed int        v);
+    MPint(signed short      v);
+    MPint(signed char       v);
+    MPint(unsigned long int v);
+    MPint(unsigned int      v);
+    MPint(unsigned short    v);
+    MPint(unsigned char     v);
+    MPint(long long         v);
 
     // String literals: decimal, octal (0-prefix), hex (0x), binary (0b).
     // Single-quote digit separators are ignored.  No type suffixes.
-    explicit MPint(const char*        s) noexcept;
-    explicit MPint(const std::string& s) noexcept;
+    explicit MPint(const char*        s);
+    explicit MPint(const std::string& s);
 
     // Copy / move / destroy
-    MPint(const MPint&)            noexcept;
+    MPint(const MPint&);
     MPint& operator=(const MPint&) noexcept;
     MPint(MPint&&)                 noexcept;
     MPint& operator=(MPint&&)      noexcept;
@@ -39,29 +39,29 @@ public:
 
     // --- conversion out -----------------------------------------------------
     // Integral: explicit, to prevent silent narrowing.
-    explicit operator signed long int()   const noexcept;
-    explicit operator signed int()        const noexcept;
-    explicit operator signed short()      const noexcept;
-    explicit operator signed char()       const noexcept;
-    explicit operator unsigned long int() const noexcept;
-    explicit operator unsigned int()      const noexcept;
-    explicit operator bool()              const noexcept;
+    [[nodiscard]] explicit operator signed long int()   const noexcept;
+    [[nodiscard]] explicit operator signed int()        const noexcept;
+    [[nodiscard]] explicit operator signed short()      const noexcept;
+    [[nodiscard]] explicit operator signed char()       const noexcept;
+    [[nodiscard]] explicit operator unsigned long int() const noexcept;
+    [[nodiscard]] explicit operator unsigned int()      const noexcept;
+    [[nodiscard]] explicit operator bool()              const noexcept;
 
     // Floating-point: explicit too — implicit operators cause overload
     // ambiguity when MPint is mixed with integral literals (e.g. a*3).
-    explicit operator float()             const;   // throws std::overflow_error on ±inf
-    explicit operator double()            const;   // throws std::overflow_error on ±inf
-    explicit operator long double()       const noexcept;
+    [[nodiscard]] explicit operator float()             const;   // throws std::overflow_error on ±inf
+    [[nodiscard]] explicit operator double()            const;   // throws std::overflow_error on ±inf
+    [[nodiscard]] explicit operator long double()       const noexcept;
 
     // --- unary arithmetic ---------------------------------------------------
-    MPint  operator+()         const noexcept;
-    MPint  operator-()         const noexcept;
+    [[nodiscard]] MPint  operator+()         const noexcept;
+    [[nodiscard]] MPint  operator-()         const noexcept;
 
     // --- unary logical ------------------------------------------------------
-    bool   operator!()         const noexcept;
+    [[nodiscard]] bool   operator!()         const noexcept;
 
     // --- unary bitwise ------------------------------------------------------
-    MPint  operator~()         const noexcept;
+    [[nodiscard]] MPint  operator~()         const noexcept;
 
     // --- prefix increment / decrement ---------------------------------------
     MPint& operator++()    noexcept;
@@ -89,25 +89,25 @@ public:
     MPint& operator<<=(const MPint& rhs) noexcept;
     MPint& operator>>=(const MPint& rhs) noexcept;
 
-    // --- binary arithmetic (defined via compound assignment) ----------------
-    friend MPint operator+(MPint lhs, const MPint& rhs) noexcept;
-    friend MPint operator-(MPint lhs, const MPint& rhs) noexcept;
-    friend MPint operator*(MPint lhs, const MPint& rhs) noexcept;
-    friend MPint operator/(MPint lhs, const MPint& rhs);
-    friend MPint operator%(MPint lhs, const MPint& rhs);
+    // --- binary arithmetic (inline: backend-agnostic, delegate to +=) -------
+    [[nodiscard]] friend MPint operator+(MPint lhs, const MPint& rhs) noexcept { return lhs += rhs; }
+    [[nodiscard]] friend MPint operator-(MPint lhs, const MPint& rhs) noexcept { return lhs -= rhs; }
+    [[nodiscard]] friend MPint operator*(MPint lhs, const MPint& rhs) noexcept { return lhs *= rhs; }
+    [[nodiscard]] friend MPint operator/(MPint lhs, const MPint& rhs)           { return lhs /= rhs; }
+    [[nodiscard]] friend MPint operator%(MPint lhs, const MPint& rhs)           { return lhs %= rhs; }
 
-    // --- binary bitwise -----------------------------------------------------
-    friend MPint operator&(MPint lhs, const MPint& rhs) noexcept;
-    friend MPint operator|(MPint lhs, const MPint& rhs) noexcept;
-    friend MPint operator^(MPint lhs, const MPint& rhs) noexcept;
+    // --- binary bitwise (inline: backend-agnostic) --------------------------
+    [[nodiscard]] friend MPint operator&(MPint lhs, const MPint& rhs) noexcept { return lhs &= rhs; }
+    [[nodiscard]] friend MPint operator|(MPint lhs, const MPint& rhs) noexcept { return lhs |= rhs; }
+    [[nodiscard]] friend MPint operator^(MPint lhs, const MPint& rhs) noexcept { return lhs ^= rhs; }
 
-    // --- shift --------------------------------------------------------------
-    friend MPint operator<<(MPint lhs, int n)            noexcept;
-    friend MPint operator>>(MPint lhs, int n)            noexcept;
-    friend MPint operator<<(MPint lhs, const MPint& rhs) noexcept;
-    friend MPint operator>>(MPint lhs, const MPint& rhs) noexcept;
+    // --- shift (inline: backend-agnostic) -----------------------------------
+    [[nodiscard]] friend MPint operator<<(MPint lhs, int n)            noexcept { return lhs <<= n; }
+    [[nodiscard]] friend MPint operator>>(MPint lhs, int n)            noexcept { return lhs >>= n; }
+    [[nodiscard]] friend MPint operator<<(MPint lhs, const MPint& rhs) noexcept { return lhs <<= rhs; }
+    [[nodiscard]] friend MPint operator>>(MPint lhs, const MPint& rhs) noexcept { return lhs >>= rhs; }
 
-    // --- comparison ---------------------------------------------------------
+    // --- comparison (backend-specific, defined in .cpp) ---------------------
     friend bool operator==(const MPint& a, const MPint& b) noexcept;
     friend bool operator!=(const MPint& a, const MPint& b) noexcept;
     friend bool operator< (const MPint& a, const MPint& b) noexcept;
@@ -123,3 +123,13 @@ private:
     struct MPintImpl;   // defined in MPint.cpp — no internals visible in this header
     MPintImpl*  pImpl;
 };
+
+// Comparison operators are backend-specific (defined in .cpp), so [[nodiscard]]
+// cannot be placed on the non-definition friend declarations inside the class.
+// Redeclaring them here makes the attribute visible at every call site.
+[[nodiscard]] bool operator==(const MPint& a, const MPint& b) noexcept;
+[[nodiscard]] bool operator!=(const MPint& a, const MPint& b) noexcept;
+[[nodiscard]] bool operator< (const MPint& a, const MPint& b) noexcept;
+[[nodiscard]] bool operator> (const MPint& a, const MPint& b) noexcept;
+[[nodiscard]] bool operator<=(const MPint& a, const MPint& b) noexcept;
+[[nodiscard]] bool operator>=(const MPint& a, const MPint& b) noexcept;
