@@ -1,0 +1,17 @@
+[claudeuser@gondwana:test]$ ./test.sh prof
+profiling ../bin/demoNative ...
+profiling ../bin/demo ...
+profiling ../bin/demoGMP ...
+
+=== profiling comparison (rdtsc cpu cycles, avg of 100000 runs) ===
+
+function                  demoNative       demo (long int)               demoGMP
+--------------  --------------------  --------------------  --------------------
+claude_main                    5 373                 7 121                12 125
+basicexpr                     59 633                67 520                90 696
+moreexpr                      20 533                24 712                36 216
+extraexpr                     27 196                49 863                84 970
+detTest                      408 411               661 726             1 068 922
+strconstr                     11 217                17 805                31 420
+floatconv                      7 864                 8 147                23 719
+reduTest                   2 076 943             5 292 753            12 926 933

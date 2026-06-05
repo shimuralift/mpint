@@ -33,14 +33,7 @@ Test commands: simple stdout/stderr based regression test: cd test; ./test.sh al
 Profiling/Benchmarking: cd test; ./test.sh prof
 
 ## What I've done in the meantime
-I changed some parameters governing redu_test() from redu.hpp and updated the test reference output files.
+I've saved a copy of the current "test/test.sh prof" output in test.
 
 ## What to do for you right now
-"const correctness" means - roughly - that all data used in c++ code which is intended to be immutable
-after initialisation is marked with the keyword const. This serves two purposes IMO:
-first, each code modification which violates the immutability intention gives a compile error,
-and second that a developer who analyses code, in an IDE, or using a debugger
-does not have to consider too many code locations when trying to figure out where data actually changes.
-
-Please review the library code, MPint*.?pp for const correctness and fix missing consts, even when this
-requires duplicated function declarations, i.e one non const and one const variant.
+Please have look at optimisation possibilities, namely (a) inlining, and (b) compiler optimisation options.

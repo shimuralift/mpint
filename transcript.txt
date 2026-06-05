@@ -7199,3 +7199,779 @@ claude --resume e9dd3c6f-7b6b-47f3-a3f2-6fc301b9ae37
 
 ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 ❯ /exit
+
+#############################################################################################################################################################################################################
+
+ ▐▛███▜▌   Claude Code v2.1.158
+▝▜█████▛▘  Sonnet 4.6 · Claude Pro
+  ▘▘ ▝▝    ~/work/mpint
+
+   Opus 4.8 is now available! · /model to switch
+
+✻ Conversation compacted (ctrl+o for history)
+
+
+❯ /compact
+  ⎿  Compacted (ctrl+o to see full summary)
+  ⎿  Referenced file src/redu.cpp
+  ⎿  Referenced file src/demo.cpp
+  ⎿  Read src/demoUtils.cpp (204 lines)
+  ⎿  Read src/det.cpp (217 lines)
+  ⎿  Read src/det.hpp (11 lines)
+
+❯ see CLAUDE.md for instructions
+
+● Reading the current instructions.
+
+  Read 1 file (ctrl+o to expand)
+
+● Let me read the MPint header and source files.
+
+  Read 3 files (ctrl+o to expand)
+
+● Now I have a clear picture. The MPint.hpp is already well const-correct (all non-mutating member functions are const). The gaps are in the .cpp files — local variables and pointer-typed parameters that are never
+  modified after initialization. Here's what I'll fix:
+
+  MPint.cpp:
+  - parse_str: const char* s → const char* const s (pointer never reassigned); char c → const char c
+  - operator float(): float f → const float f
+  - operator double(): double d → const double d
+
+  MPintGMP.cpp:
+  - mpz_set_mpint_str: const char* s → const char* const s; const char* q → const char* const q
+  - operator<<: char* s → char* const s
+  - operator float(): const float f
+  - operator double(): const double d
+
+● Update(src/MPint.cpp)
+  ⎿  Added 3 lines, removed 3 lines
+      19
+      20  // --- string parsing helper --------------------------------------------------
+      21
+      22 -static signed long int parse_str(const char* s) {
+      22 +static signed long int parse_str(const char* const s) {
+      23      const char* p = s;
+      24      bool negative = false;
+      25      if (*p == '-')      { negative = true; ++p; }
+     ...
+      27
+      28      int base = 10;
+      29      if (*p == '0') {
+      30 -        const char* q = p + 1;
+      30 +        const char* const q = p + 1;
+      31          if      (*q == 'x' || *q == 'X') { base = 16; p += 2; }
+      32          else if (*q == 'b' || *q == 'B') { base =  2; p += 2; }
+      33          else                             { base =  8; p += 1; }
+     ...
+      37      for (; *p; ++p) {
+      38          if (*p == '\'') continue;
+      39          unsigned int digit;
+      40 -        char c = *p;
+      40 +        const char c = *p;
+      41          if      (c >= '0' && c <= '9') digit = static_cast<unsigned int>(c - '0');
+      42          else if (c >= 'a' && c <= 'f') digit = static_cast<unsigned int>(c - 'a') + 10u;
+      43          else if (c >= 'A' && c <= 'F') digit = static_cast<unsigned int>(c - 'A') + 10u;
+
+● Update(src/MPint.cpp)
+  ⎿  Added 2 lines, removed 2 lines
+       89  MPint::operator unsigned int()      const noexcept { return static_cast<unsigned int>(pImpl->mVal); }
+       90  MPint::operator bool()              const noexcept { return pImpl->mVal != 0; }
+       91  MPint::operator float() const {
+       92 -    float f = static_cast<float>(pImpl->mVal);
+       92 +    const float f = static_cast<float>(pImpl->mVal);
+       93      if (std::isinf(f)) throw std::overflow_error("MPint->float overflow");
+       94      return f;
+       95  }
+       96  MPint::operator double() const {
+       97 -    double d = static_cast<double>(pImpl->mVal);
+       97 +    const double d = static_cast<double>(pImpl->mVal);
+       98      if (std::isinf(d)) throw std::overflow_error("MPint->double overflow");
+       99      return d;
+      100  }
+
+● Now the GMP file:
+
+● Update(src/MPintGMP.cpp)
+  ⎿  Added 2 lines, removed 2 lines
+      29  // Strips single-quote separators and handles the 0b/0B binary prefix that
+      30  // GMP's mpz_set_str does not recognise natively.
+      31
+      32 -static void mpz_set_mpint_str(mpz_t dest, const char* s) {
+      32 +static void mpz_set_mpint_str(mpz_t dest, const char* const s) {
+      33      const char* p = s;
+      34
+      35      // Preserve leading sign for the clean buffer
+     ...
+      40      // Detect base and advance past any prefix
+      41      int base = 0; // 0 → GMP auto-detects 0x (hex) and 0 (octal)
+      42      if (*p == '0') {
+      43 -        const char* q = p + 1;
+      43 +        const char* const q = p + 1;
+      44          if (*q == 'b' || *q == 'B') { base = 2; p += 2; }
+      45          // 0x and 0-prefix are left for GMP's base-0 auto-detection
+      46      }
+
+● Update(src/MPintGMP.cpp)
+  ⎿  Added 2 lines, removed 2 lines
+       97  MPint::operator unsigned int()      const noexcept { return static_cast<unsigned int>(mpz_get_ui(pImpl->mVal)); }
+       98  MPint::operator bool()              const noexcept { return mpz_sgn(pImpl->mVal) != 0; }
+       99  MPint::operator float() const {
+      100 -    float f = static_cast<float>(mpz_get_d(pImpl->mVal));
+      100 +    const float f = static_cast<float>(mpz_get_d(pImpl->mVal));
+      101      if (std::isinf(f)) throw std::overflow_error("MPint->float overflow");
+      102      return f;
+      103  }
+      104  MPint::operator double() const {
+      105 -    double d = mpz_get_d(pImpl->mVal);
+      105 +    const double d = mpz_get_d(pImpl->mVal);
+      106      if (std::isinf(d)) throw std::overflow_error("MPint->double overflow");
+      107      return d;
+      108  }
+
+● Update(src/MPintGMP.cpp)
+  ⎿  Added 1 line, removed 1 line
+      193  // --- stream I/O -------------------------------------------------------------
+      194
+      195  std::ostream& operator<<(std::ostream& os, const MPint& v) {
+      196 -    char* s = mpz_get_str(nullptr, 10, v.pImpl->mVal);
+      196 +    char* const s = mpz_get_str(nullptr, 10, v.pImpl->mVal);
+      197      os << s;
+      198      std::free(s);
+      199      return os;
+
+● Now verify everything builds cleanly:
+
+● Bash(make 2>&1)
+  ⎿  g++ -std=c++14 -Wall -Wextra -pedantic -Werror -Isrc -c -o bin/MPint.o src/MPint.cpp
+     ar rcs bin/libMP.a bin/MPint.o
+     g++ -std=c++14 -Wall -Wextra -pedantic -Werror -Isrc -o bin/demo src/demo.cpp src/det.cpp src/redu.cpp src/demoUtils.cpp -Lbin -lMP
+     … +3 lines (ctrl+o to expand)
+
+● Clean build. Let me run the tests:
+
+● Bash(cd /home/claudeuser/work/mpint/test && ./test.sh all 2>&1)
+  ⎿  ############################## START : ../bin/demo > demo.output 2>&1 ##########
+     ############################## EXIT  : ../bin/demo > demo.output 2>&1 : EXITCODE : 0 ##########
+     ############################## START : cat demo.output ##########
+     … +1962 lines (ctrl+o to expand)
+
+● Bash(./test.sh all 2>&1 | grep -E "^(PASS|FAIL|ERROR|#####.*DIFF)" | head -30)
+  ⎿  (No output)
+
+● Bash(./test.sh all 2>&1 | grep -E "(PASS|FAIL|DIFF|SUCCESS|ERROR)" | head -30)
+  ⎿  (No output)
+
+● Bash(./test.sh all 2>&1 | tail -20)
+  ⎿  864 2
+     870 2
+     881 2
+     … +17 lines (ctrl+o to expand)
+
+● All three diffs return exit code 0 — all tests pass. The changes added const to:
+
+  - parse_str's s parameter and the local c variable (both files)
+  - mpz_set_mpint_str's s parameter and its local q pointer (GMP file)
+  - The local f / d in operator float() / operator double() (both files)
+  - The local char* const s in GMP's operator<< (pointer is set once, never reassigned)
+
+  MPint.hpp was already const-correct — all non-mutating member functions were already marked const.
+
+✻ Sautéed for 3m 15s
+
+❯ ok, now do a review of MPint for "noexcept correctness"
+
+● Let me analyze the noexcept specs across all three files systematically.
+
+  Read 3 files (ctrl+o to expand)
+
+● The picture is clear. Here's what I found:
+
+  Wrong — noexcept but CAN throw via new:
+  - All constructors that allocate with new: the default ctor, all 10 numeric ctors, both string ctors, and the copy ctor. new throws std::bad_alloc; if a throw propagates through a noexcept boundary, std::terminate
+  is called silently.
+
+  Correctly noexcept — genuinely cannot throw:
+  - MPint(MPint&&) — just pointer swap, no allocation
+  - operator=(const MPint&) — long-int: trivial assignment; GMP: mpz_set uses GMP's abort-on-OOM contract, no C++ exception
+  - operator=(MPint&&) — pointer swap
+  - All unary/binary/bitwise/shift/comparison operators
+
+  Correctly NOT noexcept:
+  - operator float() / operator double() — explicitly throw on overflow
+  - operator/=, operator%=, operator/, operator% — UB or throw on zero divisor
+  - Stream operators
+
+  The fix is to remove noexcept from all constructors that call new. Three files to update: the header, MPint.cpp, and MPintGMP.cpp.
+
+● Update(~/work/mpint/src/MPint.hpp)
+  ⎿  Added 13 lines, removed 13 lines
+      12  class MPint {
+      13  public:
+      14      // --- construction -------------------------------------------------------
+      15 -    MPint() noexcept;
+      15 +    MPint();
+      16
+      17      // Accept any built-in integral type without narrowing warnings.
+      18 -    MPint(signed long int   v) noexcept;
+      19 -    MPint(signed int        v) noexcept;
+      20 -    MPint(signed short      v) noexcept;
+      21 -    MPint(signed char       v) noexcept;
+      22 -    MPint(unsigned long int v) noexcept;
+      23 -    MPint(unsigned int      v) noexcept;
+      24 -    MPint(unsigned short    v) noexcept;
+      25 -    MPint(unsigned char     v) noexcept;
+      26 -    MPint(long long         v) noexcept;
+      18 +    MPint(signed long int   v);
+      19 +    MPint(signed int        v);
+      20 +    MPint(signed short      v);
+      21 +    MPint(signed char       v);
+      22 +    MPint(unsigned long int v);
+      23 +    MPint(unsigned int      v);
+      24 +    MPint(unsigned short    v);
+      25 +    MPint(unsigned char     v);
+      26 +    MPint(long long         v);
+      27
+      28      // String literals: decimal, octal (0-prefix), hex (0x), binary (0b).
+      29      // Single-quote digit separators are ignored.  No type suffixes.
+      30 -    explicit MPint(const char*        s) noexcept;
+      31 -    explicit MPint(const std::string& s) noexcept;
+      30 +    explicit MPint(const char*        s);
+      31 +    explicit MPint(const std::string& s);
+      32
+      33      // Copy / move / destroy
+      34 -    MPint(const MPint&)            noexcept;
+      34 +    MPint(const MPint&);
+      35      MPint& operator=(const MPint&) noexcept;
+      36      MPint(MPint&&)                 noexcept;
+      37      MPint& operator=(MPint&&)      noexcept;
+
+● Now the MPint.cpp definitions:
+
+● Update(~/work/mpint/src/MPint.cpp)
+  ⎿  Added 13 lines, removed 13 lines
+      50
+      51  // --- construction -----------------------------------------------------------
+      52
+      53 -MPint::MPint()                    noexcept : pImpl(new MPintImpl{0L}) {}
+      54 -MPint::MPint(signed long int   v) noexcept : pImpl(new MPintImpl{v}) {}
+      55 -MPint::MPint(signed int        v) noexcept : pImpl(new MPintImpl{v}) {}
+      56 -MPint::MPint(signed short      v) noexcept : pImpl(new MPintImpl{v}) {}
+      57 -MPint::MPint(signed char       v) noexcept : pImpl(new MPintImpl{v}) {}
+      58 -MPint::MPint(unsigned long int v) noexcept : pImpl(new MPintImpl{static_cast<signed long int>(v)}) {}
+      59 -MPint::MPint(unsigned int      v) noexcept : pImpl(new MPintImpl{static_cast<signed long int>(v)}) {}
+      60 -MPint::MPint(unsigned short    v) noexcept : pImpl(new MPintImpl{static_cast<signed long int>(v)}) {}
+      61 -MPint::MPint(unsigned char     v) noexcept : pImpl(new MPintImpl{static_cast<signed long int>(v)}) {}
+      62 -MPint::MPint(long long         v) noexcept : pImpl(new MPintImpl{static_cast<signed long int>(v)}) {}
+      53 +MPint::MPint()                    : pImpl(new MPintImpl{0L}) {}
+      54 +MPint::MPint(signed long int   v) : pImpl(new MPintImpl{v}) {}
+      55 +MPint::MPint(signed int        v) : pImpl(new MPintImpl{v}) {}
+      56 +MPint::MPint(signed short      v) : pImpl(new MPintImpl{v}) {}
+      57 +MPint::MPint(signed char       v) : pImpl(new MPintImpl{v}) {}
+      58 +MPint::MPint(unsigned long int v) : pImpl(new MPintImpl{static_cast<signed long int>(v)}) {}
+      59 +MPint::MPint(unsigned int      v) : pImpl(new MPintImpl{static_cast<signed long int>(v)}) {}
+      60 +MPint::MPint(unsigned short    v) : pImpl(new MPintImpl{static_cast<signed long int>(v)}) {}
+      61 +MPint::MPint(unsigned char     v) : pImpl(new MPintImpl{static_cast<signed long int>(v)}) {}
+      62 +MPint::MPint(long long         v) : pImpl(new MPintImpl{static_cast<signed long int>(v)}) {}
+      63
+      64 -MPint::MPint(const char*        s) noexcept : pImpl(new MPintImpl{parse_str(s)}) {}
+      65 -MPint::MPint(const std::string& s) noexcept : pImpl(new MPintImpl{parse_str(s.c_str())}) {}
+      64 +MPint::MPint(const char*        s) : pImpl(new MPintImpl{parse_str(s)}) {}
+      65 +MPint::MPint(const std::string& s) : pImpl(new MPintImpl{parse_str(s.c_str())}) {}
+      66
+      67 -MPint::MPint(const MPint& other)  noexcept : pImpl(new MPintImpl{other.pImpl->mVal}) {}
+      67 +MPint::MPint(const MPint& other)  : pImpl(new MPintImpl{other.pImpl->mVal}) {}
+      68  MPint::MPint(MPint&&      other)  noexcept : pImpl(other.pImpl) { other.pImpl = nullptr; }
+      69
+      70  MPint& MPint::operator=(const MPint& other) noexcept {
+  ⎿  Found 10 new diagnostic issues in 1 file (ctrl+o to expand)
+
+● As expected — MPintGMP.cpp still has the old noexcept on those constructors. Fixing those now:
+
+● Update(~/work/mpint/src/MPintGMP.cpp)
+  ⎿  Added 13 lines, removed 13 lines
+      58
+      59  // --- construction -----------------------------------------------------------
+      60
+      61 -MPint::MPint()                    noexcept : pImpl(new MPintImpl()) {}
+      62 -MPint::MPint(signed long int   v) noexcept : pImpl(new MPintImpl(v)) {}
+      63 -MPint::MPint(signed int        v) noexcept : pImpl(new MPintImpl(static_cast<signed long int>(v))) {}
+      64 -MPint::MPint(signed short      v) noexcept : pImpl(new MPintImpl(static_cast<signed long int>(v))) {}
+      65 -MPint::MPint(signed char       v) noexcept : pImpl(new MPintImpl(static_cast<signed long int>(v))) {}
+      66 -MPint::MPint(unsigned long int v) noexcept : pImpl(new MPintImpl(static_cast<signed long int>(v))) {}
+      67 -MPint::MPint(unsigned int      v) noexcept : pImpl(new MPintImpl(static_cast<signed long int>(v))) {}
+      68 -MPint::MPint(unsigned short    v) noexcept : pImpl(new MPintImpl(static_cast<signed long int>(v))) {}
+      69 -MPint::MPint(unsigned char     v) noexcept : pImpl(new MPintImpl(static_cast<signed long int>(v))) {}
+      70 -MPint::MPint(long long         v) noexcept : pImpl(new MPintImpl(static_cast<signed long int>(v))) {}
+      61 +MPint::MPint()                    : pImpl(new MPintImpl()) {}
+      62 +MPint::MPint(signed long int   v) : pImpl(new MPintImpl(v)) {}
+      63 +MPint::MPint(signed int        v) : pImpl(new MPintImpl(static_cast<signed long int>(v))) {}
+      64 +MPint::MPint(signed short      v) : pImpl(new MPintImpl(static_cast<signed long int>(v))) {}
+      65 +MPint::MPint(signed char       v) : pImpl(new MPintImpl(static_cast<signed long int>(v))) {}
+      66 +MPint::MPint(unsigned long int v) : pImpl(new MPintImpl(static_cast<signed long int>(v))) {}
+      67 +MPint::MPint(unsigned int      v) : pImpl(new MPintImpl(static_cast<signed long int>(v))) {}
+      68 +MPint::MPint(unsigned short    v) : pImpl(new MPintImpl(static_cast<signed long int>(v))) {}
+      69 +MPint::MPint(unsigned char     v) : pImpl(new MPintImpl(static_cast<signed long int>(v))) {}
+      70 +MPint::MPint(long long         v) : pImpl(new MPintImpl(static_cast<signed long int>(v))) {}
+      71
+      72 -MPint::MPint(const char*        s) noexcept : pImpl(new MPintImpl()) { mpz_set_mpint_str(pImpl->mVal, s); }
+      73 -MPint::MPint(const std::string& s) noexcept : pImpl(new MPintImpl()) { mpz_set_mpint_str(pImpl->mVal, s.c_str()); }
+      72 +MPint::MPint(const char*        s) : pImpl(new MPintImpl()) { mpz_set_mpint_str(pImpl->mVal, s); }
+      73 +MPint::MPint(const std::string& s) : pImpl(new MPintImpl()) { mpz_set_mpint_str(pImpl->mVal, s.c_str()); }
+      74
+      75 -MPint::MPint(const MPint& other)  noexcept : pImpl(new MPintImpl(*other.pImpl)) {}
+      75 +MPint::MPint(const MPint& other)  : pImpl(new MPintImpl(*other.pImpl)) {}
+      76  MPint::MPint(MPint&&      other)  noexcept : pImpl(other.pImpl) { other.pImpl = nullptr; }
+      77
+      78  MPint& MPint::operator=(const MPint& other) noexcept {
+
+● Bash(make 2>&1)
+  ⎿  Error: Exit code 2
+     make: *** No targets specified and no makefile found.  Stop.
+
+● Bash(make -C /home/claudeuser/work/mpint 2>&1)
+  ⎿  make: Entering directory '/home/claudeuser/work/mpint'
+     g++ -std=c++14 -Wall -Wextra -pedantic -Werror -Isrc -c -o bin/MPint.o src/MPint.cpp
+     ar rcs bin/libMP.a bin/MPint.o
+     … +5 lines (ctrl+o to expand)
+
+● Clean. Run tests:
+
+● Bash(./test.sh all 2>&1 | tail -12)
+  ⎿  952 2
+     955 2
+     976 2
+     … +9 lines (ctrl+o to expand)
+
+● All green. Here's a summary of what changed and why:
+
+  Removed noexcept from (header + both .cpp implementations):
+  - Default constructor, all 10 numeric constructors, both string constructors, copy constructor — every constructor that calls new, which can throw std::bad_alloc.
+
+  Left noexcept on:
+  - MPint(MPint&&) — just steals the pointer, no allocation
+  - operator=(const MPint&) — long-int: trivial =; GMP: mpz_set uses GMP's abort-on-OOM contract, never throws a C++ exception
+  - operator=(MPint&&) — pointer swap
+  - All arithmetic/bitwise/shift/comparison operators — their bodies do no allocation
+
+  The key principle: if an exception propagates through a noexcept function, std::terminate is called silently, which is worse than letting the exception propagate normally. Move constructor and both assignment
+  operators are the only ones that genuinely cannot throw.
+
+✻ Baked for 3m 14s
+
+❯ how come that the code compiled before you removed these noexcepts?
+
+● Good question. The compiler never checks whether a noexcept declaration is truthful — it trusts you. There is no diagnostic for "this function body can throw but you said noexcept."
+
+  noexcept is a promise to the compiler, not a contract it verifies. The compiler uses it for two things:
+
+  1. Optimization — it can skip generating unwind tables for noexcept functions.
+  2. Type-system queries — e.g. std::is_nothrow_constructible, std::move_if_noexcept use it to make decisions at compile time.
+
+  If the promise is broken at runtime — i.e. an exception actually propagates out of a noexcept function — the runtime calls std::terminate(). That's the only enforcement, and it happens at runtime, not at compile
+  time.
+
+  So the previous code compiled fine because noexcept on a function that calls new is syntactically and semantically legal C++. It's just a latent runtime hazard: on an OOM, instead of propagating std::bad_alloc to
+  the caller, the program would silently terminate. The compiler had no reason to complain.
+
+✻ Sautéed for 14s
+
+❯ noexcept is not a contract to be verified by the compiler. good to know. what other kinds of correctness can you suggest?
+
+● A few that are actionable in C++, ordered roughly by relevance to this codebase:
+
+  [[nodiscard]] correctness — mark functions whose return value should essentially never be discarded. For MPint this means all value-returning operators (operator+, operator-, operator*, comparisons, unary operators,
+  conversion operators, etc.). If a caller writes a + b; and throws the result away, that's almost certainly a bug, and the compiler will warn about it.
+
+  explicit correctness — constructors and conversion operators that should not participate in implicit conversions should be explicit. MPint is actually a deliberate exception here: the numeric constructors are
+  intentionally implicit (that is the whole point — drop-in replacement). The string constructors are already explicit. Worth confirming intentionality but probably nothing to change.
+
+  constexpr correctness — functions computable at compile time should be constexpr. Not currently feasible for MPint because constexpr in C++14 forbids dynamic allocation (new), which is the basis of the pImpl design.
+  Would require a design change.
+
+  override / final correctness — virtual overrides should be marked override to catch signature mismatches at compile time. Not applicable here since MPint has no inheritance.
+
+  Rule-of-five correctness — if you define any of destructor, copy constructor, copy assignment, move constructor, move assignment, you should define or explicitly =delete all five. MPint already does this correctly.
+
+  ---
+  Of these, [[nodiscard]] is the most immediately useful and straightforward to apply to MPint. Want me to do that next?
+
+✻ Baked for 36s
+
+❯ yes, do that
+
+● Before making changes, I need to check one thing — [[nodiscard]] is a C++17 attribute and the Makefile uses -std=c++14 -pedantic -Werror. Let me verify whether that's actually a problem.
+
+● Bash(cd /home/claudeuser/work/mpint && echo '#include <iostream>
+      [[nodiscard]] int foo() { return 1; }…)
+  ⎿  (No output)
+
+● Good — no warnings, no errors. This GCC version accepts [[nodiscard]] silently in C++14 mode. Now let me also confirm the attribute actually fires when the return value is discarded:
+
+● Bash(echo '#include <iostream>
+      [[nodiscard]] int foo() { return 1; }…)
+  ⎿  Error: Exit code 1
+     <stdin>: In function ‘int main()’:
+     <stdin>:3:17: error: ignoring return value of ‘int foo()’, declared with attribute ‘nodiscard’ [-Werror=unused-result]
+     <stdin>:2:19: note: declared here
+     cc1plus: all warnings being treated as errors
+
+● Works perfectly. Now I'll add [[nodiscard]] to the header. The candidates are:
+
+  - All conversion operators — discarding an explicit cast result is always a bug
+  - Unary value-returning operators — +(), -(), ~(), !()
+  - All binary operators — arithmetic, bitwise, shift
+  - All comparison operators — silently discarding a comparison is almost always a bug
+
+  Not added to: postfix/prefix increment/decrement (used as statements all the time in C/C++), compound assignments (primary use is as a statement), assignment operators, stream operators.
+
+  [[nodiscard]] only needs to be on the declaration, so only MPint.hpp changes:
+
+● Update(src/MPint.hpp)
+  ⎿  Added 14 lines, removed 14 lines
+      39
+      40      // --- conversion out -----------------------------------------------------
+      41      // Integral: explicit, to prevent silent narrowing.
+      42 -    explicit operator signed long int()   const noexcept;
+      43 -    explicit operator signed int()        const noexcept;
+      44 -    explicit operator signed short()      const noexcept;
+      45 -    explicit operator signed char()       const noexcept;
+      46 -    explicit operator unsigned long int() const noexcept;
+      47 -    explicit operator unsigned int()      const noexcept;
+      48 -    explicit operator bool()              const noexcept;
+      42 +    [[nodiscard]] explicit operator signed long int()   const noexcept;
+      43 +    [[nodiscard]] explicit operator signed int()        const noexcept;
+      44 +    [[nodiscard]] explicit operator signed short()      const noexcept;
+      45 +    [[nodiscard]] explicit operator signed char()       const noexcept;
+      46 +    [[nodiscard]] explicit operator unsigned long int() const noexcept;
+      47 +    [[nodiscard]] explicit operator unsigned int()      const noexcept;
+      48 +    [[nodiscard]] explicit operator bool()              const noexcept;
+      49
+      50      // Floating-point: explicit too — implicit operators cause overload
+      51      // ambiguity when MPint is mixed with integral literals (e.g. a*3).
+      52 -    explicit operator float()             const;   // throws std::overflow_error on ±inf
+      53 -    explicit operator double()            const;   // throws std::overflow_error on ±inf
+      54 -    explicit operator long double()       const noexcept;
+      52 +    [[nodiscard]] explicit operator float()             const;   // throws std::overflow_error on ±inf
+      53 +    [[nodiscard]] explicit operator double()            const;   // throws std::overflow_error on ±inf
+      54 +    [[nodiscard]] explicit operator long double()       const noexcept;
+      55
+      56      // --- unary arithmetic ---------------------------------------------------
+      57 -    MPint  operator+()         const noexcept;
+      58 -    MPint  operator-()         const noexcept;
+      57 +    [[nodiscard]] MPint  operator+()         const noexcept;
+      58 +    [[nodiscard]] MPint  operator-()         const noexcept;
+      59
+      60      // --- unary logical ------------------------------------------------------
+      61 -    bool   operator!()         const noexcept;
+      61 +    [[nodiscard]] bool   operator!()         const noexcept;
+      62
+      63      // --- unary bitwise ------------------------------------------------------
+      64 -    MPint  operator~()         const noexcept;
+      64 +    [[nodiscard]] MPint  operator~()         const noexcept;
+      65
+      66      // --- prefix increment / decrement ---------------------------------------
+      67      MPint& operator++()    noexcept;
+
+● Update(src/MPint.hpp)
+  ⎿  Added 18 lines, removed 18 lines
+       90      MPint& operator>>=(const MPint& rhs) noexcept;
+       91
+       92      // --- binary arithmetic (defined via compound assignment) ----------------
+       93 -    friend MPint operator+(MPint lhs, const MPint& rhs) noexcept;
+       94 -    friend MPint operator-(MPint lhs, const MPint& rhs) noexcept;
+       95 -    friend MPint operator*(MPint lhs, const MPint& rhs) noexcept;
+       96 -    friend MPint operator/(MPint lhs, const MPint& rhs);
+       97 -    friend MPint operator%(MPint lhs, const MPint& rhs);
+       93 +    [[nodiscard]] friend MPint operator+(MPint lhs, const MPint& rhs) noexcept;
+       94 +    [[nodiscard]] friend MPint operator-(MPint lhs, const MPint& rhs) noexcept;
+       95 +    [[nodiscard]] friend MPint operator*(MPint lhs, const MPint& rhs) noexcept;
+       96 +    [[nodiscard]] friend MPint operator/(MPint lhs, const MPint& rhs);
+       97 +    [[nodiscard]] friend MPint operator%(MPint lhs, const MPint& rhs);
+       98
+       99      // --- binary bitwise -----------------------------------------------------
+      100 -    friend MPint operator&(MPint lhs, const MPint& rhs) noexcept;
+      101 -    friend MPint operator|(MPint lhs, const MPint& rhs) noexcept;
+      102 -    friend MPint operator^(MPint lhs, const MPint& rhs) noexcept;
+      100 +    [[nodiscard]] friend MPint operator&(MPint lhs, const MPint& rhs) noexcept;
+      101 +    [[nodiscard]] friend MPint operator|(MPint lhs, const MPint& rhs) noexcept;
+      102 +    [[nodiscard]] friend MPint operator^(MPint lhs, const MPint& rhs) noexcept;
+      103
+      104      // --- shift --------------------------------------------------------------
+      105 -    friend MPint operator<<(MPint lhs, int n)            noexcept;
+      106 -    friend MPint operator>>(MPint lhs, int n)            noexcept;
+      107 -    friend MPint operator<<(MPint lhs, const MPint& rhs) noexcept;
+      108 -    friend MPint operator>>(MPint lhs, const MPint& rhs) noexcept;
+      105 +    [[nodiscard]] friend MPint operator<<(MPint lhs, int n)            noexcept;
+      106 +    [[nodiscard]] friend MPint operator>>(MPint lhs, int n)            noexcept;
+      107 +    [[nodiscard]] friend MPint operator<<(MPint lhs, const MPint& rhs) noexcept;
+      108 +    [[nodiscard]] friend MPint operator>>(MPint lhs, const MPint& rhs) noexcept;
+      109
+      110      // --- comparison ---------------------------------------------------------
+      111 -    friend bool operator==(const MPint& a, const MPint& b) noexcept;
+      112 -    friend bool operator!=(const MPint& a, const MPint& b) noexcept;
+      113 -    friend bool operator< (const MPint& a, const MPint& b) noexcept;
+      114 -    friend bool operator> (const MPint& a, const MPint& b) noexcept;
+      115 -    friend bool operator<=(const MPint& a, const MPint& b) noexcept;
+      116 -    friend bool operator>=(const MPint& a, const MPint& b) noexcept;
+      111 +    [[nodiscard]] friend bool operator==(const MPint& a, const MPint& b) noexcept;
+      112 +    [[nodiscard]] friend bool operator!=(const MPint& a, const MPint& b) noexcept;
+      113 +    [[nodiscard]] friend bool operator< (const MPint& a, const MPint& b) noexcept;
+      114 +    [[nodiscard]] friend bool operator> (const MPint& a, const MPint& b) noexcept;
+      115 +    [[nodiscard]] friend bool operator<=(const MPint& a, const MPint& b) noexcept;
+      116 +    [[nodiscard]] friend bool operator>=(const MPint& a, const MPint& b) noexcept;
+      117
+      118      // --- stream I/O ---------------------------------------------------------
+      119      friend std::ostream& operator<<(std::ostream& os, const MPint& v);
+
+● Bash(make -C /home/claudeuser/work/mpint 2>&1)
+  ⎿  Error: Exit code 2
+     make: Entering directory '/home/claudeuser/work/mpint'
+     g++ -std=c++14 -Wall -Wextra -pedantic -Werror -Isrc -c -o bin/MPint.o src/MPint.cpp
+     In file included from src/MPint.cpp:1:
+     src/MPint.hpp:93:32: error: attribute ignored [-Werror=attributes]
+        93 |     [[nodiscard]] friend MPint operator+(MPint lhs, const MPint& rhs) noexcept;
+           |                                ^~~~~~~~
+     src/MPint.hpp:93:32: note: an attribute that appertains to a friend declaration that is not a definition is ignored
+     src/MPint.hpp:94:32: error: attribute ignored [-Werror=attributes]
+        94 |     [[nodiscard]] friend MPint operator-(MPint lhs, const MPint& rhs) noexcept;
+     … +69 lines (ctrl+o to expand)
+  ⎿  Found 12 new diagnostic issues in 3 files (ctrl+o to expand)
+
+● The C++ standard explicitly ignores [[nodiscard]] on non-definition friend declarations. I need a different approach for the friends. Two strategies:
+
+  - Binary arithmetic / bitwise / shift operators: convert to inline friend definitions inside the class body (they're all trivial one-liners delegating to compound assignment, which is backend-agnostic). Inline
+  friend definitions accept [[nodiscard]].
+  - Comparison operators: the implementations access pImpl->mVal differently per backend so they can't be inlined in the header. Instead, add [[nodiscard]] redeclarations after the class body — seeing [[nodiscard]] on
+  any declaration is sufficient for the compiler to warn.
+
+  First, revert the friend declarations back to no-attribute (they'll either become inline defs or get fixed via redeclarations), and convert binary/bitwise/shift to inline definitions:
+
+● Update(src/MPint.hpp)
+  ⎿  Added 22 lines, removed 22 lines
+       89      MPint& operator<<=(const MPint& rhs) noexcept;
+       90      MPint& operator>>=(const MPint& rhs) noexcept;
+       91
+       92 -    // --- binary arithmetic (defined via compound assignment) ----------------
+       93 -    [[nodiscard]] friend MPint operator+(MPint lhs, const MPint& rhs) noexcept;
+       94 -    [[nodiscard]] friend MPint operator-(MPint lhs, const MPint& rhs) noexcept;
+       95 -    [[nodiscard]] friend MPint operator*(MPint lhs, const MPint& rhs) noexcept;
+       96 -    [[nodiscard]] friend MPint operator/(MPint lhs, const MPint& rhs);
+       97 -    [[nodiscard]] friend MPint operator%(MPint lhs, const MPint& rhs);
+       92 +    // --- binary arithmetic (inline: backend-agnostic, delegate to +=) -------
+       93 +    [[nodiscard]] friend MPint operator+(MPint lhs, const MPint& rhs) noexcept { return lhs += rhs; }
+       94 +    [[nodiscard]] friend MPint operator-(MPint lhs, const MPint& rhs) noexcept { return lhs -= rhs; }
+       95 +    [[nodiscard]] friend MPint operator*(MPint lhs, const MPint& rhs) noexcept { return lhs *= rhs; }
+       96 +    [[nodiscard]] friend MPint operator/(MPint lhs, const MPint& rhs)           { return lhs /= rhs; }
+       97 +    [[nodiscard]] friend MPint operator%(MPint lhs, const MPint& rhs)           { return lhs %= rhs; }
+       98
+       99 -    // --- binary bitwise -----------------------------------------------------
+      100 -    [[nodiscard]] friend MPint operator&(MPint lhs, const MPint& rhs) noexcept;
+      101 -    [[nodiscard]] friend MPint operator|(MPint lhs, const MPint& rhs) noexcept;
+      102 -    [[nodiscard]] friend MPint operator^(MPint lhs, const MPint& rhs) noexcept;
+       99 +    // --- binary bitwise (inline: backend-agnostic) --------------------------
+      100 +    [[nodiscard]] friend MPint operator&(MPint lhs, const MPint& rhs) noexcept { return lhs &= rhs; }
+      101 +    [[nodiscard]] friend MPint operator|(MPint lhs, const MPint& rhs) noexcept { return lhs |= rhs; }
+      102 +    [[nodiscard]] friend MPint operator^(MPint lhs, const MPint& rhs) noexcept { return lhs ^= rhs; }
+      103
+      104 -    // --- shift --------------------------------------------------------------
+      105 -    [[nodiscard]] friend MPint operator<<(MPint lhs, int n)            noexcept;
+      106 -    [[nodiscard]] friend MPint operator>>(MPint lhs, int n)            noexcept;
+      107 -    [[nodiscard]] friend MPint operator<<(MPint lhs, const MPint& rhs) noexcept;
+      108 -    [[nodiscard]] friend MPint operator>>(MPint lhs, const MPint& rhs) noexcept;
+      104 +    // --- shift (inline: backend-agnostic) -----------------------------------
+      105 +    [[nodiscard]] friend MPint operator<<(MPint lhs, int n)            noexcept { return lhs <<= n; }
+      106 +    [[nodiscard]] friend MPint operator>>(MPint lhs, int n)            noexcept { return lhs >>= n; }
+      107 +    [[nodiscard]] friend MPint operator<<(MPint lhs, const MPint& rhs) noexcept { return lhs <<= rhs; }
+      108 +    [[nodiscard]] friend MPint operator>>(MPint lhs, const MPint& rhs) noexcept { return lhs >>= rhs; }
+      109
+      110 -    // --- comparison ---------------------------------------------------------
+      111 -    [[nodiscard]] friend bool operator==(const MPint& a, const MPint& b) noexcept;
+      112 -    [[nodiscard]] friend bool operator!=(const MPint& a, const MPint& b) noexcept;
+      113 -    [[nodiscard]] friend bool operator< (const MPint& a, const MPint& b) noexcept;
+      114 -    [[nodiscard]] friend bool operator> (const MPint& a, const MPint& b) noexcept;
+      115 -    [[nodiscard]] friend bool operator<=(const MPint& a, const MPint& b) noexcept;
+      116 -    [[nodiscard]] friend bool operator>=(const MPint& a, const MPint& b) noexcept;
+      110 +    // --- comparison (backend-specific, defined in .cpp) ---------------------
+      111 +    friend bool operator==(const MPint& a, const MPint& b) noexcept;
+      112 +    friend bool operator!=(const MPint& a, const MPint& b) noexcept;
+      113 +    friend bool operator< (const MPint& a, const MPint& b) noexcept;
+      114 +    friend bool operator> (const MPint& a, const MPint& b) noexcept;
+      115 +    friend bool operator<=(const MPint& a, const MPint& b) noexcept;
+      116 +    friend bool operator>=(const MPint& a, const MPint& b) noexcept;
+      117
+      118      // --- stream I/O ---------------------------------------------------------
+      119      friend std::ostream& operator<<(std::ostream& os, const MPint& v);
+
+● Now add the [[nodiscard]] redeclarations for comparisons after the class, and the stream operator. Let me read the end of the header first:
+
+  Read 1 file (ctrl+o to expand)
+  ⎿  Found 20 new diagnostic issues in 2 files (ctrl+o to expand)
+
+● Good — the redefinitions are expected. I'll remove those operators from both .cpp files, then add the [[nodiscard]] redeclarations for comparisons after the class. Let me do all three edits in parallel:
+
+● Update(src/MPint.hpp)
+  ⎿  Added 10 lines
+      123      struct MPintImpl;   // defined in MPint.cpp — no internals visible in this header
+      124      MPintImpl*  pImpl;
+      125  };
+      126 +
+      127 +// Comparison operators are backend-specific (defined in .cpp), so [[nodiscard]]
+      128 +// cannot be placed on the non-definition friend declarations inside the class.
+      129 +// Redeclaring them here makes the attribute visible at every call site.
+      130 +[[nodiscard]] bool operator==(const MPint& a, const MPint& b) noexcept;
+      131 +[[nodiscard]] bool operator!=(const MPint& a, const MPint& b) noexcept;
+      132 +[[nodiscard]] bool operator< (const MPint& a, const MPint& b) noexcept;
+      133 +[[nodiscard]] bool operator> (const MPint& a, const MPint& b) noexcept;
+      134 +[[nodiscard]] bool operator<=(const MPint& a, const MPint& b) noexcept;
+      135 +[[nodiscard]] bool operator>=(const MPint& a, const MPint& b) noexcept;
+
+● Update(src/MPint.cpp)
+  ⎿  Removed 21 lines
+      144  MPint& MPint::operator<<=(const MPint& rhs) noexcept { pImpl->mVal <<= rhs.pImpl->mVal; return *this; }
+      145  MPint& MPint::operator>>=(const MPint& rhs) noexcept { pImpl->mVal >>= rhs.pImpl->mVal; return *this; }
+      146
+      147 -// --- binary arithmetic ------------------------------------------------------
+      148 -
+      149 -MPint operator+(MPint lhs, const MPint& rhs) noexcept { return lhs += rhs; }
+      150 -MPint operator-(MPint lhs, const MPint& rhs) noexcept { return lhs -= rhs; }
+      151 -MPint operator*(MPint lhs, const MPint& rhs) noexcept { return lhs *= rhs; }
+      152 -MPint operator/(MPint lhs, const MPint& rhs)           { return lhs /= rhs; }
+      153 -MPint operator%(MPint lhs, const MPint& rhs)           { return lhs %= rhs; }
+      154 -
+      155 -// --- binary bitwise ---------------------------------------------------------
+      156 -
+      157 -MPint operator&(MPint lhs, const MPint& rhs) noexcept { return lhs &= rhs; }
+      158 -MPint operator|(MPint lhs, const MPint& rhs) noexcept { return lhs |= rhs; }
+      159 -MPint operator^(MPint lhs, const MPint& rhs) noexcept { return lhs ^= rhs; }
+      160 -
+      161 -// --- shift ------------------------------------------------------------------
+      162 -
+      163 -MPint operator<<(MPint lhs, int n)            noexcept { return lhs <<= n; }
+      164 -MPint operator>>(MPint lhs, int n)            noexcept { return lhs >>= n; }
+      165 -MPint operator<<(MPint lhs, const MPint& rhs) noexcept { return lhs <<= rhs; }
+      166 -MPint operator>>(MPint lhs, const MPint& rhs) noexcept { return lhs >>= rhs; }
+      167 -
+      147  // --- comparison -------------------------------------------------------------
+      148
+      149  bool operator==(const MPint& a, const MPint& b) noexcept { return a.pImpl->mVal == b.pImpl->mVal; }
+
+● Update(src/MPintGMP.cpp)
+  ⎿  Removed 21 lines
+      160  MPint& MPint::operator<<=(const MPint& rhs) noexcept { mpz_mul_2exp(pImpl->mVal, pImpl->mVal, static_cast<mp_bitcnt_t>(mpz_get_ui(rhs.pImpl->mVal))); return *this; }
+      161  MPint& MPint::operator>>=(const MPint& rhs) noexcept { mpz_fdiv_q_2exp(pImpl->mVal, pImpl->mVal, static_cast<mp_bitcnt_t>(mpz_get_ui(rhs.pImpl->mVal))); return *this; }
+      162
+      163 -// --- binary arithmetic ------------------------------------------------------
+      164 -
+      165 -MPint operator+(MPint lhs, const MPint& rhs) noexcept { return lhs += rhs; }
+      166 -MPint operator-(MPint lhs, const MPint& rhs) noexcept { return lhs -= rhs; }
+      167 -MPint operator*(MPint lhs, const MPint& rhs) noexcept { return lhs *= rhs; }
+      168 -MPint operator/(MPint lhs, const MPint& rhs)           { return lhs /= rhs; }
+      169 -MPint operator%(MPint lhs, const MPint& rhs)           { return lhs %= rhs; }
+      170 -
+      171 -// --- binary bitwise ---------------------------------------------------------
+      172 -
+      173 -MPint operator&(MPint lhs, const MPint& rhs) noexcept { return lhs &= rhs; }
+      174 -MPint operator|(MPint lhs, const MPint& rhs) noexcept { return lhs |= rhs; }
+      175 -MPint operator^(MPint lhs, const MPint& rhs) noexcept { return lhs ^= rhs; }
+      176 -
+      177 -// --- shift ------------------------------------------------------------------
+      178 -
+      179 -MPint operator<<(MPint lhs, int n)            noexcept { return lhs <<= n; }
+      180 -MPint operator>>(MPint lhs, int n)            noexcept { return lhs >>= n; }
+      181 -MPint operator<<(MPint lhs, const MPint& rhs) noexcept { return lhs <<= rhs; }
+      182 -MPint operator>>(MPint lhs, const MPint& rhs) noexcept { return lhs >>= rhs; }
+      183 -
+      163  // --- comparison -------------------------------------------------------------
+      164
+      165  bool operator==(const MPint& a, const MPint& b) noexcept { return mpz_cmp(a.pImpl->mVal, b.pImpl->mVal) == 0; }
+
+● Bash(make -C /home/claudeuser/work/mpint 2>&1)
+  ⎿  make: Entering directory '/home/claudeuser/work/mpint'
+     g++ -std=c++14 -Wall -Wextra -pedantic -Werror -Isrc -c -o bin/MPint.o src/MPint.cpp
+     ar rcs bin/libMP.a bin/MPint.o
+     … +5 lines (ctrl+o to expand)
+
+● Clean. Let me also verify the attribute actually fires — that a call site using MPint that discards a comparison result gets an error:
+
+● Bash(echo '#include "MPint.hpp"
+      int main() {…)
+  ⎿  Error: Exit code 1
+     <stdin>: In function ‘int main()’:
+     <stdin>:4:7: error: ignoring return value of ‘bool operator==(const MPint&, const MPint&)’, declared with attribute ‘nodiscard’ [-Werror=unused-result]
+     In file included from <stdin>:1:
+     src/MPint.hpp:130:20: note: declared here
+       130 | [[nodiscard]] bool operator==(const MPint& a, const MPint& b) noexcept;
+           |                    ^~~~~~~~
+     <stdin>:5:9: error: ignoring return value of ‘MPint operator+(MPint, const MPint&)’, declared with attribute ‘nodiscard’ [-Werror=unused-result]
+     src/MPint.hpp:93:32: note: declared here
+        93 |     [[nodiscard]] friend MPint operator+(MPint lhs, const MPint& rhs) noexcept { return lhs += rhs; }
+     … +2 lines (ctrl+o to expand)
+
+● Both paths fire correctly. Run the full tests:
+
+● Bash(cd /home/claudeuser/work/mpint/test && ./test.sh all 2>&1 | tail -8)
+  ⎿  996 4
+     ############################## EXIT  : cat demoNative.output : EXITCODE : 0 ##########
+     ############################## START : diff demo.output demo.output.ref ##########
+     … +5 lines (ctrl+o to expand)
+
+● All tests pass. Here's a summary of the approach:
+
+  Binary arithmetic, bitwise, and shift operators (12 total): converted from separate .cpp definitions to inline friend definitions inside the class body. Since they're backend-agnostic one-liners (return lhs += rhs),
+  this is appropriate — and inline friend definitions accept [[nodiscard]].
+
+  Comparison operators (6 total): implementations differ per backend so they stay as .cpp definitions. Their friend declarations inside the class cannot carry [[nodiscard]] (GCC ignores it there), so [[nodiscard]]
+  redeclarations were added after the closing } of the class. Any redeclaration with [[nodiscard]] is sufficient for the compiler to warn at call sites.
+
+✻ Brewed for 4m 13s
+
+❯ thanks, btw why does nodiscard have this fancy "[[ ]]" decoration?
+
+● It's the C++ standard attribute syntax, introduced in C++11 to replace the chaotic pre-standard situation where every compiler had its own proprietary spelling:
+
+  - GCC: __attribute__((warn_unused_result))
+  - MSVC: __declspec(noinline)
+  - Clang: both of the above, plus its own variants
+
+  All non-portable, all ugly, all different.
+
+  The standards committee introduced [[...]] as a single unified syntax. The double brackets specifically were chosen because single brackets [x] already mean array subscript in the grammar — adding a second [ makes
+  the token sequence unambiguous for the parser without any look-ahead tricks.
+
+  A secondary design goal was graceful degradation: a compiler that doesn't recognise a particular attribute is supposed to ignore it rather than reject it. So if you write [[nodiscard]] and target an older compiler,
+  it just silently skips it rather than refusing to compile. (GCC with -Wpedantic does warn about unknown attributes, but that's the compiler being extra strict, not the language requiring it.)
+
+  The standard keeps adding new ones across versions:
+  - C++11: [[noreturn]], [[carries_dependency]]
+  - C++14: [[deprecated]]
+  - C++17: [[nodiscard]], [[fallthrough]], [[maybe_unused]]
+  - C++20: [[likely]], [[unlikely]], [[no_unique_address]]
+  - C++23: [[assume(expr)]]
+
+  So [[nodiscard]] looks "fancy" because it's relatively new (C++17) and the syntax was deliberately made visually distinct so attributes stand out from ordinary declarations.
+
+✻ Churned for 22s
+
+❯ commit this
+
+● Bash(cd /home/claudeuser/work/mpint && git status && git diff)
+  ⎿  On branch master
+     Changes not staged for commit:
+       (use "git add <file>..." to update what will be committed)
+     … +379 lines (ctrl+o to expand)
+
+● Bash(git log --oneline -5)
+  ⎿  1537ba1 changed test parameters for lattice related demo code in redu.cpp
+     0c99607 updated transcript.txt
+     a75df07 add shell size output to reduTest: print length and vector count per shell
+     … +2 lines (ctrl+o to expand)
+
+● Bash(git add src/MPint.hpp src/MPint.cpp src/MPintGMP.cpp && git commit -m "$(cat <<'EOF'
+      apply const, noexcept, and [[nodiscard]] correctness to MPint library…)
+  ⎿  [master ce6f6ad] apply const, noexcept, and [[nodiscard]] correctness to MPint library
+      3 files changed, 96 insertions(+), 128 deletions(-)
+
+● Done.
+
+#############################################################################################################################################################################################################
+
