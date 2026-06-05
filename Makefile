@@ -25,7 +25,7 @@ TARGETNATIVE   := $(BINDIR)/demoNative
 
 
 CXX      := g++
-CXXFLAGS := -std=c++14 -Wall -Wextra -pedantic -Werror -I$(SRCDIR)
+CXXFLAGS := -std=c++14 -Wall -Wextra -pedantic -Werror -O2 -flto -I$(SRCDIR)
 AR       := ar
 ARFLAGS  := rcs
 
