@@ -540,12 +540,12 @@ void shortvecs(double * ge, double ** mo, Long len, Long ** vecs, int dim) {
 void reduTest() {
 	  const int runsPerCase = 2;
 	  const int dimLow = 2;
-	  const int dimHigh = 5;
+	  const int dimHigh = 6;
 	  const int dimStep = 1;
 	  const int sparsityLow = 10;
 	  const int sparsityHigh = 30;
 	  const int sparsityStep = 10;
-	  const unsigned long int entryMagnitude = 300;
+	  const unsigned long int entryMagnitude = 10;
 	  const long int rand48Seed = 4713;
 
 	  const int dimRangeSize = getRangeSize(dimLow, dimHigh, dimStep);
@@ -565,7 +565,7 @@ void reduTest() {
 
 				  double * ge;
 				  double ** mo;
-				  Long len = entryMagnitude*dim;
+				  Long len = entryMagnitude*entryMagnitude*entryMagnitude;
 				  Long ** vecs;
 				  unsigned int shortvec_numb;
 
@@ -574,7 +574,6 @@ void reduTest() {
 				  make_double_squarematrix(&mo, dim);
 				  triple_l(pdState->getMatrix(), nullptr, nullptr, ge, mo, dim);
 
-				  pdState->printMatrix();
 				  shortvec_numb = shortvecs_count(ge, mo, len, dim);
 				  make_Long_rectmatrix(&vecs, shortvec_numb + 1, dim + 1);
 				  shortvecs(ge, mo, len, vecs, dim);
