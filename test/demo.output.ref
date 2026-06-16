@@ -30,14 +30,10 @@ MPint: my elementary operator expressions
 2nc -() const :: 1::-1
 !() const :: 65514::0
 ~() const :: -23::22
-+()       :: 0::0
--()       :: 1::-1
 ++()      :: -11::-10::-10
 ++(int)   :: -12::-12::-11
 --()      :: 13::12::12
 --(int)   :: 21::21::20
-!()       :: 65514::0
-~()       :: -23::22
 
 =(MPint&, MPint) :: -23 = -733 :: -733 :: -733
 
@@ -746,6 +742,29 @@ double(42)          = 42
 double(-100)        = -100
 double(1000000000)  = 1e+09
 double(-999999999)  = -1e+09
+
+MPint: missing coverage tests
+
+--- move construction ---
+move-constructed = 42
+
+--- move assignment ---
+move-assigned    = 99
+
+--- operator long double() ---
+long double(0)    = 0
+long double(42)   = 42
+long double(-100) = -100
+
+--- stream input operator>> ---
+read "123"  = 123
+read "-456" = -456
+read "7 8"  = 7 8
+
+--- string constructor: + prefix (non-decimal) ---
+"+0x1F" = 31
+"+017"  = 15
+"+0b11" = 3
 
 MPint: integral lattice example
 

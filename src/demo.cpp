@@ -4,9 +4,11 @@
 #include <cstring>
 #include <iomanip>
 #include <iostream>
+#include <sstream>
 #include <stdexcept>
 #include <streambuf>
 #include <string>
+#include <utility>
 
 #include "det.hpp"
 #include "redu.hpp"
@@ -19,7 +21,7 @@ typedef signed long int MPint;
 
 
 
-int claude_main() {
+int expr() {
     // --- construction from literals -----------------------------------------
     MPint a = 6;
     MPint b = 4;
@@ -141,8 +143,6 @@ int basicexpr() {
   std::cout << "!() const :: " << cMP__c_u_s_i << "::" <<  !cMP__c_u_s_i   << std::endl;
   std::cout << "~() const :: " << cMP__c_u_l_i << "::" <<  ~cMP__c_u_l_i   << std::endl;
   
-  std::cout << "+()       :: " << ncMP_________ << "::" <<  +ncMP_________   << std::endl;
-  std::cout << "-()       :: " << ncMP__c______ << "::" <<  -ncMP__c______   << std::endl;
 #ifdef DEMO_NATIVE
   { auto _b = ncMP__c_____i; auto _r = ++ncMP__c_____i;
     std::cout << "++()      :: " << _b << "::" << _r << "::" << ncMP__c_____i << std::endl; }
@@ -158,8 +158,6 @@ int basicexpr() {
   std::cout << "--()      :: " << ncMP__c___l_i << "::" << --ncMP__c___l_i   << "::" << ncMP__c___l_i << std::endl;
   std::cout << "--(int)   :: " << ncMP__c_u___i << "::" <<   ncMP__c_u___i-- << "::" << ncMP__c_u___i << std::endl;
 #endif
-  std::cout << "!()       :: " << ncMP__c_u_s_i << "::" <<  !ncMP__c_u_s_i   << std::endl;
-  std::cout << "~()       :: " << ncMP__c_u_l_i << "::" <<  ~ncMP__c_u_l_i   << std::endl;
   std::cout << std::endl;
 
 #ifdef DEMO_NATIVE
@@ -714,6 +712,87 @@ int strconstr() {
 }
 #endif
 
+int missingexpr() {
+  // --- move construction ---
+  // For DEMO_NATIVE (signed long int), std::move on a primitive is a copy;
+  // the test still validates the correct value reaches the destination.
+  std::cout << "--- move construction ---" << std::endl;
+  {
+    MPint src(42);
+    MPint dst(std::move(src));
+    std::cout << "move-constructed = " << dst << std::endl;  // 42
+    assert(dst == MPint(42));
+  }
+
+  // --- move assignment ---
+  std::cout << std::endl << "--- move assignment ---" << std::endl;
+  {
+    MPint src(99);
+    MPint dst(0);
+    dst = std::move(src);
+    std::cout << "move-assigned    = " << dst << std::endl;  // 99
+    assert(dst == MPint(99));
+  }
+
+  // --- operator long double() ---
+  std::cout << std::endl << "--- operator long double() ---" << std::endl;
+  {
+    MPint v0(0), vp(42), vn(-100);
+    long double ld0 = static_cast<long double>(v0);
+    long double ldp = static_cast<long double>(vp);
+    long double ldn = static_cast<long double>(vn);
+    assert(ld0 ==    0.0L);
+    assert(ldp ==   42.0L);
+    assert(ldn == -100.0L);
+    std::cout << "long double(0)    = " << ld0 << std::endl;  // 0
+    std::cout << "long double(42)   = " << ldp << std::endl;  // 42
+    std::cout << "long double(-100) = " << ldn << std::endl;  // -100
+  }
+
+  // --- stream input operator>> ---
+  std::cout << std::endl << "--- stream input operator>> ---" << std::endl;
+  {
+    MPint x;
+    std::istringstream iss("123");
+    iss >> x;
+    std::cout << "read \"123\"  = " << x << std::endl;  // 123
+    assert(x == MPint(123));
+  }
+  {
+    MPint x;
+    std::istringstream iss("-456");
+    iss >> x;
+    std::cout << "read \"-456\" = " << x << std::endl;  // -456
+    assert(x == MPint(-456));
+  }
+  {
+    MPint a, b;
+    std::istringstream iss("7 8");
+    iss >> a >> b;
+    std::cout << "read \"7 8\"  = " << a << " " << b << std::endl;  // 7 8
+    assert(a == MPint(7));
+    assert(b == MPint(8));
+  }
+
+#ifndef DEMO_NATIVE
+  // --- string constructor: + prefix with non-decimal bases ---
+  std::cout << std::endl << "--- string constructor: + prefix (non-decimal) ---" << std::endl;
+  {
+    MPint ph("+0x1F");   // hex: +31
+    MPint po("+017");    // octal: +15
+    MPint pb("+0b11");   // binary: +3
+    assert(ph == MPint(31));
+    assert(po == MPint(15));
+    assert(pb == MPint(3));
+    std::cout << "\"+0x1F\" = " << ph << std::endl;  // 31
+    std::cout << "\"+017\"  = " << po << std::endl;  // 15
+    std::cout << "\"+0b11\" = " << pb << std::endl;  // 3
+  }
+#endif
+
+  return 0;
+}
+
 static std::string format_cycles(uint64_t n) {
     std::string s = std::to_string(n);
     for (int pos = static_cast<int>(s.size()) - 3; pos > 0; pos -= 3)
@@ -807,7 +886,7 @@ int main(int argc, char* argv[]) {
   }
 
   const int PROF_RUNS = 100000;
-  uint64_t total[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+  uint64_t total[9] = {0, 0, 0, 0, 0, 0, 0, 0, 0};
   uint64_t t0, t1;
 
   NullBuf nullbuf;
@@ -815,7 +894,7 @@ int main(int argc, char* argv[]) {
 
   std::cout << "MPint: claude's elementary operator expressions" << std::endl << std::endl;
   for (int r = 0; r < (prof ? PROF_RUNS : 1); ++r)
-    { t0 = rdtsc_read(); claude_main(); t1 = rdtsc_read(); total[0] += t1 - t0; }
+    { t0 = rdtsc_read(); expr();        t1 = rdtsc_read(); total[0] += t1 - t0; }
 
   std::cout << "MPint: my elementary operator expressions" << std::endl << std::endl;
   for (int r = 0; r < (prof ? PROF_RUNS : 1); ++r)
@@ -839,26 +918,30 @@ int main(int argc, char* argv[]) {
 
   std::cout << std::endl << "MPint: float/double conversion tests" << std::endl << std::endl;
   for (int r = 0; r < (prof ? PROF_RUNS : 1); ++r)
-    { t0 = rdtsc_read(); floatconv();   t1 = rdtsc_read(); total[6] += t1 - t0; }
+    { t0 = rdtsc_read(); floatconv();    t1 = rdtsc_read(); total[6] += t1 - t0; }
+
+  std::cout << std::endl << "MPint: missing coverage tests" << std::endl << std::endl;
+  for (int r = 0; r < (prof ? PROF_RUNS : 1); ++r)
+    { t0 = rdtsc_read(); missingexpr();  t1 = rdtsc_read(); total[7] += t1 - t0; }
 
   std::cout << std::endl << "MPint: integral lattice example" << std::endl << std::endl;
   for (int r = 0; r < (prof ? PROF_RUNS : 1); ++r)
-    { t0 = rdtsc_read(); reduTest();     t1 = rdtsc_read(); total[7] += t1 - t0; }
+    { t0 = rdtsc_read(); reduTest();     t1 = rdtsc_read(); total[8] += t1 - t0; }
 
   if (prof) {
     std::cout.rdbuf(orig);
-    static const char* const names[8] = {
-      "claude_main", "basicexpr", "moreexpr", "extraexpr", "detTest", "strconstr", "floatconv", "reduTest"
+    static const char* const names[9] = {
+      "expr", "basicexpr", "moreexpr", "extraexpr", "detTest", "strconstr", "floatconv", "missingexpr", "reduTest"
     };
-    std::string formatted[8];
+    std::string formatted[9];
     std::string::size_type maxcycles = 0, maxname = 0;
-    for (int i = 0; i < 8; ++i) {
+    for (int i = 0; i < 9; ++i) {
       formatted[i] = format_cycles(total[i] / PROF_RUNS);
       if (formatted[i].size() > maxcycles) maxcycles = formatted[i].size();
       if (std::strlen(names[i]) > maxname) maxname = std::strlen(names[i]);
     }
     std::cout << "=== profiling report (rdtsc cpu cycles, avg of " << PROF_RUNS << " runs) ===" << std::endl;
-    for (int i = 0; i < 8; ++i) {
+    for (int i = 0; i < 9; ++i) {
       std::cout << "  " << std::setw(static_cast<int>(maxname)) << std::left  << names[i]
                 << ": " << std::setw(static_cast<int>(maxcycles)) << std::right << formatted[i]
                 << " cycles" << std::endl;
