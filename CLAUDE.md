@@ -36,7 +36,4 @@ Profiling/Benchmarking: cd test; ./test.sh prof
 I've saved the last conversation to transcript.txt.
 
 ## What to do for you right now
-(i) in demo.cpp,rename function claude_main to expr.
-(ii) then, review functions expr, basicexpr, moreexpr, extraexpr, strconstr, floatconv in demo.cpp for
-redundant tests. remove redundant tests, if any, from basicexpr. exclude det_test from this review.
-(iii) review the mentioned test functions for coverage and indicate missing tests. be pedantic about it.
+factor out functions expr, basicexpr, moreexpr, extraexpr, strconstr, floatconv, missingexpr in demo.cpp into exprtest.cpp, with header exprtest.hpp.
