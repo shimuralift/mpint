@@ -33,7 +33,10 @@ Test commands: simple stdout/stderr based regression test: cd test; ./test.sh al
 Profiling/Benchmarking: cd test; ./test.sh prof
 
 ## What I've done in the meantime
-I've saved a copy of the current "test/test.sh prof" output in test.
+I've saved the last conversation to transcript.txt.
 
 ## What to do for you right now
-Please have look at optimisation possibilities, namely (a) inlining, and (b) compiler optimisation options.
+(i) in demo.cpp,rename function claude_main to expr.
+(ii) then, review functions expr, basicexpr, moreexpr, extraexpr, strconstr, floatconv in demo.cpp for
+redundant tests. remove redundant tests, if any, from basicexpr. exclude det_test from this review.
+(iii) review the mentioned test functions for coverage and indicate missing tests. be pedantic about it.
