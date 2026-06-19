@@ -33,7 +33,7 @@ Test commands: simple stdout/stderr based regression test: cd test; ./test.sh al
 Profiling/Benchmarking: cd test; ./test.sh prof
 
 ## What I've done in the meantime
-I've saved the last conversation to transcript.txt.
+Straightened out .hpp include files, particularly MPint typedefs.
 
 ## What to do for you right now
-factor out functions expr, basicexpr, moreexpr, extraexpr, strconstr, floatconv, missingexpr in demo.cpp into exprtest.cpp, with header exprtest.hpp.
+I will give instructions interactively.

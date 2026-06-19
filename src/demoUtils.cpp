@@ -3,12 +3,6 @@
 #include <stdlib.h>
 
 
-#ifdef DEMO_NATIVE
-typedef signed long int MPint;
-#else
-#include "MPint.hpp"
-#endif
-
 #include "demoUtils.hpp"
 #include "det.hpp"
 

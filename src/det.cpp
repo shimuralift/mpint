@@ -3,14 +3,10 @@
 #include <stdlib.h>
 
 
-#ifdef DEMO_NATIVE
-typedef signed long int Bint;
-#else
-#include "MPint.hpp"
-typedef MPint Bint;
-#endif
-
+#include "demoTypedef.hpp"
 #include "demoUtils.hpp"
+
+typedef MPint Bint;
 
 
 static Bint gcd(const Bint a, const Bint b) { // @suppress("No return")

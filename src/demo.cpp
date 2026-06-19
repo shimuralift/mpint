@@ -6,7 +6,7 @@
 #include <string>
 
 #include "det.hpp"
-#include "exprtest.hpp"
+#include "exprTest.hpp"
 #include "redu.hpp"
 
 

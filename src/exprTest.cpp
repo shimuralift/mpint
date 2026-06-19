@@ -5,13 +5,8 @@
 #include <string>
 #include <utility>
 
-#include "exprtest.hpp"
-
-#ifdef DEMO_NATIVE
-typedef signed long int MPint;
-#else
-#include "MPint.hpp"
-#endif
+#include "demoTypedef.hpp"
+#include "exprTest.hpp"
 
 
 int expr() {

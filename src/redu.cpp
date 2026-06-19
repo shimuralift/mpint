@@ -3,11 +3,14 @@
 #include <iostream>
 #include <map>
 
+#include "demoTypedef.hpp"
 #include "demoUtils.hpp"
 
-#define EPS 0.0000001
-
 typedef MPint Long;
+
+
+
+#define EPS 0.0000001
 
 
 void make_Long_vector(Long ** vec, int dim) {
