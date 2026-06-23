@@ -9588,3 +9588,39 @@ Committed as 7c7a135.
 
 #############################################################################################################################################################################################################
 
+
+❯ make produces lto warnings now: lto-wrapper: warning: using serial compilation of 2 LTRANS jobs. I know that these can be safely ignored, but I dont like that noise in the make output. What can be done? Instead of just suppressing the warning, I'd prefer to adress it more properly.
+
+  Read 1 file, ran 1 shell command
+
+The warning fires because plain -flto requests parallel LTRANS partitioning but never tells GCC how many parallel jobs to actually use, so it falls back to one serial job and complains. The proper fix is -flto=auto, which tells GCC to use the number of available cores (or make's jobserver count, if invoked under make -j) instead of leaving it unspecified.
+
+● Update(Makefile)
+Added 1 line, removed 1 line
+
+
+CXX      := g++
+CXXFLAGS := -std=c++14 -Wall -Wextra -pedantic -Werror -O2 -flto -I$(SRCDIR)
+CXXFLAGS := -std=c++14 -Wall -Wextra -pedantic -Werror -O2 -flto=auto -I$(SRCDIR)
+AR       := ar
+ARFLAGS  := rcs
+
+
+  Ran 1 shell command
+
+Clean — no LTO warnings. Let's confirm tests still pass:
+
+  Ran 1 shell command
+
+All diffs pass (exit code 0). Fixed by changing -flto to -flto=auto in the CXXFLAGS line of the Makefile — this tells GCC how many parallel LTRANS jobs to use (based on available cores) instead of leaving it unspecified, which is what triggered the serial-compilation warning. No test output changed.
+
+✻ Crunched for 49s
+
+❯ commit this
+
+  Committed 3ebd1b3, ran 2 shell commands
+
+Committed as 3ebd1b3.
+
+#############################################################################################################################################################################################################
+

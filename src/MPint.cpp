@@ -7,7 +7,8 @@
 
 // ---------------------------------------------------------------------------
 // The only implementation detail: what an MPint actually stores.
-// To switch to GMP, replace this struct and adjust the operator bodies below.
+// To switch to an arbitrary precision backend, replace this struct
+// and adjust the operator bodies below.
 // Nothing outside this file needs to change.
 // struct MPint::MPintImpl is an 'aggregate', i.e. it does not have a
 // user defined ctor. On construction with 'new', an ordered list of

@@ -6,8 +6,8 @@
 // MPint: a drop-in replacement for signed long int.
 // All arithmetic, comparison, bitwise, increment/decrement, and stream
 // operators are provided so legacy code needs no textual changes.
-// The private Impl handle will later be swapped out for a GMP/PARI/...
-// multi-precision type without touching any call sites or this header.
+// The private Impl handle will later be swapped out for a multi-precision type
+// without touching any call sites or this header.
 
 class MPint {
 public:

@@ -736,8 +736,8 @@ int floatconv() {
   std::cout << "double(1000000000)  = " << d3 << std::endl;
   std::cout << "double(-999999999)  = " << d4 << std::endl;
 
-#ifdef DEMO_GMP
-  // Overflow detection only meaningful with GMP backend (arbitrary precision).
+#ifdef DEMO_ARBPREC
+  // Overflow detection only meaningful with arbitrary precision backend.
   // The long-int proxy truncates large strings to LLONG_MAX, which never overflows float/double.
 
   // Value exceeding FLT_MAX (~3.4e38)
