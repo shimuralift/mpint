@@ -1,4 +1,4 @@
-MPint: claude's elementary operator expressions
+MPint: elementary operator expressions
 
 a        = 6
 b        = 4
@@ -280,6 +280,84 @@ gcd(482923147313, 988823136811) = 1
 
 --- power by repeated squaring ---
 23^19 = 74615470927590710561908487 (overflow on native int based MPint implementations)
+
+MPint: string constructor tests
+
+--- string constructor: decimal ---
+"0"          = 0
+"42"         = 42
+"-17"        = -17
+"+99"        = 99
+"1'000'000"  = 1000000
+
+--- string constructor: octal ---
+"0"      = 0
+"010"    = 8
+"0755"   = 493
+"-010"   = -8
+
+--- string constructor: hexadecimal ---
+"0xff"      = 255
+"0xDEAD"    = 57005
+"0X1A2B"    = 6699
+"0xff'ee"   = 65518
+"-0x10"     = -16
+
+--- string constructor: binary ---
+"0b1010"       = 10
+"0B11111111"   = 255
+"0b1111'1111"  = 255
+"-0b11"        = -3
+
+--- string constructor: std::string ---
+std::string("12345")  = 12345
+std::string("0xCAFE") = 51966
+
+--- string constructor: arithmetic ---
+"100" + "200"      = 300
+"0xFF" * "2"       = 510
+"0b1010" * "010"   = 80
+"-0x10" + "0b10000" = 0
+
+--- string constructor: large values fitting in long int ---
+"1'000'000'000'000'000'000" = 1000000000000000000
+"999'999'999'999'999'999" + 1 = 1000000000000000000
+
+MPint: float/double conversion tests
+
+float(42)           = 42
+float(-100)         = -100
+float(1000000000)   = 1e+09
+float(-999999999)   = -1e+09
+double(42)          = 42
+double(-100)        = -100
+double(1000000000)  = 1e+09
+double(-999999999)  = -1e+09
+float overflow detected ok
+double overflow detected ok
+
+MPint: missing coverage tests
+
+--- move construction ---
+move-constructed = 42
+
+--- move assignment ---
+move-assigned    = 99
+
+--- operator long double() ---
+long double(0)    = 0
+long double(42)   = 42
+long double(-100) = -100
+
+--- stream input operator>> ---
+read "123"  = 123
+read "-456" = -456
+read "7 8"  = 7 8
+
+--- string constructor: + prefix (non-decimal) ---
+"+0x1F" = 31
+"+017"  = 15
+"+0b11" = 3
 
 MPint: determinant example
 
@@ -689,84 +767,6 @@ Dodgson:    0
 GaussInt:   0
 GaussFloat: 0
 
-
-MPint: string constructor tests
-
---- string constructor: decimal ---
-"0"          = 0
-"42"         = 42
-"-17"        = -17
-"+99"        = 99
-"1'000'000"  = 1000000
-
---- string constructor: octal ---
-"0"      = 0
-"010"    = 8
-"0755"   = 493
-"-010"   = -8
-
---- string constructor: hexadecimal ---
-"0xff"      = 255
-"0xDEAD"    = 57005
-"0X1A2B"    = 6699
-"0xff'ee"   = 65518
-"-0x10"     = -16
-
---- string constructor: binary ---
-"0b1010"       = 10
-"0B11111111"   = 255
-"0b1111'1111"  = 255
-"-0b11"        = -3
-
---- string constructor: std::string ---
-std::string("12345")  = 12345
-std::string("0xCAFE") = 51966
-
---- string constructor: arithmetic ---
-"100" + "200"      = 300
-"0xFF" * "2"       = 510
-"0b1010" * "010"   = 80
-"-0x10" + "0b10000" = 0
-
---- string constructor: large values fitting in long int ---
-"1'000'000'000'000'000'000" = 1000000000000000000
-"999'999'999'999'999'999" + 1 = 1000000000000000000
-
-MPint: float/double conversion tests
-
-float(42)           = 42
-float(-100)         = -100
-float(1000000000)   = 1e+09
-float(-999999999)   = -1e+09
-double(42)          = 42
-double(-100)        = -100
-double(1000000000)  = 1e+09
-double(-999999999)  = -1e+09
-float overflow detected ok
-double overflow detected ok
-
-MPint: missing coverage tests
-
---- move construction ---
-move-constructed = 42
-
---- move assignment ---
-move-assigned    = 99
-
---- operator long double() ---
-long double(0)    = 0
-long double(42)   = 42
-long double(-100) = -100
-
---- stream input operator>> ---
-read "123"  = 123
-read "-456" = -456
-read "7 8"  = 7 8
-
---- string constructor: + prefix (non-decimal) ---
-"+0x1F" = 31
-"+017"  = 15
-"+0b11" = 3
 
 MPint: integral lattice example
 
