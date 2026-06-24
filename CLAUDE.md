@@ -115,6 +115,10 @@ On checkout, multiPrecOperators is mostly an empty directory structure, guarded
 by .gitkeep files. multiPrecOperators is populated with src files from mpint by
 mpint's 'make all' and reverted to its empty state by mpint's 'make clean'.
 For actually ditributing and using it, it must be copied elsewhere.
+The files copied into multiPrecOperators by 'make all' are listed in mpint's
+.gitignore (and its committed template .gitignore.example), so that populating
+or cleaning multiPrecOperators never shows up as a change in 'git status' on
+this branch.
 
 Test commands (mpint only):
 simple stdout/stderr based regression test: cd test; ./test.sh all

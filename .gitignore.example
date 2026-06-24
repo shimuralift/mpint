@@ -17,3 +17,12 @@ test/demoNative.output
 .cproject
 .project
 .settings/
+
+# files copied from mpint into dist/multiPrecOperators by 'make all',
+# removed again by 'make clean' -- not meant to be tracked here
+dist/multiPrecOperators/lib/src/MPint.cpp
+dist/multiPrecOperators/lib/src/MPintWrappedNative.cpp
+dist/multiPrecOperators/lib/include/MPint.hpp
+dist/multiPrecOperators/demo/src/demoTypedef.hpp
+dist/multiPrecOperators/demo/src/exprTest.cpp
+dist/multiPrecOperators/demo/src/exprTest.hpp
