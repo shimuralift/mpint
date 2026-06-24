@@ -30,6 +30,20 @@ TARGET_NATIVE          := $(DEMO_BINDIR)/demoNative
 TARGET_WRAPPEDNATIVE   := $(DEMO_BINDIR)/demoWrappedNative
 
 
+DIST_DIR         := dist/multiPrecOperators
+DIST_LIB_SRCDIR  := $(DIST_DIR)/lib/src
+DIST_LIB_INCLDIR := $(DIST_DIR)/lib/include
+DIST_DEMO_SRCDIR := $(DIST_DIR)/demo/src
+
+DIST_FILES := \
+  $(DIST_LIB_SRCDIR)/MPint.cpp \
+  $(DIST_LIB_SRCDIR)/MPintWrappedNative.cpp \
+  $(DIST_LIB_INCLDIR)/MPint.hpp \
+  $(DIST_DEMO_SRCDIR)/demoTypedef.hpp \
+  $(DIST_DEMO_SRCDIR)/exprTest.cpp \
+  $(DIST_DEMO_SRCDIR)/exprTest.hpp
+
+
 CXX      := g++
 CXXFLAGS := -std=c++14 -Wall -Wextra -pedantic -Werror -O2 -flto=auto
 AR       := ar
@@ -38,10 +52,11 @@ ARFLAGS  := rcs
 
 .PHONY: all clean
 
-all: $(TARGET_WRAPPEDNATIVE) $(TARGET_GMP) $(TARGET_NATIVE)
+all: $(TARGET_WRAPPEDNATIVE) $(TARGET_GMP) $(TARGET_NATIVE) $(DIST_FILES)
 
 clean:
 	$(RM) $(TARGET_WRAPPEDNATIVE) $(LIBRARY_WRAPPEDNATIVE) $(LIB_WRAPPEDNATIVE_OBJ) $(TARGET_GMP) $(TARGET_NATIVE) $(LIBRARY_GMP) $(LIB_GMP_OBJ)
+	$(RM) $(DIST_FILES)
 
 
 $(LIB_WRAPPEDNATIVE_OBJ): $(LIB_WRAPPEDNATIVE_SRC) $(LIB_HDR)
@@ -66,3 +81,22 @@ $(TARGET_GMP): $(DEMO_SRCS) $(DEMO_HDRS) $(LIBRARY_GMP) $(LIB_HDR)
 
 $(TARGET_NATIVE): $(DEMO_SRCS) $(DEMO_HDRS)
 	$(CXX) $(CXXFLAGS) -DDEMO_NATIVE -I$(DEMO_INCLDIR) -o $@ $(DEMO_SRCS)
+
+
+$(DIST_LIB_SRCDIR)/MPint.cpp: $(LIB_WRAPPEDNATIVE_SRC)
+	cp $< $@
+
+$(DIST_LIB_SRCDIR)/MPintWrappedNative.cpp: $(LIB_WRAPPEDNATIVE_SRC)
+	cp $< $@
+
+$(DIST_LIB_INCLDIR)/MPint.hpp: $(LIB_HDR)
+	cp $< $@
+
+$(DIST_DEMO_SRCDIR)/demoTypedef.hpp: $(DEMO_SRCDIR)/demoTypedef.hpp
+	cp $< $@
+
+$(DIST_DEMO_SRCDIR)/exprTest.cpp: $(DEMO_SRCDIR)/exprTest.cpp
+	cp $< $@
+
+$(DIST_DEMO_SRCDIR)/exprTest.hpp: $(DEMO_SRCDIR)/exprTest.hpp
+	cp $< $@
