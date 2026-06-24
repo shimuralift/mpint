@@ -128,21 +128,7 @@ Profiling/Benchmarking (mpint only):
 cd test; ./test.sh prof
 
 ## What I've done in the meantime
-I've rearranged the projects file system structure, renamed some source, library,
-and executable files, and some internal make targets, and adapted the test script
-(see above). I also introduced subproject 'dist/multiPrecOperators' (see above).
+just updated CLAUDE.md and transcript.txt
 
 ## What to do for you right now
-multiPrecOperators is intended to be an empty directory structure on fresh checkout.
-Exceptions are its Makefile and demo/src/demo.cpp.
-Everything else is to be populated on mpint's 'make all' as follows:
-
-mpint/lib/src/MPintWrappedNative.cpp -> multiPrecOperators/lib/src/MPint.cpp
-mpint/lib/src/MPintWrappedNative.cpp -> multiPrecOperators/lib/src/MPintWrappedNative.cpp
-mpint/lib/include/MPint.hpp -> multiPrecOperators/lib/include/MPint.hpp
-mpint/demo/src/demoTypedef.hpp -> multiPrecOperators/demo/src/demoTypedef.hpp
-mpint/demo/src/exprTest.cpp -> multiPrecOperators/demo/src/exprTest.cpp
-mpint/demo/src/exprTest.hpp -> multiPrecOperators/demo/src/exprTest.hpp
-
-All these sources shall be deleted from multiPrecOperators on mpint's 'make clean.
-
+verify ALL test results of demoGMP in mpint. use PARI/gp for det and redu, which is available in PATH.

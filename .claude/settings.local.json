@@ -1,7 +1,17 @@
 {
   "permissions": {
     "allow": [
-      "Bash(make:*)"
+      "Bash(make:*)",
+      "Bash(gp -q)",
+      "Bash(./test.sh all *)",
+      "Bash(echo \"EXIT=$?\")",
+      "Bash(python3 verify_det.py)",
+      "Bash(gp -q --test)",
+      "Bash(gp -q /tmp/t.gp)",
+      "Bash(cat)",
+      "Bash(gp -q /tmp/t2.gp)",
+      "Bash(gp -q /tmp/t3.gp)",
+      "Bash(gp -q /tmp/t4.gp)"
     ]
   }
 }
