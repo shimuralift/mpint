@@ -2,6 +2,9 @@
 #include <cstdlib>
 #include <iostream>
 #include <map>
+#include <sstream>
+#include <string>
+#include <vector>
 
 #include "demoTypedef.hpp"
 #include "demoUtils.hpp"
@@ -539,6 +542,37 @@ void shortvecs(double * ge, double ** mo, Long len, Long ** vecs, int dim) {
     return;
 }
 
+/* prints <norm,count> pairs of a theta series as a single PARI/gp vector
+   literal of the form [[norm,count],[norm,count],...], wrapped across
+   several lines of at most <maxLineWidth> characters using gp's '\'
+   line-continuation syntax, so the whole block can be pasted into gp
+   as one expression while still being easy for a human to scan. */
+static void printThetaSeries(const std::map<Long, int> &theta) {
+    const std::size_t maxLineWidth = 150;
+
+    std::vector<std::string> tokens;
+    std::size_t idx = 0;
+    for (auto &kv : theta) {
+        std::ostringstream token;
+        token << "[" << kv.first << "," << kv.second << "]";
+        if (++idx < theta.size())
+            token << ",";
+        tokens.push_back(token.str());
+    }
+
+    std::ostringstream line;
+    line << "[";
+    for (auto &token : tokens) {
+        if (line.str().size() > 1 && line.str().size() + token.size() + 2 > maxLineWidth) {
+            std::cout << line.str() << " \\\n";
+            line.str("");
+        }
+        line << token;
+    }
+    line << "]";
+    std::cout << line.str() << "\n";
+}
+
 
 void reduTest() {
 	  const int runsPerCase = 2;
@@ -580,11 +614,10 @@ void reduTest() {
 				  shortvec_numb = shortvecs_count(ge, mo, len, dim);
 				  make_Long_rectmatrix(&vecs, shortvec_numb + 1, dim + 1);
 				  shortvecs(ge, mo, len, vecs, dim);
-				  std::map<Long, int> shells;
+				  std::map<Long, int> theta;
 				  for (unsigned int i = 1; i <= shortvec_numb; i++)
-					  shells[vecs[i][dim]]++;
-				  for (auto& kv : shells)
-					  std::cout << kv.first << " " << kv.second << "\n";
+					  theta[vecs[i][dim]]++;
+				  printThetaSeries(theta);
 				  destroy_double_vector(&ge);
 				  destroy_double_matrix(&mo, dim);
 				  destroy_Long_matrix(&vecs, shortvec_numb + 1);
