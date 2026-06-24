@@ -4,17 +4,16 @@ ARGC=$#
 CMDLPARAM=$1
 DRYPARAM=$2
 
-EXECUTABLE="../bin/demo"
-OUTFILE="demo.output"
+EXECUTABLEWRAPPEDNATIVE="../demo/bin/demoWrappedNative"
+OUTFILEWRAPPEDNATIVE="demoWrappedNative.output"
 
-
-EXECUTABLEGMP="../bin/demoGMP"
+EXECUTABLEGMP="../demo/bin/demoGMP"
 OUTFILEGMP="demoGMP.output"
 
-EXECUTABLENATIVE="../bin/demoNative"
+EXECUTABLENATIVE="../demo/bin/demoNative"
 OUTFILENATIVE="demoNative.output"
 
-REFFILE="demo.output.ref"
+REFFILEWRAPPEDNATIVE="demoWrappedNative.output.ref"
 REFFILEGMP="demoGMP.output.ref"
 REFFILENATIVE="demoNative.output.ref"
 
@@ -60,7 +59,7 @@ doAll () {
     local diffretval=0
 
 
-    runExecutable ${EXECUTABLE} ${OUTFILE}
+    runExecutable ${EXECUTABLEWRAPPEDNATIVE} ${OUTFILEWRAPPEDNATIVE}
     retval=$?
     if [ "${retval}" -ne 0 ]; then
         return ${retval}
@@ -79,7 +78,7 @@ doAll () {
     fi
 
 
-    doDiff "${OUTFILE}" "${REFFILE}"
+    doDiff "${OUTFILEWRAPPEDNATIVE}" "${REFFILEWRAPPEDNATIVE}"
     diffretval=$?
     if [ "${diffretval}" -ne 0 ]; then
         retval=${diffretval}
@@ -103,7 +102,7 @@ doAll () {
 
 doProf () {
     if [ "${DRYPARAM}" == "dry" ]; then
-        echo "DRY: would run ${EXECUTABLE}, ${EXECUTABLEGMP}, ${EXECUTABLENATIVE} with -prof and display side-by-side"
+        echo "DRY: would run ${EXECUTABLEWRAPPEDNATIVE}, ${EXECUTABLEGMP}, ${EXECUTABLENATIVE} with -prof and display side-by-side"
         return 0
     fi
 
@@ -117,8 +116,8 @@ doProf () {
 
     echo "profiling ${EXECUTABLENATIVE} ..."
     ${EXECUTABLENATIVE} -prof > "${tmp1}" 2>&1
-    echo "profiling ${EXECUTABLE} ..."
-    ${EXECUTABLE}      -prof > "${tmp2}" 2>&1
+    echo "profiling ${EXECUTABLEWRAPPEDNATIVE} ..."
+    ${EXECUTABLEWRAPPEDNATIVE}      -prof > "${tmp2}" 2>&1
     echo "profiling ${EXECUTABLEGMP} ..."
     ${EXECUTABLEGMP}   -prof > "${tmp3}" 2>&1
 
@@ -136,7 +135,7 @@ doProf () {
     paste "${tdata1}" "${tdata2}" "${tdata3}" | awk -F'\t' '
     BEGIN {
         printf "%-14s  %20s  %20s  %20s\n",
-               "function", "demoNative", "demo (long int)", "demoGMP"
+               "function", "demoNative", "demoWrappedNative", "demoGMP"
         printf "%-14s  %20s  %20s  %20s\n",
                "--------------",
                "--------------------",

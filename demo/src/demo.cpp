@@ -44,7 +44,7 @@ int main(int argc, char* argv[]) {
   NullBuf nullbuf;
   std::streambuf* orig = prof ? std::cout.rdbuf(&nullbuf) : nullptr;
 
-  std::cout << "MPint: claude's elementary operator expressions" << std::endl << std::endl;
+  std::cout << "MPint: elementary operator expressions" << std::endl << std::endl;
   for (int r = 0; r < (prof ? PROF_RUNS : 1); ++r)
     { t0 = rdtsc_read(); expr();        t1 = rdtsc_read(); total[0] += t1 - t0; }
 
@@ -60,21 +60,21 @@ int main(int argc, char* argv[]) {
   for (int r = 0; r < (prof ? PROF_RUNS : 1); ++r)
     { t0 = rdtsc_read(); extraexpr();   t1 = rdtsc_read(); total[3] += t1 - t0; }
 
-  std::cout << std::endl << "MPint: determinant example" << std::endl << std::endl;
-  for (int r = 0; r < (prof ? PROF_RUNS : 1); ++r)
-    { t0 = rdtsc_read(); detTest();     t1 = rdtsc_read(); total[4] += t1 - t0; }
-
   std::cout << std::endl << "MPint: string constructor tests" << std::endl << std::endl;
   for (int r = 0; r < (prof ? PROF_RUNS : 1); ++r)
-    { t0 = rdtsc_read(); strconstr();   t1 = rdtsc_read(); total[5] += t1 - t0; }
+    { t0 = rdtsc_read(); strconstr();   t1 = rdtsc_read(); total[4] += t1 - t0; }
 
   std::cout << std::endl << "MPint: float/double conversion tests" << std::endl << std::endl;
   for (int r = 0; r < (prof ? PROF_RUNS : 1); ++r)
-    { t0 = rdtsc_read(); floatconv();    t1 = rdtsc_read(); total[6] += t1 - t0; }
+    { t0 = rdtsc_read(); floatconv();    t1 = rdtsc_read(); total[5] += t1 - t0; }
 
   std::cout << std::endl << "MPint: missing coverage tests" << std::endl << std::endl;
   for (int r = 0; r < (prof ? PROF_RUNS : 1); ++r)
-    { t0 = rdtsc_read(); missingexpr();  t1 = rdtsc_read(); total[7] += t1 - t0; }
+    { t0 = rdtsc_read(); missingexpr();  t1 = rdtsc_read(); total[6] += t1 - t0; }
+
+  std::cout << std::endl << "MPint: determinant example" << std::endl << std::endl;
+  for (int r = 0; r < (prof ? PROF_RUNS : 1); ++r)
+    { t0 = rdtsc_read(); detTest();     t1 = rdtsc_read(); total[7] += t1 - t0; }
 
   std::cout << std::endl << "MPint: integral lattice example" << std::endl << std::endl;
   for (int r = 0; r < (prof ? PROF_RUNS : 1); ++r)
@@ -83,7 +83,7 @@ int main(int argc, char* argv[]) {
   if (prof) {
     std::cout.rdbuf(orig);
     static const char* const names[9] = {
-      "expr", "basicexpr", "moreexpr", "extraexpr", "detTest", "strconstr", "floatconv", "missingexpr", "reduTest"
+      "expr", "basicexpr", "moreexpr", "extraexpr", "strconstr", "floatconv", "missingexpr", "detTest", "reduTest"
     };
     std::string formatted[9];
     std::string::size_type maxcycles = 0, maxname = 0;

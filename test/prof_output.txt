@@ -1,16 +1,17 @@
-profiling ../bin/demoNative ...
-profiling ../bin/demo ...
-profiling ../bin/demoGMP ...
+profiling ../demo/bin/demoNative ...
+profiling ../demo/bin/demoWrappedNative ...
+profiling ../demo/bin/demoGMP ...
 
 === profiling comparison (rdtsc cpu cycles, avg of 100000 runs) ===
 
-function                  demoNative       demo (long int)               demoGMP
+function                  demoNative     demoWrappedNative               demoGMP
 --------------  --------------------  --------------------  --------------------
-claude_main                    5 373                 7 121                12 125
-basicexpr                     59 633                67 520                90 696
-moreexpr                      20 533                24 712                36 216
-extraexpr                     27 196                49 863                84 970
-detTest                      408 411               661 726             1 068 922
-strconstr                     11 217                17 805                31 420
-floatconv                      7 864                 8 147                23 719
-reduTest                   2 076 943             5 292 753            12 926 933
+expr                           4 770                 6 057                11 111
+basicexpr                     51 866                57 824                79 896
+moreexpr                      18 784                21 356                31 445
+extraexpr                     23 593                38 553                75 257
+strconstr                     10 289                14 877                26 797
+floatconv                      7 458                 7 626                25 765
+missingexpr                    6 392                 8 837                11 172
+detTest                      358 560               494 429               923 233
+reduTest                     880 835             2 688 315             9 212 402

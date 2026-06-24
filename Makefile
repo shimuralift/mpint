@@ -1,66 +1,68 @@
-SRCDIR   := src
-BINDIR   := bin
+LIB_DIR    := lib
+DEMO_DIR   := demo
 
 
-LIB_HDR  := $(SRCDIR)/MPint.hpp
+LIB_SRCDIR    := $(LIB_DIR)/src
+LIB_INCLDIR   := $(LIB_DIR)/include
+LIB_BINDIR    := $(LIB_DIR)/bin
 
-LIB_SRC  := $(SRCDIR)/MPint.cpp
-LIB_OBJ  := $(BINDIR)/MPint.o
-LIBRARY  := $(BINDIR)/libMP.a
-
-LIBGMP_SRC  := $(SRCDIR)/MPintGMP.cpp
-LIBGMP_OBJ  := $(BINDIR)/MPintGMP.o
-LIBRARYGMP  := $(BINDIR)/libMPGMP.a
+DEMO_SRCDIR    := $(DEMO_DIR)/src
+DEMO_INCLDIR   := $(DEMO_DIR)/src
+DEMO_BINDIR    := $(DEMO_DIR)/bin
 
 
-DEMO_SRCS := $(SRCDIR)/demo.cpp $(SRCDIR)/exprTest.cpp $(SRCDIR)/det.cpp $(SRCDIR)/redu.cpp $(SRCDIR)/demoUtils.cpp
-DEMO_HDRS := $(SRCDIR)/det.hpp $(SRCDIR)/redu.hpp $(SRCDIR)/demoUtils.hpp $(SRCDIR)/demoTypedef.hpp $(SRCDIR)/exprTest.hpp
+LIB_HDR  := $(LIB_INCLDIR)/MPint.hpp
+
+LIB_GMP_SRC  := $(LIB_SRCDIR)/MPintGMP.cpp
+LIB_GMP_OBJ  := $(LIB_BINDIR)/MPintGMP.o
+LIBRARY_GMP  := $(LIB_BINDIR)/libMPGMP.a
+
+LIB_WRAPPEDNATIVE_SRC  := $(LIB_SRCDIR)/MPintWrappedNative.cpp
+LIB_WRAPPEDNATIVE_OBJ  := $(LIB_BINDIR)/MPintWrappedNative.o
+LIBRARY_WRAPPEDNATIVE  := $(LIB_BINDIR)/libMPWrappedNative.a
+
+DEMO_SRCS := $(DEMO_SRCDIR)/demo.cpp $(DEMO_SRCDIR)/exprTest.cpp $(DEMO_SRCDIR)/det.cpp $(DEMO_SRCDIR)/redu.cpp $(DEMO_SRCDIR)/demoUtils.cpp
+DEMO_HDRS := $(DEMO_INCLDIR)/det.hpp $(DEMO_INCLDIR)/redu.hpp $(DEMO_INCLDIR)/demoUtils.hpp $(DEMO_INCLDIR)/demoTypedef.hpp $(DEMO_INCLDIR)/exprTest.hpp
 
 
-TARGET   := $(BINDIR)/demo
-
-TARGETGMP   := $(BINDIR)/demoGMP
-
-TARGETNATIVE   := $(BINDIR)/demoNative
+TARGET_GMP             := $(DEMO_BINDIR)/demoGMP
+TARGET_NATIVE          := $(DEMO_BINDIR)/demoNative
+TARGET_WRAPPEDNATIVE   := $(DEMO_BINDIR)/demoWrappedNative
 
 
 CXX      := g++
-CXXFLAGS := -std=c++14 -Wall -Wextra -pedantic -Werror -O2 -flto=auto -I$(SRCDIR)
+CXXFLAGS := -std=c++14 -Wall -Wextra -pedantic -Werror -O2 -flto=auto
 AR       := ar
 ARFLAGS  := rcs
 
 
 .PHONY: all clean
 
-all: $(TARGET) $(TARGETGMP) $(TARGETNATIVE)
-
-
-$(LIB_OBJ): $(LIB_SRC) $(LIB_HDR)
-	$(CXX) $(CXXFLAGS) -c -o $@ $<
-
-
-$(LIBGMP_OBJ): $(LIBGMP_SRC) $(LIB_HDR)
-	$(CXX) $(CXXFLAGS) -c -o $@ $<
-
-
-$(LIBRARY): $(LIB_OBJ)
-	$(AR) $(ARFLAGS) $@ $^
-
-
-$(LIBRARYGMP): $(LIBGMP_OBJ)
-	$(AR) $(ARFLAGS) $@ $^
-
-
-$(TARGET): $(DEMO_SRCS) $(DEMO_HDRS) $(LIBRARY)
-	$(CXX) $(CXXFLAGS) -o $@ $(DEMO_SRCS) -L$(BINDIR) -lMP
-
-
-$(TARGETGMP): $(DEMO_SRCS) $(DEMO_HDRS) $(LIBRARYGMP)
-	$(CXX) $(CXXFLAGS) -DDEMO_ARBPREC -o $@ $(DEMO_SRCS) -L$(BINDIR) -lMPGMP -lgmp
-
-$(TARGETNATIVE): $(DEMO_SRCS) $(DEMO_HDRS)
-	$(CXX) $(CXXFLAGS) -DDEMO_NATIVE -o $@ $(DEMO_SRCS)
-
+all: $(TARGET_WRAPPEDNATIVE) $(TARGET_GMP) $(TARGET_NATIVE)
 
 clean:
-	$(RM) $(TARGET) $(LIBRARY) $(LIB_OBJ) $(TARGETGMP) $(TARGETNATIVE) $(LIBRARYGMP) $(LIBGMP_OBJ)
+	$(RM) $(TARGET_WRAPPEDNATIVE) $(LIBRARY_WRAPPEDNATIVE) $(LIB_WRAPPEDNATIVE_OBJ) $(TARGET_GMP) $(TARGET_NATIVE) $(LIBRARY_GMP) $(LIB_GMP_OBJ)
+
+
+$(LIB_WRAPPEDNATIVE_OBJ): $(LIB_WRAPPEDNATIVE_SRC) $(LIB_HDR)
+	$(CXX) $(CXXFLAGS) -I$(LIB_INCLDIR) -c -o $@ $<
+
+$(LIB_GMP_OBJ): $(LIB_GMP_SRC) $(LIB_HDR)
+	$(CXX) $(CXXFLAGS) -I$(LIB_INCLDIR) -c -o $@ $<
+
+
+$(LIBRARY_WRAPPEDNATIVE): $(LIB_WRAPPEDNATIVE_OBJ)
+	$(AR) $(ARFLAGS) $@ $^
+
+$(LIBRARY_GMP): $(LIB_GMP_OBJ)
+	$(AR) $(ARFLAGS) $@ $^
+
+
+$(TARGET_WRAPPEDNATIVE): $(DEMO_SRCS) $(DEMO_HDRS) $(LIBRARY_WRAPPEDNATIVE) $(LIB_HDR)
+	$(CXX) $(CXXFLAGS) -I$(DEMO_INCLDIR) -I$(LIB_INCLDIR) -o $@ $(DEMO_SRCS) -L$(LIB_BINDIR) -lMPWrappedNative
+
+$(TARGET_GMP): $(DEMO_SRCS) $(DEMO_HDRS) $(LIBRARY_GMP) $(LIB_HDR)
+	$(CXX) $(CXXFLAGS) -DDEMO_ARBPREC -I$(DEMO_INCLDIR) -I$(LIB_INCLDIR) -o $@ $(DEMO_SRCS) -L$(LIB_BINDIR) -lMPGMP -lgmp
+
+$(TARGET_NATIVE): $(DEMO_SRCS) $(DEMO_HDRS)
+	$(CXX) $(CXXFLAGS) -DDEMO_NATIVE -I$(DEMO_INCLDIR) -o $@ $(DEMO_SRCS)
