@@ -3,8 +3,8 @@
 *.bak/
 *.bak
 *.o
+*.a
 demo/bin/demo*
-lib/bin/*.a
 *~
 *.*~
 core
@@ -18,11 +18,13 @@ test/demoNative.output
 .project
 .settings/
 
-# files copied from mpint into dist/multiPrecOperators by 'make all',
-# removed again by 'make clean' -- not meant to be tracked here
-dist/multiPrecOperators/lib/src/MPint.cpp
-dist/multiPrecOperators/lib/src/MPintWrappedNative.cpp
-dist/multiPrecOperators/lib/include/MPint.hpp
-dist/multiPrecOperators/demo/src/demoTypedef.hpp
-dist/multiPrecOperators/demo/src/exprTest.cpp
-dist/multiPrecOperators/demo/src/exprTest.hpp
+# files copied from mpint into dist/multiPrecOperators
+# by mpint 'make all', removed again by 'make clean',
+# and artifacts of the dist/multiPrecOperators build
+# are not meant to be tracked here.
+dist/multiPrecOperators/lib/src/*.cpp
+dist/multiPrecOperators/lib/src/*.hpp
+dist/multiPrecOperators/lib/include/*.hpp
+dist/multiPrecOperators/demo/src/*.hpp
+dist/multiPrecOperators/demo/src/*.cpp
+dist/multiPrecOperators/demo/bin/demo*

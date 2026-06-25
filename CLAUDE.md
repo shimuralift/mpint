@@ -114,7 +114,7 @@ mpint and multiPrecOperators have separate Makefiles in their top level director
 On checkout, multiPrecOperators is mostly an empty directory structure, guarded
 by .gitkeep files. multiPrecOperators is populated with src files from mpint by
 mpint's 'make all' and reverted to its empty state by mpint's 'make clean'.
-For actually ditributing and using it, it must be copied elsewhere.
+For actually shipping and using it, it must be copied elsewhere.
 The files copied into multiPrecOperators by 'make all' are listed in mpint's
 .gitignore (and its committed template .gitignore.example), so that populating
 or cleaning multiPrecOperators never shows up as a change in 'git status' on
@@ -128,7 +128,16 @@ Profiling/Benchmarking (mpint only):
 cd test; ./test.sh prof
 
 ## What I've done in the meantime
-just updated CLAUDE.md and transcript.txt
+just updated CLAUDE.md and transcript.txt.
+I also modified the .gitignore.example slightly.
 
 ## What to do for you right now
-verify ALL test results of demoGMP in mpint. use PARI/gp for det and redu, which is available in PATH.
+I asked you to verify ALL test results in mpint. You did PARI/gp based
+verification on redu and det. Good. But I also meant verification of all
+the other tests in mpint's test suite independently, other than relying
+on the *.output.ref files. Overflow errors in the demoMPintNative and
+demoMPintWrappedNative executables are exempted, of course, but give a
+comprehensive list of them. Heh, you don't have to do it using pencil
+and paper, use any tool you find in $PATH (or have at hand otherwise)
+you find appropriate. gp would be fine, but it's overkill for checking
+trivial operators IMO.
