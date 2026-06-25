@@ -127,6 +127,46 @@ simple stdout/stderr based regression test: cd test; ./test.sh all
 Profiling/Benchmarking (mpint only):
 cd test; ./test.sh prof
 
+## Known test-suite overflow exemptions (demoNative / demoWrappedNative)
+Both native-backed demos compute on a 64-bit 'signed long int' and so can
+silently overflow on inputs where demoGMP (arbitrary precision) stays exact.
+All other lines of test/test.sh's reference outputs (expr, basicexpr,
+moreexpr, extraexpr, strconstr, floatconv, missingexpr, detTest, reduTest)
+have been independently cross-checked against external oracles (a from-
+scratch Python reimplementation of the C++ semantics, and PARI/gp's
+matdet/qfrep for detTest/reduTest) and match exactly. The known/observed
+overflow-driven divergences are:
+
+- extraexpr() repeated-squaring test ("23^19"): the true value is
+  74615470927590710561908487 (exact on demoGMP). demoNative and
+  demoWrappedNative both print -3983830012993820921, which is exactly the
+  64-bit signed two's-complement wraparound of the same repeated-squaring
+  algorithm (confirmed by independently simulating it with explicit int64
+  wraparound arithmetic). This is the only overflow in the entire
+  expr/basicexpr/moreexpr/extraexpr/strconstr/floatconv/missingexpr battery;
+  in particular the GCD test's large inputs (482923147313, 988823136811)
+  fit comfortably under 64-bit and are unaffected.
+
+- detTest() GaussInt column (known): computeDetGaussInt's fraction-free
+  Gaussian elimination keeps intermediate values that can exceed the final
+  determinant's magnitude. For the two dense (sparsity 0%) 4x4 cases (run 25
+  and run 26 of 32), demoNative/demoWrappedNative's GaussInt overflows to
+  402904 and -117875 respectively, while Dodgson and GaussFloat on the same
+  runs still report the correct determinants -43753032 and -18819899
+  (matching demoGMP). No other detTest case overflows.
+
+- reduTest() (potential, not fully isolated): starting at run 13 of 16
+  (the first dimension==5 case), demoNative/demoWrappedNative's generated
+  Gram matrices diverge completely from demoGMP's, and stay diverged for
+  all subsequent runs. Runs 1-12 (dimension <= 4) match demoGMP bit-for-bit.
+  isSingular() (called by PosDefState while constructing each candidate
+  lattice) calls the very same computeDetGaussInt() that's confirmed to
+  overflow on dense 4x4 input above; a wrong singular/non-singular verdict
+  on a 5x5 candidate would consume a different number of drand48() draws
+  than demoGMP and fork the entire subsequent random sequence, which is
+  consistent with what's observed. This is the likely root cause but has
+  not been confirmed by direct instrumentation of isSingular() itself.
+
 ## What I've done in the meantime
 just updated CLAUDE.md and transcript.txt.
 I also modified the .gitignore.example slightly.
