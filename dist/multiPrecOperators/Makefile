@@ -57,9 +57,15 @@ $(LIBRARY): $(LIB_OBJ)
 $(LIBRARY_WRAPPEDNATIVE): $(LIB_WRAPPEDNATIVE_OBJ)
 	$(AR) $(ARFLAGS) $@ $^
 
-
+# when used as a starting point for a multiprecision implementation, MPint.cpp is identical to 
+# MPintWrappedNative.cpp which just uses ordinary signed long int. At this stage, the resulting
+# demoMP executable would fail assertions when it was compiled with -DDEMO_ARBPREC.
+# As soon as you have true multi precision integers implemented in MPint.cpp, in particular the
+# string constructors, you should switch on -DDEMO_ARBPREC as in the out-commented target below.
+#$(TARGET_MP): $(DEMO_SRCS) $(DEMO_HDRS) $(LIBRARY)
+#	$(CXX) $(CXXFLAGS) -DDEMO_ARBPREC -I$(LIB_INCLDIR) -I$(DEMO_INCLDIR) -o $@ $(DEMO_SRCS) -L$(LIB_BINDIR) -lMP
 $(TARGET_MP): $(DEMO_SRCS) $(DEMO_HDRS) $(LIBRARY)
-	$(CXX) $(CXXFLAGS) -DDEMO_ARBPREC -I$(LIB_INCLDIR) -I$(DEMO_INCLDIR) -o $@ $(DEMO_SRCS) -L$(LIB_BINDIR) -lMP
+	$(CXX) $(CXXFLAGS) -I$(LIB_INCLDIR) -I$(DEMO_INCLDIR) -o $@ $(DEMO_SRCS) -L$(LIB_BINDIR) -lMP
 
 $(TARGET_NATIVE): $(DEMO_SRCS) $(DEMO_HDRS)
 	$(CXX) $(CXXFLAGS) -DDEMO_NATIVE -I$(DEMO_INCLDIR) -o $@ $(DEMO_SRCS)

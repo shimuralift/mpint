@@ -10220,3 +10220,203 @@ Committed as 0257a20. CLAUDE.md, transcript.txt, and .claude/settings.local.json
 
 #############################################################################################################################################################################################################
 
+ ▐▛███▜▌   Claude Code v2.1.191
+▝▜█████▛▘  Sonnet 4.6 · Claude Pro
+  ▘▘ ▝▝    ~/work/mpint
+
+
+Those were stray background gp processes from earlier experimentation (testing line-continuation syntax) — already dead ends I'd worked around at the time, no action needed.
+
+✻ Cooked for 5s
+
+❯ /compact
+  ⎿  Compacted (ctrl+o to see full summary)
+Read ../../../../tmp/claude-500/-home-claudeuser-work-mpint/4ea49a3a-13d2-4e0c-9ba4-4a7d13e600d3/scratchpad/verify_redu.py (49 lines)
+Referenced file demo/src/redu.cpp
+Read ../../.claude/projects/-home-claudeuser-work-mpint/memory/feedback_theta_series_terminology.md (15 lines)
+Read ../../../../tmp/claude-500/-home-claudeuser-work-mpint/4ea49a3a-13d2-4e0c-9ba4-4a7d13e600d3/scratchpad/verify_det.py (64 lines)
+Read demo/src/demoUtils.hpp (38 lines)
+
+❯ see CLAUDE.md for instructions.
+
+I'll pick up the remaining ask from CLAUDE.md: independently verify the other test functions (expr/basicexpr/moreexpr/extraexpr/strconstr/floatconv/missingexpr) beyond det/redu, and compile a list of overflow exemptions for demoNative/demoWrappedNative.
+
+  Read 3 files, ran 2 shell commands
+
+Let me extract the relevant section (lines 1–361, before detTest) from each of the three reference outputs for detailed independent verification.
+
+  Read 3 files, ran 2 shell commands
+
+● Write(/tmp/claude-500/-home-claudeuser-work-mpint/4ea49a3a-13d2-4e0c-9ba4-4a7d13e600d3/scratchpad/verify2/oracle.py)
+Wrote 218 lines to ../../../../tmp/claude-500/-home-claudeuser-work-mpint/4ea49a3a-13d2-4e0c-9ba4-4a7d13e600d3/scratchpad/verify2/oracle.py
+import re, sys
+
+def wrap(v, bits, signed):
+    m = 1 << bits
+    v = v % m
+    if signed and v >= (1 << (bits-1)):
+        v -= m
+    return v
+
+def wrap64(v):
+… +208 lines
+
+  Ran 1 shell command
+
+❯ what does 'oracle' have to do with it? please explain that terminology.
+
+"Oracle" is standard software-testing terminology: a test oracle is an independent mechanism that tells you what the correct expected output should be, so you can compare the system-under-test's actual output against it. It doesn't share any code path with the thing being tested — that's the whole point, it's not allowed to just reflect the same bug back.
+
+I used it here the same way I used PARI/gp earlier for det/redu: PARI/gp's matdet/qfrep were the oracle there. For this batch of tests (expr, basicexpr, etc.), I was writing a small Python script (oracle.py) that independently recomputes what each line of demo output should say — reimplementing the arithmetic (with explicit C++ truncating-division and fixed-width wraparound semantics) from scratch in Python, then diffing that against demoGMP.output.ref. That script is the oracle for this round of verification.
+
+It's not project-specific jargon — just naming the script for what it's doing. Want me to continue running it, or pause here?
+
+✻ Brewed for 17s
+
+❯ great information, i did not know that. thanks. ok, go ahead and run it.
+
+  Ran 1 shell command
+
+● Update(/tmp/claude-500/-home-claudeuser-work-mpint/4ea49a3a-13d2-4e0c-9ba4-4a7d13e600d3/scratchpad/verify2/oracle.py)
+Added 1 line, removed 4 lines
+cMPelf = 11
+cMP733 = MP(-733)
+
+P(f"    +() const :: {cMP_________} :: {+cMP_________}".replace(" :: ", "::", 1).replace(" :: ", "::"))
+out[-1] = f"    +() const :: {cMP_________}::{+cMP_________}"
+out[-2] = None
+out = [o for o in out if o is not None]
+P(f"    +() const :: {cMP_________}::{+cMP_________}")
+P(f"    -() const :: {cMP__c______}::{-cMP__c______}")
+P(f"2nc +() const :: {ncMP_________}::{+ncMP_________}")
+P(f"2nc -() const :: {ncMP__c______}::{-ncMP__c______}")
+
+  Ran 2 shell commands
+
+expr() and basicexpr() both match the independently computed oracle exactly — including the wraparound conversion edge cases. Now extending the oracle to moreexpr, extraexpr, missingexpr, strconstr, floatconv, and the GCD/power-of-23 computations.
+
+  Ran 1 shell command
+
+● Write(/tmp/claude-500/-home-claudeuser-work-mpint/4ea49a3a-13d2-4e0c-9ba4-4a7d13e600d3/scratchpad/verify2/oracle2.py)
+Wrote 237 lines to ../../../../tmp/claude-500/-home-claudeuser-work-mpint/4ea49a3a-13d2-4e0c-9ba4-4a7d13e600d3/scratchpad/verify2/oracle2.py
+import sys, struct
+
+def tdiv(a, b):
+    q = abs(a) // abs(b)
+    if (a < 0) != (b < 0):
+        q = -q
+    return q
+
+def tmod(a, b):
+    return a - tdiv(a, b) * b
+… +227 lines
+
+  Ran 1 shell command
+
+Just the section-header line my oracle script (correctly) doesn't emit — adjusting the reference slice to skip it.
+
+  Ran 1 shell command
+
+moreexpr() and extraexpr() match exactly. Now strconstr, floatconv, and missingexpr.
+
+  Ran 2 shell commands
+
+Now floatconv (float/double rounding) and missingexpr.
+
+  Ran 1 shell command
+
+All other (non-det/non-redu) test functions are now independently verified. Summary:
+
+Method: wrote a Python oracle (oracle.py/oracle2.py) that reimplements the exact C++ semantics from exprTest.cpp from scratch — fixed-width-to-int64 wraparound for the construction edge cases in basicexpr, C-style truncating //%, native bitwise/shift behavior — and generates the expected line-by-line output independent of the demo binaries. Then diffed against demoGMP.output.ref.
+
+Results — all exact matches, zero discrepancies:
+- expr, basicexpr (including all the unsigned↔signed wraparound edge cases: -23, 65514, 4294967255, etc. — all confirmed to be the deliberate, deterministic result of reinterpreting the bit pattern as signed 64-bit, not bugs)
+- moreexpr, extraexpr (incl. GCD via Euclid: gcd(482923147313, 988823136811) = 1, confirmed with Python's math.gcd)
+- strconstr (decimal/octal/hex/binary literal parsing, both digit-separator and string-constructor forms)
+- floatconv (float/double rounding of 1e9/-999999999 → confirmed 1e+09/-1e+09 is exactly what IEEE-754 float32 + C++'s default 6-significant-digit stream formatting produces)
+- missingexpr (move semantics, operator long double(), operator>>, +-prefixed literals)
+
+Comprehensive overflow exemption list for demoNative/demoWrappedNative: exactly one line in the entire suite — extraexpr()'s 23^19 repeated-squaring result. True value is 74615470927590710561908487 (confirmed exact for demoGMP); both native-backed binaries print -3983830012993820921. I simulated the actual repeated-squaring algorithm with explicit signed-64-bit two's-complement wraparound at each multiply, and it reproduces -3983830012993820921 exactly — confirming this is deterministic 64-bit overflow of that one computation, not memory corruption or a logic bug. No other line in expr/basicexpr/moreexpr/extraexpr/strconstr/floatconv/missingexpr overflows on either native backend (the GCD inputs, despite being ~1e11–1e12, fit comfortably under int64 max ~9.2e18).
+
+Combined with the earlier PARI/gp verification of detTest/reduTest, every test function in the suite has now been independently cross-checked against an oracle outside the .output.ref files.
+
+✻ Churned for 2m 46s
+
+❯ add the overflow exemption list to CLAUDE.md, including the (known) det and (potential) redu cases.
+
+  Read 1 file, ran 10 shell commands
+
+● Update(CLAUDE.md)
+Added 40 lines
+Profiling/Benchmarking (mpint only):
+cd test; ./test.sh prof
+
+## Known test-suite overflow exemptions (demoNative / demoWrappedNative)
+Both native-backed demos compute on a 64-bit 'signed long int' and so can
+silently overflow on inputs where demoGMP (arbitrary precision) stays exact.
+All other lines of test/test.sh's reference outputs (expr, basicexpr,
+moreexpr, extraexpr, strconstr, floatconv, missingexpr, detTest, reduTest)
+have been independently cross-checked against external oracles (a from-
+scratch Python reimplementation of the C++ semantics, and PARI/gp's
+matdet/qfrep for detTest/reduTest) and match exactly. The known/observed
+overflow-driven divergences are:
+
+- extraexpr() repeated-squaring test ("23^19"): the true value is
+  74615470927590710561908487 (exact on demoGMP). demoNative and
+  demoWrappedNative both print -3983830012993820921, which is exactly the
+  64-bit signed two's-complement wraparound of the same repeated-squaring
+  algorithm (confirmed by independently simulating it with explicit int64
+  wraparound arithmetic). This is the only overflow in the entire
+  expr/basicexpr/moreexpr/extraexpr/strconstr/floatconv/missingexpr battery;
+  in particular the GCD test's large inputs (482923147313, 988823136811)
+  fit comfortably under 64-bit and are unaffected.
+
+- detTest() GaussInt column (known): computeDetGaussInt's fraction-free
+  Gaussian elimination keeps intermediate values that can exceed the final
+  determinant's magnitude. For the two dense (sparsity 0%) 4x4 cases (run 25
+  and run 26 of 32), demoNative/demoWrappedNative's GaussInt overflows to
+  402904 and -117875 respectively, while Dodgson and GaussFloat on the same
+  runs still report the correct determinants -43753032 and -18819899
+  (matching demoGMP). No other detTest case overflows.
+
+- reduTest() (potential, not fully isolated): starting at run 13 of 16
+  (the first dimension==5 case), demoNative/demoWrappedNative's generated
+  Gram matrices diverge completely from demoGMP's, and stay diverged for
+  all subsequent runs. Runs 1-12 (dimension <= 4) match demoGMP bit-for-bit.
+  isSingular() (called by PosDefState while constructing each candidate
+  lattice) calls the very same computeDetGaussInt() that's confirmed to
+  overflow on dense 4x4 input above; a wrong singular/non-singular verdict
+  on a 5x5 candidate would consume a different number of drand48() draws
+  than demoGMP and fork the entire subsequent random sequence, which is
+  consistent with what's observed. This is the likely root cause but has
+  not been confirmed by direct instrumentation of isSingular() itself.
+
+## What I've done in the meantime
+just updated CLAUDE.md and transcript.txt.
+I also modified the .gitignore.example slightly.
+
+Added a "Known test-suite overflow exemptions" section to CLAUDE.md, covering:
+
+1. extraexpr()'s 23^19 — confirmed exact 64-bit wraparound (-3983830012993820921 vs. the true 74615470927590710561908487), the only overflow in the non-det/redu battery.
+2. detTest() GaussInt (known) — found by diffing demoGMP vs. native dense 4×4 cases: runs 25 and 26 of 32 overflow to 402904/-117875 while Dodgson/GaussFloat still report the correct -43753032/-18819899.
+3. reduTest() (potential) — discovered that native-backed output diverges completely from demoGMP starting at run 13/16 (first dim=5 case) and stays diverged afterward. Traced the likely cause to isSingular() reusing the same computeDetGaussInt() that's confirmed to overflow at dim 4 — a wrong verdict there would fork the drand48() sequence — but flagged this as not confirmed by direct instrumentation, per your "potential" framing.
+
+✻ Brewed for 2m 45s
+
+❯ commit this
+
+  Ran 1 shell command
+
+Only CLAUDE.md is changed — committing just that.
+
+  Committed 512453a
+
+Committed as 512453a.
+
+✻ Sautéed for 15s
+
+─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯
+
+#############################################################################################################################################################################################################
+
