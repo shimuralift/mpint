@@ -47,35 +47,6 @@ reference outputs. *test.sh* with option *prof* does some rdtsc based
 profiling of the demo variants and shows a summary of results.
 
 
-### Subproject *dist/multiPrecOperators*
-mpint itself has grown organically over time and contains
-idiosyncratic bash script based testing and profiling involving
-some more arcane examples in integral determinant calculation and
-lattice reduction and finding shortest vectors. This is good enough
-for the author but not appropriate for most users.
-
-In directory *dist* there is a project multiPrecOperators which
-serves as a starting point for the user. It contains classes *MPintWrappedNative*,
-*MPint* (initially a copy of *MPintWrappedNative*) and a generic header
-*MPint.hpp*. Both classes can be compiled into a static library to
-be used in a user project. There is also some demo program which
-may serve as a smoke test.
-multiPrecOperator does not have any regression test and profiling
-facilities. The recommended approach is to modify *MPint.cpp* in
-order to use a multi precision library, or use a code agent to do
-that. Initially *MPint* implements its operator functionality in terms
-of *signed long int*.
-*MPintWrappedNative* should be left unmodified for later comparison
-with the user's *MPint* implementation.
-Consequentially, the demo comes in three variants, *demoMP*,
-*demoWrappedNative*, and *demoNative*. The latter variant does not use
-*MPint* at all, but just the native *signed long int* directly.
-All systematic testing, profiling, versioning, and integration, as
-well as the implementation using a suitable multi precision integer
-package is intentionally left to the user, or rather a code
-agent.
-
-
 ## Development Guidelines
 Coding standards and conventions:
 * The Compiler is GNU g++ with *-std=c++14* setting. 
@@ -83,8 +54,7 @@ Coding standards and conventions:
 * Other dependencies are the GNU Multiprecision (GMP) package, GNU make, and bash.
 
 File structure preferences:  
-For both mpint and multiPrecOperators we have the general directory
-structure
+We have this general directory structure:
 
     lib
         bin
@@ -93,8 +63,7 @@ structure
     demo
         bin
         src
-    test (mpint only)
-    dist (mpint only)
+    test
 
 Testing approaches:
 simple stdout/stderr based regression test, driven by *test/test.sh all*,
@@ -107,22 +76,12 @@ driven by *test/test.sh prof*, see below
 ## Important Commands
 Build commands:  
 make, with targets *all*(default) and *clean*.  
-mpint and multiPrecOperators have separate Makefiles in their top level directories.
-On checkout of mpint, *dist/multiPrecOperators* is a mostly empty directory structure, guarded
-by *.gitkeep* files. multiPrecOperators is populated with src files from mpint by
-mpint's *make all* and reverted to its almost empty state by mpint's *make clean*.
-For actually implementing *MPint.cpp*, shipping and using it, it must be copied elsewhere.
-The files copied into multiPrecOperators by 'make all' are listed in mpint's
-.gitignore (and its committed template .gitignore.example), so that populating
-or cleaning multiPrecOperators never shows up as a change in 'git status' on
-this branch.
 
-Test commands (mpint only):  
+Test commands:  
 simple stdout/stderr based regression test:  
 *cd test; ./test.sh all*  
-multiPrecOperators can only be smoke tested by running the demo\* executables.
 
-Profiling/Benchmarking (mpint only):  
+Profiling/Benchmarking:  
 *cd test; ./test.sh prof*
 
 

@@ -18,7 +18,7 @@ process on nontrivial code, and the result is much more difficult
 to read and maintain.
 
 ## Motivation of Project
-mpint is the author's (an elderly programmer) first attempt to
+mpint is the author's first attempt to
 use an LLM based code agent for a programming task other than "agent, go
 and write me a web application!".  
 The idea to use C++ operator overloading to migrate legacy C code
