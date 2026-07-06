@@ -4,18 +4,18 @@ ARGC=$#
 CMDLPARAM=$1
 DRYPARAM=$2
 
+EXECUTABLENATIVE="../demo/bin/demoNative"
+OUTFILENATIVE="demoNative.output"
+
 EXECUTABLEWRAPPEDNATIVE="../demo/bin/demoWrappedNative"
 OUTFILEWRAPPEDNATIVE="demoWrappedNative.output"
 
 EXECUTABLEGMP="../demo/bin/demoGMP"
 OUTFILEGMP="demoGMP.output"
 
-EXECUTABLENATIVE="../demo/bin/demoNative"
-OUTFILENATIVE="demoNative.output"
-
+REFFILENATIVE="demoNative.output.ref"
 REFFILEWRAPPEDNATIVE="demoWrappedNative.output.ref"
 REFFILEGMP="demoGMP.output.ref"
-REFFILENATIVE="demoNative.output.ref"
 
 DIFFCMD="diff"
 RMCMD="rm"
@@ -59,6 +59,12 @@ doAll () {
     local diffretval=0
 
 
+    runExecutable ${EXECUTABLENATIVE} ${OUTFILENATIVE}
+    retval=$?
+    if [ "${retval}" -ne 0 ]; then
+        return ${retval}
+    fi
+
     runExecutable ${EXECUTABLEWRAPPEDNATIVE} ${OUTFILEWRAPPEDNATIVE}
     retval=$?
     if [ "${retval}" -ne 0 ]; then
@@ -71,12 +77,12 @@ doAll () {
         return ${retval}
     fi
 
-    runExecutable ${EXECUTABLENATIVE} ${OUTFILENATIVE}
-    retval=$?
-    if [ "${retval}" -ne 0 ]; then
-        return ${retval}
-    fi
 
+    doDiff "${OUTFILENATIVE}" "${REFFILENATIVE}"
+    diffretval=$?
+    if [ "${diffretval}" -ne 0 ]; then
+        retval=${diffretval}
+    fi
 
     doDiff "${OUTFILEWRAPPEDNATIVE}" "${REFFILEWRAPPEDNATIVE}"
     diffretval=$?
@@ -85,12 +91,6 @@ doAll () {
     fi
 
     doDiff "${OUTFILEGMP}" "${REFFILEGMP}"
-    diffretval=$?
-    if [ "${diffretval}" -ne 0 ]; then
-        retval=${diffretval}
-    fi
-
-    doDiff "${OUTFILENATIVE}" "${REFFILENATIVE}"
     diffretval=$?
     if [ "${diffretval}" -ne 0 ]; then
         retval=${diffretval}

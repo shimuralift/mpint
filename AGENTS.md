@@ -25,12 +25,15 @@ native integer types. So, ideally, no arithmetic expressions or algorithms
 have to be changed. Additionally, *MPint* has constructors, which take a
 string as argument, to compensate for the lack of native integer literals.
 
-*MPint* is built and archived into a static library, accompanied by
-a generic header file *MPint.hpp*. There are no implementation details
-exposed by this generic header, these are hidden
-in  _MPint_ \* _.cpp_  using the pimpl idiom.
-All library code, resulting libraries, and the header reside in 
-subdirectories of *mpint/lib/*.
+Project mpint has a *Makefile* driven build, with targets *all* (default) and *clean*,
+but that only provides some demo executables of the various *MPint* implementations present
+in directories *src* and *include*. These demo executables are used for regression testing
+and profiling, driven by *test/test.sh*.
+
+A human (or artificial) consumer is meant to either pick one of the existing *MPint*
+implementations, source and header, and start their own project with them, possibly code agent
+assisted, or develop their own implementation, using one existing implementation
+as a starting point in which case the existing tests and profiling might be helpful.
 
 We have two implementations of *MPint*: *MPintWrappedNative* which
 is just the *MPint* operators wrapping the native *signed long int* type,
@@ -41,6 +44,7 @@ demo/testing/profiling purposes: *demoWrappedNative* which drives the
 *MPintWrappedNative* operators, *demoGMP* for the *MPintGMP* wrapper around the
 GMP interface, and, for comparison, *demoNative*, which runs the demo on
 the native *signed long int* type without using *MPint* at all.
+
 In subdirectory *mpint/test* there is a bash script *test.sh* which
 runs all three demo variants and compares their outputs to respective
 reference outputs. *test.sh* with option *prof* does some rdtsc based
@@ -56,10 +60,8 @@ Coding standards and conventions:
 File structure preferences:  
 We have this general directory structure:
 
-    lib
-        bin
-        include
-        src
+    include
+    src
     demo
         bin
         src

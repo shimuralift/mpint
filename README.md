@@ -17,6 +17,16 @@ would e.g. require to rewrite an expression like  _a*(b+c)_  as
 process on nontrivial code, and the result is much more difficult
 to read and maintain.
 
+Project mpint has a *Makefile* driven build, with targets *all* (default) and *clean*,
+but that only provides some demo executables of the various *MPint* implementations present
+in directories *src* and *include*. These demo executables are used for regression testing
+and profiling, driven by *test/test.sh*.
+
+A human (or artificial) consumer is meant to either pick one of the existing *MPint*
+implementations, source and header, and start their own project with them, possibly code agent
+assisted, or develop their own implementation, using one existing implementation
+as a starting point in which case the existing tests and profiling might be helpful.
+
 ## Motivation of Project
 mpint is the author's first attempt to
 use an LLM based code agent for a programming task other than "agent, go
