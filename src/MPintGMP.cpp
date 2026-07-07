@@ -30,6 +30,7 @@ struct MPint::MPintImpl {
 // GMP's mpz_set_str does not recognise natively.
 
 static void mpz_set_mpint_str(mpz_t dest, const char* const s) {
+    if (!s) throw std::invalid_argument("MPint: null string pointer");
     const char* p = s;
 
     // Preserve leading sign for the clean buffer
@@ -38,11 +39,12 @@ static void mpz_set_mpint_str(mpz_t dest, const char* const s) {
     else if (*p == '+') { ++p; }
 
     // Detect base and advance past any prefix
-    int base = 0; // 0 → GMP auto-detects 0x (hex) and 0 (octal)
+    int base = 10;
     if (*p == '0') {
         const char* const q = p + 1;
-        if (*q == 'b' || *q == 'B') { base = 2; p += 2; }
-        // 0x and 0-prefix are left for GMP's base-0 auto-detection
+        if      (*q == 'x' || *q == 'X') { base = 16; p += 2; }
+        else if (*q == 'b' || *q == 'B') { base =  2; p += 2; }
+        else                             { base =  8; }  // leave p at '0': first octal digit
     }
 
     // Build a clean copy without single-quote separators
@@ -53,7 +55,8 @@ static void mpz_set_mpint_str(mpz_t dest, const char* const s) {
         if (*p != '\'') clean += *p;
     }
 
-    mpz_set_str(dest, clean.c_str(), base);
+    if (mpz_set_str(dest, clean.c_str(), base) != 0)
+        throw std::invalid_argument(std::string("MPint: invalid integer string: ") + s);
 }
 
 // --- construction -----------------------------------------------------------
@@ -180,6 +183,14 @@ std::ostream& operator<<(std::ostream& os, const MPint& v) {
 
 std::istream& operator>>(std::istream& is, MPint& v) {
     std::string s;
-    if (is >> s) mpz_set_str(v.pImpl->mVal, s.c_str(), 10);
+    if (is >> s) {
+        mpz_t tmp;
+        mpz_init(tmp);
+        if (mpz_set_str(tmp, s.c_str(), 10) == 0)
+            mpz_set(v.pImpl->mVal, tmp);
+        else
+            is.setstate(std::ios::failbit);
+        mpz_clear(tmp);
+    }
     return is;
 }

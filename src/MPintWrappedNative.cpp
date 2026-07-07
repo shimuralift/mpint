@@ -21,6 +21,7 @@ struct MPint::MPintImpl {
 // --- string parsing helper --------------------------------------------------
 
 static signed long int parse_str(const char* const s) {
+    if (!s) throw std::invalid_argument("MPint: null string pointer");
     const char* p = s;
     bool negative = false;
     if (*p == '-')      { negative = true; ++p; }
@@ -31,10 +32,11 @@ static signed long int parse_str(const char* const s) {
         const char* const q = p + 1;
         if      (*q == 'x' || *q == 'X') { base = 16; p += 2; }
         else if (*q == 'b' || *q == 'B') { base =  2; p += 2; }
-        else                             { base =  8; p += 1; }
+        else                             { base =  8; }  // leave p at '0': it's the first octal digit
     }
 
     unsigned long int result = 0;
+    bool got_digit = false;
     for (; *p; ++p) {
         if (*p == '\'') continue;
         unsigned int digit;
@@ -42,9 +44,14 @@ static signed long int parse_str(const char* const s) {
         if      (c >= '0' && c <= '9') digit = static_cast<unsigned int>(c - '0');
         else if (c >= 'a' && c <= 'f') digit = static_cast<unsigned int>(c - 'a') + 10u;
         else if (c >= 'A' && c <= 'F') digit = static_cast<unsigned int>(c - 'A') + 10u;
-        else break;
+        else throw std::invalid_argument(std::string("MPint: invalid integer string: ") + s);
+        if (digit >= static_cast<unsigned int>(base))
+            throw std::invalid_argument(std::string("MPint: invalid integer string: ") + s);
         result = result * static_cast<unsigned long int>(base) + digit;
+        got_digit = true;
     }
+    if (!got_digit)
+        throw std::invalid_argument(std::string("MPint: invalid integer string: ") + s);
     return negative ? -static_cast<signed long int>(result)
                     :  static_cast<signed long int>(result);
 }
@@ -157,4 +164,15 @@ bool operator>=(const MPint& a, const MPint& b) noexcept { return a.pImpl->mVal 
 // --- stream I/O -------------------------------------------------------------
 
 std::ostream& operator<<(std::ostream& os, const MPint& v) { return os << v.pImpl->mVal; }
-std::istream& operator>>(std::istream& is,       MPint& v) { return is >> v.pImpl->mVal; }
+std::istream& operator>>(std::istream& is, MPint& v) {
+    std::string s;
+    if (is >> s) {
+        try {
+            const signed long int tmp = parse_str(s.c_str());
+            v.pImpl->mVal = tmp;
+        } catch (const std::invalid_argument&) {
+            is.setstate(std::ios::failbit);
+        }
+    }
+    return is;
+}

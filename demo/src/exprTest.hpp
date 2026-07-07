@@ -7,3 +7,4 @@ int extraexpr();
 int strconstr();
 int floatconv();
 int missingexpr();
+int injTest();

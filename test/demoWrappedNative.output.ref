@@ -357,6 +357,29 @@ read "7 8"  = 7 8
 "+017"  = 15
 "+0b11" = 3
 
+MPint: input safety tests
+
+--- string ctor: valid edge cases ---
+MPint("0")    = 0
+MPint("-0")   = 0
+MPint("+0x0") = 0
+
+--- string ctor: invalid inputs rejected ---
+MPint("") threw ok
+MPint("-") threw ok
+MPint("+") threw ok
+MPint("0x") threw ok
+MPint("0b") threw ok
+MPint("abc") threw ok
+MPint("12abc") threw ok
+MPint("08") threw ok
+MPint("0b012") threw ok
+MPint("0xGG") threw ok
+
+--- operator>> with invalid input ---
+stream("abc") >> MPint : failbit set ok
+stream("abc") >> MPint : value unchanged ok
+
 MPint: determinant example
 
  number of cases  ==  dimensions x sparsities:

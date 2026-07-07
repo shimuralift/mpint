@@ -536,6 +536,50 @@ int extraexpr() {
   return 0;
 }
 
+int injTest() {
+#ifndef DEMO_NATIVE
+  std::cout << "--- string ctor: valid edge cases ---" << std::endl;
+  {
+    MPint z0("0");    assert(z0 == MPint(0)); std::cout << "MPint(\"0\")    = " << z0 << std::endl;
+    MPint z1("-0");   assert(z1 == MPint(0)); std::cout << "MPint(\"-0\")   = " << z1 << std::endl;
+    MPint z2("+0x0"); assert(z2 == MPint(0)); std::cout << "MPint(\"+0x0\") = " << z2 << std::endl;
+  }
+
+  std::cout << std::endl << "--- string ctor: invalid inputs rejected ---" << std::endl;
+  {
+    auto strThrows = [](const char* s) -> bool {
+      try { MPint m(s); (void)m; return false; }
+      catch (const std::invalid_argument&) { return true; }
+    };
+    assert(strThrows(""));      std::cout << "MPint(\"\") threw ok"       << std::endl;
+    assert(strThrows("-"));     std::cout << "MPint(\"-\") threw ok"      << std::endl;
+    assert(strThrows("+"));     std::cout << "MPint(\"+\") threw ok"      << std::endl;
+    assert(strThrows("0x"));    std::cout << "MPint(\"0x\") threw ok"     << std::endl;
+    assert(strThrows("0b"));    std::cout << "MPint(\"0b\") threw ok"     << std::endl;
+    assert(strThrows("abc"));   std::cout << "MPint(\"abc\") threw ok"    << std::endl;
+    assert(strThrows("12abc")); std::cout << "MPint(\"12abc\") threw ok"  << std::endl;
+    assert(strThrows("08"));    std::cout << "MPint(\"08\") threw ok"     << std::endl;
+    assert(strThrows("0b012")); std::cout << "MPint(\"0b012\") threw ok"  << std::endl;
+    assert(strThrows("0xGG"));  std::cout << "MPint(\"0xGG\") threw ok"   << std::endl;
+  }
+
+  std::cout << std::endl;
+#endif
+
+  std::cout << "--- operator>> with invalid input ---" << std::endl;
+  {
+    MPint x(42);
+    std::istringstream iss("abc");
+    iss >> x;
+    assert(iss.fail());        std::cout << "stream(\"abc\") >> MPint : failbit set ok"      << std::endl;
+#ifndef DEMO_NATIVE
+    assert(x == MPint(42));    std::cout << "stream(\"abc\") >> MPint : value unchanged ok"  << std::endl;
+#endif
+  }
+
+  return 0;
+}
+
 #ifdef DEMO_NATIVE
 int strconstr() {
   std::cout << "--- string constructor: decimal ---" << std::endl;

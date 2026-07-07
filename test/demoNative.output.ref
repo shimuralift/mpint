@@ -352,6 +352,11 @@ read "123"  = 123
 read "-456" = -456
 read "7 8"  = 7 8
 
+MPint: input safety tests
+
+--- operator>> with invalid input ---
+stream("abc") >> MPint : failbit set ok
+
 MPint: determinant example
 
  number of cases  ==  dimensions x sparsities:
