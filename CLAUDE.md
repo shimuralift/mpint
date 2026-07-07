@@ -16,20 +16,24 @@ which implements an integer with arbitrary precision.
 * On a Claude Pro annual subscription in 2026.
 
 ## What I have done since our last conversation
-Between the previous and this session I made four commits (most recent first):
+I've updated *transcript.txt* and made a minor cosmetic change to *Makefile*.
+I've also updated *CLAUDE.md*:  
+Now, there's a new paragraph "What Claude has done (...)".  
+I want you to update that with a summary of your activities after a Claude Code session.
 
-- *2be3304* — project no longer builds static libraries; directory structure
-  adapted: *lib/src/* → *src/*, *lib/include/* → *include/*, *lib/bin/* removed;
-  Makefile and *test/test.sh* updated accordingly. *AGENTS.md*, *README.md*,
-  *CLAUDE.md* updated to reflect the new purpose (source development environment).
-- *61c31f0* — removed sub project *dist/multiPrecOperators* entirely.
-- *0dbfb92* — added *README.md* (high-level, for humans) and *AGENTS.md*
-  (technical reference for agents); content moved out of *CLAUDE.md*.
-- *0073a2c* — reorganised *CLAUDE.md*; minor Makefile comment; updated
-  *transcript.txt*.
+## What Claude has done since our last conversation
 
-## What I want you to do in the current conversation
-This session was orientation only. I read *README.md*, *AGENTS.md*, and the
-four most recent commits as instructed. No code changes were made.
 
-No outstanding tasks. Await further instructions.
+## What I want you to do in the upcoming conversation
+*test/test.sh* has an optional argument *dry* which only prints the shell command without
+actually executing them.  
+With *./test.sh prof dry* this echoes only
+"DRY: would run <some executables here> with -prof and display side-by-side".
+I want you to run the commands in lines 118, 120, and 122 through function *runCmd()*,
+which already respects the *dry* option, instead of running them directly.
+Please don"t do that for output post-processing and table generation, but echo
+a line conforming to what *runCmd()* does in the *dry* case, but without quoting all
+these commands. Like
+"############################## DRY RUN : <post processing results and printing a summarizing table on stdout>
+Factor out ""############################## DRY RUN : " as a string constant to be used in both *runCmd()*
+and the echo mentioned above.

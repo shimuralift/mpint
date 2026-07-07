@@ -2,9 +2,9 @@ SRCDIR  := src
 INCLDIR := include
 
 WRAPPEDNATIVE_SRC := $(SRCDIR)/MPintWrappedNative.cpp
-GMP_SRC           := $(SRCDIR)/MPintGMP.cpp
-
 WRAPPEDNATIVE_HDR := $(INCLDIR)/MPint.hpp
+
+GMP_SRC           := $(SRCDIR)/MPintGMP.cpp
 GMP_HDR           := $(INCLDIR)/MPint.hpp
 
 
