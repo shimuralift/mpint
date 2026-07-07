@@ -13,5 +13,17 @@
       "Bash(gp -q /tmp/t3.gp)",
       "Bash(gp -q /tmp/t4.gp)"
     ]
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 -c \"import json,pathlib; p=pathlib.Path('CLAUDE.md'); content=p.read_text() if p.exists() else ''; print(json.dumps({'hookSpecificOutput': {'hookEventName': 'SessionStart', 'additionalContext': 'Project CLAUDE.md:\\n'+content}}))\""
+          }
+        ]
+      }
+    ]
   }
 }

@@ -21,11 +21,13 @@ DIFFCMD="diff"
 RMCMD="rm"
 SHOWOUTPUTCMD="cat"
 
+DRY_RUN_PREFIX="############################## DRY RUN : "
+
 runCmd () {
     local cmdline=$1
     local retval=0
     if [ "${DRYPARAM}" == "dry" ]; then
-        echo "############################## DRY RUN : ${cmdline} ##########"
+        echo "${DRY_RUN_PREFIX}${cmdline} ##########"
         return $?
     else
         echo "############################## START : ${cmdline} ##########"
@@ -101,11 +103,6 @@ doAll () {
 }
 
 doProf () {
-    if [ "${DRYPARAM}" == "dry" ]; then
-        echo "DRY: would run ${EXECUTABLEWRAPPEDNATIVE}, ${EXECUTABLEGMP}, ${EXECUTABLENATIVE} with -prof and display side-by-side"
-        return 0
-    fi
-
     local tmp1 tmp2 tmp3 tdata1 tdata2 tdata3
     tmp1=$(mktemp)
     tmp2=$(mktemp)
@@ -115,11 +112,17 @@ doProf () {
     tdata3=$(mktemp)
 
     echo "profiling ${EXECUTABLENATIVE} ..."
-    ${EXECUTABLENATIVE} -prof > "${tmp1}" 2>&1
+    runCmd "${EXECUTABLENATIVE} -prof > ${tmp1} 2>&1"
     echo "profiling ${EXECUTABLEWRAPPEDNATIVE} ..."
-    ${EXECUTABLEWRAPPEDNATIVE}      -prof > "${tmp2}" 2>&1
+    runCmd "${EXECUTABLEWRAPPEDNATIVE} -prof > ${tmp2} 2>&1"
     echo "profiling ${EXECUTABLEGMP} ..."
-    ${EXECUTABLEGMP}   -prof > "${tmp3}" 2>&1
+    runCmd "${EXECUTABLEGMP} -prof > ${tmp3} 2>&1"
+
+    if [ "${DRYPARAM}" == "dry" ]; then
+        echo "${DRY_RUN_PREFIX}<post processing results and printing a summarizing table on stdout>"
+        rm -f "${tmp1}" "${tmp2}" "${tmp3}" "${tdata1}" "${tdata2}" "${tdata3}"
+        return 0
+    fi
 
     # Strip the "===" header line, keep only per-function rows
     grep -v '^===' "${tmp1}" > "${tdata1}"

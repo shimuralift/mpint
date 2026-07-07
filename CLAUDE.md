@@ -22,7 +22,12 @@ Now, there's a new paragraph "What Claude has done (...)".
 I want you to update that with a summary of your activities after a Claude Code session.
 
 ## What Claude has done since our last conversation
-
+- Modified *test/test.sh*: factored out `DRY_RUN_PREFIX` constant, updated `runCmd()` to use it,
+  routed the three profiling executable calls in `doProf()` through `runCmd()`, and replaced the
+  early dry-return with a proper dry guard + echo before the post-processing block.
+- Added a `SessionStart` hook to *.claude/settings.local.json* that injects *CLAUDE.md* as
+  `additionalContext` at the start of every session.
+- Saved memory entries to auto-read CLAUDE.md at session start and auto-update it before commits.
 
 ## What I want you to do in the upcoming conversation
 *test/test.sh* has an optional argument *dry* which only prints the shell command without
