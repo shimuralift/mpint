@@ -111,11 +111,8 @@ doProf () {
     tdata2=$(mktemp)
     tdata3=$(mktemp)
 
-    echo "profiling ${EXECUTABLENATIVE} ..."
     runCmd "${EXECUTABLENATIVE} -prof > ${tmp1} 2>&1"
-    echo "profiling ${EXECUTABLEWRAPPEDNATIVE} ..."
     runCmd "${EXECUTABLEWRAPPEDNATIVE} -prof > ${tmp2} 2>&1"
-    echo "profiling ${EXECUTABLEGMP} ..."
     runCmd "${EXECUTABLEGMP} -prof > ${tmp3} 2>&1"
 
     if [ "${DRYPARAM}" == "dry" ]; then

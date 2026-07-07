@@ -16,29 +16,16 @@ which implements an integer with arbitrary precision.
 * On a Claude Pro annual subscription in 2026.
 
 ## What I have done since our last conversation
-I've updated *transcript.txt* and made a minor cosmetic change to *Makefile*.
-I've also updated *CLAUDE.md*:  
-Now, there's a new paragraph "What Claude has done (...)".  
-I want you to update that with a summary of your activities after a Claude Code session.
+I've updated *transcript.txt* and made a minor cosmetic change to *test/test.sh*.
+I've also updated *CLAUDE.md*.
 
 ## What Claude has done since our last conversation
-- Modified *test/test.sh*: factored out `DRY_RUN_PREFIX` constant, updated `runCmd()` to use it,
-  routed the three profiling executable calls in `doProf()` through `runCmd()`, and replaced the
-  early dry-return with a proper dry guard + echo before the post-processing block.
-- Added a `SessionStart` hook to *.claude/settings.local.json* that injects *CLAUDE.md* as
-  `additionalContext` at the start of every session.
-- Saved memory entries to auto-read CLAUDE.md at session start and auto-update it before commits.
 
 ## What I want you to do in the upcoming conversation
-*test/test.sh* has an optional argument *dry* which only prints the shell command without
-actually executing them.  
-With *./test.sh prof dry* this echoes only
-"DRY: would run <some executables here> with -prof and display side-by-side".
-I want you to run the commands in lines 118, 120, and 122 through function *runCmd()*,
-which already respects the *dry* option, instead of running them directly.
-Please don"t do that for output post-processing and table generation, but echo
-a line conforming to what *runCmd()* does in the *dry* case, but without quoting all
-these commands. Like
-"############################## DRY RUN : <post processing results and printing a summarizing table on stdout>
-Factor out ""############################## DRY RUN : " as a string constant to be used in both *runCmd()*
-and the echo mentioned above.
+The MPint(...) implementations have ctors from various other types,
+from the native integers, and from strings. Make sure that they don"t
+enable injection attacks using maliciously crafted arguments.
+Also review *operator>>* with respect to that.
+Add a new section/function to *demo/src/exprtest.cpp* and *.hpp*,
+to the *test/test.sh* script, and update the regression test reference
+files in *test*.
