@@ -13,8 +13,8 @@ demo/bin/core
 test/core
 test/demoNative.output
 test/demoGMPXX.output
-test/demoWrappedNative.output
-test/demoGMP.output
+test/demoWrappedNativePimpl.output
+test/demoGMPPimpl.output
 .cproject
 .project
 .settings/

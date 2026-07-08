@@ -7,9 +7,9 @@
     #include <gmpxx.h>
     typedef mpz_class MPint;
     #define DEMO_ARBPREC
-#elif defined DEMO_WRAPPEDNATIVEPIMPLE
+#elif defined DEMO_WRAPPEDNATIVEPIMPL
     #include "MPint.hpp"
-#elif defined DEMO_GMPPIMPLE
+#elif defined DEMO_GMPPIMPL
     #include "MPint.hpp"
     #define DEMO_ARBPREC
 #else

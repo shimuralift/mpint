@@ -10,16 +10,16 @@ OUTFILENATIVE="demoNative.output"
 EXECUTABLEGMPXX="../demo/bin/demoGMPXX"
 OUTFILEGMPXX="demoGMPXX.output"
 
-EXECUTABLEWRAPPEDNATIVEPIMPLE="../demo/bin/demoWrappedNativePimple"
-OUTFILEWRAPPEDNATIVEPIMPLE="demoWrappedNativePimple.output"
+EXECUTABLEWRAPPEDNATIVEPIMPL="../demo/bin/demoWrappedNativePimpl"
+OUTFILEWRAPPEDNATIVEPIMPL="demoWrappedNativePimpl.output"
 
-EXECUTABLEGMPPIMPLE="../demo/bin/demoGMPPimple"
-OUTFILEGMPPIMPLE="demoGMPPimple.output"
+EXECUTABLEGMPPIMPL="../demo/bin/demoGMPPimpl"
+OUTFILEGMPPIMPL="demoGMPPimpl.output"
 
 REFFILENATIVE="demoNative.output.ref"
 REFFILEGMPXX="demoGMPXX.output.ref"
-REFFILEWRAPPEDNATIVEPIMPLE="demoWrappedNativePimple.output.ref"
-REFFILEGMPPIMPLE="demoGMPPimple.output.ref"
+REFFILEWRAPPEDNATIVEPIMPL="demoWrappedNativePimpl.output.ref"
+REFFILEGMPPIMPL="demoGMPPimpl.output.ref"
 
 DIFFCMD="diff"
 RMCMD="rm"
@@ -77,13 +77,13 @@ doAll () {
         return ${retval}
     fi
 
-    runExecutable ${EXECUTABLEWRAPPEDNATIVEPIMPLE} ${OUTFILEWRAPPEDNATIVEPIMPLE}
+    runExecutable ${EXECUTABLEWRAPPEDNATIVEPIMPL} ${OUTFILEWRAPPEDNATIVEPIMPL}
     retval=$?
     if [ "${retval}" -ne 0 ]; then
         return ${retval}
     fi
 
-    runExecutable ${EXECUTABLEGMPPIMPLE} ${OUTFILEGMPPIMPLE}
+    runExecutable ${EXECUTABLEGMPPIMPL} ${OUTFILEGMPPIMPL}
     retval=$?
     if [ "${retval}" -ne 0 ]; then
         return ${retval}
@@ -102,13 +102,13 @@ doAll () {
         retval=${diffretval}
     fi
 
-    doDiff "${OUTFILEWRAPPEDNATIVEPIMPLE}" "${REFFILEWRAPPEDNATIVEPIMPLE}"
+    doDiff "${OUTFILEWRAPPEDNATIVEPIMPL}" "${REFFILEWRAPPEDNATIVEPIMPL}"
     diffretval=$?
     if [ "${diffretval}" -ne 0 ]; then
         retval=${diffretval}
     fi
 
-    doDiff "${OUTFILEGMPPIMPLE}" "${REFFILEGMPPIMPLE}"
+    doDiff "${OUTFILEGMPPIMPL}" "${REFFILEGMPPIMPL}"
     diffretval=$?
     if [ "${diffretval}" -ne 0 ]; then
         retval=${diffretval}
@@ -131,8 +131,8 @@ doProf () {
 
     runCmd "${EXECUTABLENATIVE} -prof > ${tmp1} 2>&1"
     runCmd "${EXECUTABLEGMPXX} -prof > ${tmp2} 2>&1"
-    runCmd "${EXECUTABLEWRAPPEDNATIVEPIMPLE} -prof > ${tmp3} 2>&1"
-    runCmd "${EXECUTABLEGMPPIMPLE} -prof > ${tmp4} 2>&1"
+    runCmd "${EXECUTABLEWRAPPEDNATIVEPIMPL} -prof > ${tmp3} 2>&1"
+    runCmd "${EXECUTABLEGMPPIMPL} -prof > ${tmp4} 2>&1"
 
     if [ "${DRYPARAM}" == "dry" ]; then
         echo "${DRY_RUN_PREFIX}<post processing results and printing a summarizing table on stdout>"
@@ -155,7 +155,7 @@ doProf () {
     paste "${tdata1}" "${tdata2}" "${tdata3}" "${tdata4}" | awk -F'\t' '
     BEGIN {
         printf "%-14s  %20s  %20s  %26s  %20s\n",
-               "function", "demoNative", "demoGMPXX", "demoWrappedNativePimple", "demoGMPPimple"
+               "function", "demoNative", "demoGMPXX", "demoWrappedNativePimpl", "demoGMPPimpl"
         printf "%-14s  %20s  %20s  %26s  %20s\n",
                "--------------",
                "--------------------",

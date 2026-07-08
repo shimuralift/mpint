@@ -35,9 +35,9 @@ implementations, source and header, and start their own project with them, possi
 assisted, or develop their own implementation, using one existing implementation
 as a starting point in which case the existing tests and profiling might be helpful.
 
-We have two pimpl-style implementations of *MPint*: *MPintWrappedNativePimple*
+We have two pimpl-style implementations of *MPint*: *MPintWrappedNativePimpl*
 which is just the *MPint* operators wrapping the native *signed long int* type,
-and *MPintGMPPimple* which wraps the C interface of the GNU Multiprecision
+and *MPintGMPPimpl* which wraps the C interface of the GNU Multiprecision
 library.
 In subdirectory mpint/demo, there are several executable artifacts for
 demo/testing/profiling purposes:
@@ -45,8 +45,8 @@ demo/testing/profiling purposes:
   using *MPint* at all (for baseline comparison).
 - *demoGMPXX*: uses *mpz_class* from the GMP C++ interface (*gmpxx.h*)
   directly via a typedef, without going through *class MPint*.
-- *demoWrappedNativePimple*: drives the *MPintWrappedNativePimple* operators.
-- *demoGMPPimple*: drives the *MPintGMPPimple* wrapper around the GMP C interface.
+- *demoWrappedNativePimpl*: drives the *MPintWrappedNativePimpl* operators.
+- *demoGMPPimpl*: drives the *MPintGMPPimpl* wrapper around the GMP C interface.
 
 In subdirectory *mpint/test* there is a bash script *test.sh* which
 runs all four demo variants and compares their outputs to respective
@@ -90,9 +90,9 @@ Profiling/Benchmarking:
 *cd test; ./test.sh prof*
 
 
-## Known test-suite overflow exemptions (*demoNative* / *demoWrappedNativePimple*)
+## Known test-suite overflow exemptions (*demoNative* / *demoWrappedNativePimpl*)
 Both native-backed demos compute on a 64-bit *signed long int* and so can
-silently overflow on inputs where *demoGMPPimple* (arbitrary precision) stays exact.
+silently overflow on inputs where *demoGMPPimpl* (arbitrary precision) stays exact.
 All other lines of *test/test.sh*'s reference outputs (*expr*, *basicexpr*,
 *moreexpr*, *extraexpr*, *strconstr*, *floatconv*, *missingexpr*, *detTest*, *reduTest*)
 have been independently cross-checked against external oracles (a from-
@@ -101,8 +101,8 @@ scratch Python reimplementation of the C++ semantics, and PARI/gp's
 overflow-driven divergences are:
 
 - *extraexpr()* repeated-squaring test ("23^19"): the true value is
-  74615470927590710561908487 (exact on *demoGMPPimple*). *demoNative* and
-  *demoWrappedNativePimple* both print -3983830012993820921, which is exactly the
+  74615470927590710561908487 (exact on *demoGMPPimpl*). *demoNative* and
+  *demoWrappedNativePimpl* both print -3983830012993820921, which is exactly the
   64-bit signed two's-complement wraparound of the same repeated-squaring
   algorithm (confirmed by independently simulating it with explicit int64
   wraparound arithmetic). This is the only overflow in the entire
@@ -113,19 +113,19 @@ overflow-driven divergences are:
 - *detTest()* GaussInt column (known): computeDetGaussInt's fraction-free
   Gaussian elimination keeps intermediate values that can exceed the final
   determinant's magnitude. For the two dense (sparsity 0%) 4x4 cases (run 25
-  and run 26 of 32), *demoNative/demoWrappedNativePimple*'s GaussInt overflows to
+  and run 26 of 32), *demoNative/demoWrappedNativePimpl*'s GaussInt overflows to
   402904 and -117875 respectively, while Dodgson and GaussFloat on the same
   runs still report the correct determinants -43753032 and -18819899
-  (matching demoGMPPimple). No other *detTest* case overflows.
+  (matching demoGMPPimpl). No other *detTest* case overflows.
 
 - *reduTest()* (potential, not fully isolated): starting at run 13 of 16
-  (the first dimension==5 case), demoNative/demoWrappedNativePimple's generated
-  Gram matrices diverge completely from demoGMPPimple's, and stay diverged for
-  all subsequent runs. Runs 1-12 (dimension <= 4) match demoGMPPimple bit-for-bit.
+  (the first dimension==5 case), demoNative/demoWrappedNativePimpl's generated
+  Gram matrices diverge completely from demoGMPPimpl's, and stay diverged for
+  all subsequent runs. Runs 1-12 (dimension <= 4) match demoGMPPimpl bit-for-bit.
   isSingular() (called by PosDefState while constructing each candidate
   lattice) calls the very same computeDetGaussInt() that's confirmed to
   overflow on dense 4x4 input above; a wrong singular/non-singular verdict
   on a 5x5 candidate would consume a different number of drand48() draws
-  than demoGMPPimple and fork the entire subsequent random sequence, which is
+  than demoGMPPimpl and fork the entire subsequent random sequence, which is
   consistent with what's observed. This is the likely root cause but has
   not been confirmed by direct instrumentation of isSingular() itself.
