@@ -147,7 +147,7 @@ void SQState::reinitializeCurrentState() {
 		pImpl->mPerm[ridx] = ridx;
 		for (unsigned int cidx = 0; cidx < pImpl->mDim; cidx++) {
 			pImpl->mMatrix[ridx][cidx] = pImpl->mFlatMatrix[ridx * pImpl->mDim + cidx];
-			pImpl->mDmatrix[ridx][cidx] = static_cast<long double>(pImpl->mFlatMatrix[ridx * pImpl->mDim + cidx]);
+			pImpl->mDmatrix[ridx][cidx] = mpint_to_ld(pImpl->mFlatMatrix[ridx * pImpl->mDim + cidx]);
 		}
 	}
 }

@@ -7,6 +7,9 @@ DRYPARAM=$2
 EXECUTABLENATIVE="../demo/bin/demoNative"
 OUTFILENATIVE="demoNative.output"
 
+EXECUTABLEGMPXX="../demo/bin/demoGMPXX"
+OUTFILEGMPXX="demoGMPXX.output"
+
 EXECUTABLEWRAPPEDNATIVE="../demo/bin/demoWrappedNative"
 OUTFILEWRAPPEDNATIVE="demoWrappedNative.output"
 
@@ -14,6 +17,7 @@ EXECUTABLEGMP="../demo/bin/demoGMP"
 OUTFILEGMP="demoGMP.output"
 
 REFFILENATIVE="demoNative.output.ref"
+REFFILEGMPXX="demoGMPXX.output.ref"
 REFFILEWRAPPEDNATIVE="demoWrappedNative.output.ref"
 REFFILEGMP="demoGMP.output.ref"
 
@@ -67,6 +71,12 @@ doAll () {
         return ${retval}
     fi
 
+    runExecutable ${EXECUTABLEGMPXX} ${OUTFILEGMPXX}
+    retval=$?
+    if [ "${retval}" -ne 0 ]; then
+        return ${retval}
+    fi
+
     runExecutable ${EXECUTABLEWRAPPEDNATIVE} ${OUTFILEWRAPPEDNATIVE}
     retval=$?
     if [ "${retval}" -ne 0 ]; then
@@ -81,6 +91,12 @@ doAll () {
 
 
     doDiff "${OUTFILENATIVE}" "${REFFILENATIVE}"
+    diffretval=$?
+    if [ "${diffretval}" -ne 0 ]; then
+        retval=${diffretval}
+    fi
+
+    doDiff "${OUTFILEGMPXX}" "${REFFILEGMPXX}"
     diffretval=$?
     if [ "${diffretval}" -ne 0 ]; then
         retval=${diffretval}
@@ -103,21 +119,24 @@ doAll () {
 }
 
 doProf () {
-    local tmp1 tmp2 tmp3 tdata1 tdata2 tdata3
+    local tmp1 tmp2 tmp3 tmp4 tdata1 tdata2 tdata3 tdata4
     tmp1=$(mktemp)
     tmp2=$(mktemp)
     tmp3=$(mktemp)
+    tmp4=$(mktemp)
     tdata1=$(mktemp)
     tdata2=$(mktemp)
     tdata3=$(mktemp)
+    tdata4=$(mktemp)
 
     runCmd "${EXECUTABLENATIVE} -prof > ${tmp1} 2>&1"
-    runCmd "${EXECUTABLEWRAPPEDNATIVE} -prof > ${tmp2} 2>&1"
-    runCmd "${EXECUTABLEGMP} -prof > ${tmp3} 2>&1"
+    runCmd "${EXECUTABLEGMPXX} -prof > ${tmp2} 2>&1"
+    runCmd "${EXECUTABLEWRAPPEDNATIVE} -prof > ${tmp3} 2>&1"
+    runCmd "${EXECUTABLEGMP} -prof > ${tmp4} 2>&1"
 
     if [ "${DRYPARAM}" == "dry" ]; then
         echo "${DRY_RUN_PREFIX}<post processing results and printing a summarizing table on stdout>"
-        rm -f "${tmp1}" "${tmp2}" "${tmp3}" "${tdata1}" "${tdata2}" "${tdata3}"
+        rm -f "${tmp1}" "${tmp2}" "${tmp3}" "${tmp4}" "${tdata1}" "${tdata2}" "${tdata3}" "${tdata4}"
         return 0
     fi
 
@@ -125,19 +144,21 @@ doProf () {
     grep -v '^===' "${tmp1}" > "${tdata1}"
     grep -v '^===' "${tmp2}" > "${tdata2}"
     grep -v '^===' "${tmp3}" > "${tdata3}"
+    grep -v '^===' "${tmp4}" > "${tdata4}"
 
     echo ""
     grep '===' "${tmp1}" | sed 's/profiling report/profiling comparison/'
     echo ""
 
-    # Merge the three data files side-by-side and format as a table.
+    # Merge the four data files side-by-side and format as a table.
     # Each data line has the form "  name: cycles cycles".
-    paste "${tdata1}" "${tdata2}" "${tdata3}" | awk -F'\t' '
+    paste "${tdata1}" "${tdata2}" "${tdata3}" "${tdata4}" | awk -F'\t' '
     BEGIN {
-        printf "%-14s  %20s  %20s  %20s\n",
-               "function", "demoNative", "demoWrappedNative", "demoGMP"
-        printf "%-14s  %20s  %20s  %20s\n",
+        printf "%-14s  %20s  %20s  %20s  %20s\n",
+               "function", "demoNative", "demoGMPXX", "demoWrappedNative", "demoGMP"
+        printf "%-14s  %20s  %20s  %20s  %20s\n",
                "--------------",
+               "--------------------",
                "--------------------",
                "--------------------",
                "--------------------"
@@ -151,11 +172,13 @@ doProf () {
         gsub(/[[:space:]]*cycles[[:space:]]*$/, "", c2); gsub(/^[[:space:]]+/, "", c2)
         split($3, d, ":"); c3 = d[2]
         gsub(/[[:space:]]*cycles[[:space:]]*$/, "", c3); gsub(/^[[:space:]]+/, "", c3)
-        printf "%-14s  %20s  %20s  %20s\n", name, c1, c2, c3
+        split($4, e, ":"); c4 = e[2]
+        gsub(/[[:space:]]*cycles[[:space:]]*$/, "", c4); gsub(/^[[:space:]]+/, "", c4)
+        printf "%-14s  %20s  %20s  %20s  %20s\n", name, c1, c2, c3, c4
     }
     '
 
-    rm -f "${tmp1}" "${tmp2}" "${tmp3}" "${tdata1}" "${tdata2}" "${tdata3}"
+    rm -f "${tmp1}" "${tmp2}" "${tmp3}" "${tmp4}" "${tdata1}" "${tdata2}" "${tdata3}" "${tdata4}"
     return 0
 }
 

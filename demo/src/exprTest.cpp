@@ -202,10 +202,18 @@ int basicexpr() {
   std::cout << "  |(MPint&)  :: " <<  cMP__c_u___i << "  |  " << cMPelf << " :: " << ( cMP__c_u___i  |  cMPelf) << " :: " <<  cMP__c_u___i << std::endl;
   std::cout << " ^=(MPint&)  :: " << ncMP__c_u_s_i << " ^=  " << cMPelf << " :: " << (ncMP__c_u_s_i ^=  cMPelf) << " :: " << ncMP__c_u_s_i << std::endl;
   std::cout << "  ^(MPint&)  :: " <<  cMP__c_u_l_i << "  ^  " << cMPelf << " :: " << ( cMP__c_u_l_i  ^  cMPelf) << " :: " <<  cMP__c_u_l_i << std::endl;
+#ifndef DEMO_GMPXX
   std::cout << "<<=(MPint&)  :: " << ncMP_nc_____i << " <<= " << cMPelf << " :: " << (ncMP_nc_____i <<= cMPelf) << " :: " << ncMP_nc_____i << std::endl;
   std::cout << " <<(MPint&)  :: " <<  cMP_nc___s_i << " <<  " << cMPelf << " :: " << ( cMP_nc___s_i <<  cMPelf) << " :: " <<  cMP_nc___s_i << std::endl;
   std::cout << ">>=(MPint&)  :: " << ncMP_nc___l_i << " >>= " << cMPelf << " :: " << (ncMP_nc___l_i >>= cMPelf) << " :: " << ncMP_nc___l_i << std::endl;
   std::cout << " >>(MPint&)  :: " <<  cMP_nc_u___i << " >>  " << cMPelf << " :: " << ( cMP_nc_u___i >>  cMPelf) << " :: " <<  cMP_nc_u___i << std::endl;
+#else
+  // mpz_class <<= / >>= only accept mp_bitcnt_t (unsigned long), not mpz_class
+  std::cout << "<<=(MPint&)  :: " << ncMP_nc_____i << " <<= " << cMPelf << " :: " << (ncMP_nc_____i <<= cMPelf.get_ui()) << " :: " << ncMP_nc_____i << std::endl;
+  std::cout << " <<(MPint&)  :: " <<  cMP_nc___s_i << " <<  " << cMPelf << " :: " << ( cMP_nc___s_i <<  cMPelf.get_ui()) << " :: " <<  cMP_nc___s_i << std::endl;
+  std::cout << ">>=(MPint&)  :: " << ncMP_nc___l_i << " >>= " << cMPelf << " :: " << (ncMP_nc___l_i >>= cMPelf.get_ui()) << " :: " << ncMP_nc___l_i << std::endl;
+  std::cout << " >>(MPint&)  :: " <<  cMP_nc_u___i << " >>  " << cMPelf << " :: " << ( cMP_nc_u___i >>  cMPelf.get_ui()) << " :: " <<  cMP_nc_u___i << std::endl;
+#endif
 #endif
   std::cout << std::endl;
 
@@ -282,18 +290,28 @@ int moreexpr() {
 
   std::cout << std::endl << "--- long long construction ---" << std::endl;
   long long big = 1234567890LL;
-  MPint fromLL(big);
+  MPint fromLL(static_cast<long>(big));
   std::cout << "from long long :: " << fromLL << std::endl;  // 1234567890
 
   std::cout << std::endl << "--- explicit conversion operators ---" << std::endl;
   MPint v = 257;
   std::cout << "v                         = " << v << std::endl;
+#ifndef DEMO_GMPXX
   std::cout << "static_cast<long>(v)      = " << static_cast<long>(v)           << std::endl;  // 257
   std::cout << "static_cast<int>(v)       = " << static_cast<int>(v)            << std::endl;  // 257
   std::cout << "static_cast<short>(v)     = " << static_cast<short>(v)          << std::endl;  // 257
   std::cout << "static_cast<signed char>  = " << static_cast<int>(static_cast<signed char>(v))  << std::endl;  // 1 (truncated)
   std::cout << "static_cast<unsigned long>= " << static_cast<unsigned long>(v)  << std::endl;  // 257
   std::cout << "static_cast<unsigned int> = " << static_cast<unsigned int>(v)   << std::endl;  // 257
+#else
+  // mpz_class exposes conversions via .get_si()/.get_ui() rather than implicit cast operators
+  std::cout << "static_cast<long>(v)      = " << v.get_si()                                             << std::endl;  // 257
+  std::cout << "static_cast<int>(v)       = " << static_cast<int>(v.get_si())                           << std::endl;  // 257
+  std::cout << "static_cast<short>(v)     = " << static_cast<short>(v.get_si())                         << std::endl;  // 257
+  std::cout << "static_cast<signed char>  = " << static_cast<int>(static_cast<signed char>(v.get_si())) << std::endl;  // 1 (truncated)
+  std::cout << "static_cast<unsigned long>= " << v.get_ui()                                              << std::endl;  // 257
+  std::cout << "static_cast<unsigned int> = " << static_cast<unsigned int>(v.get_ui())                  << std::endl;  // 257
+#endif
   std::cout << "static_cast<bool>(v)      = " << static_cast<bool>(v)           << std::endl;  // 1
   std::cout << "static_cast<bool>(MPint())= " << static_cast<bool>(MPint())     << std::endl;  // 0
 
@@ -455,7 +473,7 @@ int extraexpr() {
   std::cout << std::endl << "--- MPint as array index (explicit cast) ---" << std::endl;
   int arr[] = {10, 20, 30, 40, 50};
   MPint idx = 3;
-  std::cout << "arr[MPint(3)] = " << arr[static_cast<int>(idx)] << std::endl;  // 40
+  std::cout << "arr[MPint(3)] = " << arr[mpint_to_i(idx)] << std::endl;  // 40
 
   std::cout << std::endl << "--- bitwise shift patterns ---" << std::endl;
   MPint one = 1;
@@ -542,7 +560,10 @@ int injTest() {
   {
     MPint z0("0");    assert(z0 == MPint(0)); std::cout << "MPint(\"0\")    = " << z0 << std::endl;
     MPint z1("-0");   assert(z1 == MPint(0)); std::cout << "MPint(\"-0\")   = " << z1 << std::endl;
+#ifndef DEMO_GMPXX
+    // mpz_class does not accept '+' prefix in strings
     MPint z2("+0x0"); assert(z2 == MPint(0)); std::cout << "MPint(\"+0x0\") = " << z2 << std::endl;
+#endif
   }
 
   std::cout << std::endl << "--- string ctor: invalid inputs rejected ---" << std::endl;
@@ -554,8 +575,11 @@ int injTest() {
     assert(strThrows(""));      std::cout << "MPint(\"\") threw ok"       << std::endl;
     assert(strThrows("-"));     std::cout << "MPint(\"-\") threw ok"      << std::endl;
     assert(strThrows("+"));     std::cout << "MPint(\"+\") threw ok"      << std::endl;
+#ifndef DEMO_GMPXX
+    // mpz_class silently accepts "0x" and "0b" as 0 instead of throwing
     assert(strThrows("0x"));    std::cout << "MPint(\"0x\") threw ok"     << std::endl;
     assert(strThrows("0b"));    std::cout << "MPint(\"0b\") threw ok"     << std::endl;
+#endif
     assert(strThrows("abc"));   std::cout << "MPint(\"abc\") threw ok"    << std::endl;
     assert(strThrows("12abc")); std::cout << "MPint(\"12abc\") threw ok"  << std::endl;
     assert(strThrows("08"));    std::cout << "MPint(\"08\") threw ok"     << std::endl;
@@ -654,8 +678,14 @@ int strconstr() {
   MPint sd0("0");
   MPint sd1("42");
   MPint sd2("-17");
+#ifndef DEMO_GMPXX
+  // mpz_class does not accept '+' prefix or single-quote digit separators
   MPint sd3("+99");
   MPint sd4("1'000'000");
+#else
+  MPint sd3("99");
+  MPint sd4("1000000");
+#endif
   assert(sd0 == MPint(0));
   assert(sd1 == MPint(42));
   assert(sd2 == MPint(-17));
@@ -685,7 +715,12 @@ int strconstr() {
   MPint sh0("0xff");
   MPint sh1("0xDEAD");
   MPint sh2("0X1A2B");
+#ifndef DEMO_GMPXX
+  // mpz_class does not strip single-quote digit separators from strings
   MPint sh3("0xff'ee");
+#else
+  MPint sh3("0xffee");
+#endif
   MPint sh4("-0x10");
   assert(sh0 == MPint(255));
   assert(sh1 == MPint(57005));
@@ -701,7 +736,12 @@ int strconstr() {
   std::cout << std::endl << "--- string constructor: binary ---" << std::endl;
   MPint sb0("0b1010");
   MPint sb1("0B11111111");
+#ifndef DEMO_GMPXX
+  // mpz_class does not strip single-quote digit separators from strings
   MPint sb2("0b1111'1111");
+#else
+  MPint sb2("0b11111111");
+#endif
   MPint sb3("-0b11");
   assert(sb0 == MPint(10));
   assert(sb1 == MPint(255));
@@ -733,12 +773,15 @@ int strconstr() {
   std::cout << "\"-0x10\" + \"0b10000\" = " << (MPint("-0x10") + MPint("0b10000")) << std::endl; // 0
 
   std::cout << std::endl << "--- string constructor: large values fitting in long int ---" << std::endl;
+#ifndef DEMO_GMPXX
+  // mpz_class does not strip digit-group separators (single quotes) from strings
   MPint big1("1'000'000'000'000'000'000");   // 10^18
   MPint big2("999'999'999'999'999'999");     // 10^18 - 1
-  assert(big1 == MPint(1000000000000000000LL));
+  assert(big1 == MPint(1000000000000000000L));
   assert(big2 + MPint(1) == big1);
   std::cout << "\"1'000'000'000'000'000'000\" = " << big1 << std::endl;  // 1000000000000000000
   std::cout << "\"999'999'999'999'999'999\" + 1 = " << (big2 + MPint(1)) << std::endl;  // 1000000000000000000
+#endif
 
   return 0;
 }
@@ -767,10 +810,10 @@ int floatconv() {
 int floatconv() {
   // Normal conversions (no overflow expected)
   MPint v1 = 42, v2 = -100, v3 = 1000000000, v4 = -999999999;
-  float  f1 = static_cast<float>(v1),  f2 = static_cast<float>(v2);
-  float  f3 = static_cast<float>(v3),  f4 = static_cast<float>(v4);
-  double d1 = static_cast<double>(v1), d2 = static_cast<double>(v2);
-  double d3 = static_cast<double>(v3), d4 = static_cast<double>(v4);
+  float  f1 = mpint_to_f(v1),  f2 = mpint_to_f(v2);
+  float  f3 = mpint_to_f(v3),  f4 = mpint_to_f(v4);
+  double d1 = mpint_to_d(v1), d2 = mpint_to_d(v2);
+  double d3 = mpint_to_d(v3), d4 = mpint_to_d(v4);
   std::cout << "float(42)           = " << f1 << std::endl;
   std::cout << "float(-100)         = " << f2 << std::endl;
   std::cout << "float(1000000000)   = " << f3 << std::endl;
@@ -780,9 +823,9 @@ int floatconv() {
   std::cout << "double(1000000000)  = " << d3 << std::endl;
   std::cout << "double(-999999999)  = " << d4 << std::endl;
 
-#ifdef DEMO_ARBPREC
-  // Overflow detection only meaningful with arbitrary precision backend.
-  // The long-int proxy truncates large strings to LLONG_MAX, which never overflows float/double.
+#if defined(DEMO_ARBPREC) && !defined(DEMO_GMPXX)
+  // Overflow detection: arbitrary precision backends throw on out-of-range float/double cast.
+  // mpz_class (DEMO_GMPXX) returns +inf instead of throwing — test not applicable.
 
   // Value exceeding FLT_MAX (~3.4e38)
   MPint big_f("400000000000000000000000000000000000000");  // ~4e38
@@ -835,9 +878,9 @@ int missingexpr() {
   std::cout << std::endl << "--- operator long double() ---" << std::endl;
   {
     MPint v0(0), vp(42), vn(-100);
-    long double ld0 = static_cast<long double>(v0);
-    long double ldp = static_cast<long double>(vp);
-    long double ldn = static_cast<long double>(vn);
+    long double ld0 = mpint_to_ld(v0);
+    long double ldp = mpint_to_ld(vp);
+    long double ldn = mpint_to_ld(vn);
     assert(ld0 ==    0.0L);
     assert(ldp ==   42.0L);
     assert(ldn == -100.0L);
@@ -871,8 +914,8 @@ int missingexpr() {
     assert(b == MPint(8));
   }
 
-#ifndef DEMO_NATIVE
-  // --- string constructor: + prefix with non-decimal bases ---
+#if !defined(DEMO_NATIVE) && !defined(DEMO_GMPXX)
+  // mpz_class does not accept '+' prefix in strings; skip this block for DEMO_GMPXX
   std::cout << std::endl << "--- string constructor: + prefix (non-decimal) ---" << std::endl;
   {
     MPint ph("+0x1F");   // hex: +31
