@@ -18,18 +18,15 @@ which implements an integer with arbitrary precision.
 
 
 ## What Claude has done in our last conversation
-* Created `demo/bin/demoGMPXX`: a new demo variant using `mpz_class` from `gmpxx.h` directly (no `class MPint`) via `typedef mpz_class MPint` in `demo/src/demoTypedef.hpp`.
-* Inserted `DEMO_GMPXX` in the correct position (after `DEMO_NATIVE`) in `demoTypedef.hpp`, `Makefile`, and `test/test.sh`, giving the order: Native → GMPXX → WrappedNative → GMP throughout.
-* Added templated conversion helpers (`mpint_to_d`, `mpint_to_f`, `mpint_to_ld`, `mpint_to_i`) to `demoTypedef.hpp` to abstract over `mpz_class`'s explicit `.get_d()`/`.get_si()` API and its expression-template arithmetic results.
-* Fixed all compile-time incompatibilities in `demo/src/exprTest.cpp`, `demo/src/redu.cpp`, and `demo/src/demoUtils.cpp`: shift-by-MPint (`<<=`/`>>=` require `mp_bitcnt_t`), implicit cast operators (`static_cast<long>` etc.), and ambiguous `long long` construction.
-* Fixed runtime incompatibilities in `exprTest.cpp`: guarded string-constructor calls that use `+` prefix (mpz_class rejects it), single-quote digit separators (mpz_class doesn't strip them), and the float/double overflow-throw tests (mpz_class returns infinity instead). Also guarded `injTest()` for `"+0x0"` (throws for mpz_class) and `"0x"`/`"0b"` (accepted as 0 by mpz_class, not rejected).
-* Updated `test/test.sh` `doProf()` to a 4-column table; added `demoGMPXX` to `doAll()`.
-* Generated `test/demoGMPXX.output.ref`; all four `./test/test.sh all` diffs pass.
+* Renamed demo variant *GMP* to *GMPPimple* and *WrappedNative* to *WrappedNativePimple* throughout.
+* Renamed source files: `src/MPintWrappedNative.cpp` → `src/MPintWrappedNativePimple.cpp` and `src/MPintGMP.cpp` → `src/MPintGMPPimple.cpp` (via `git mv`).
+* Renamed test ref files: `test/demoWrappedNative.output.ref` → `test/demoWrappedNativePimple.output.ref` and `test/demoGMP.output.ref` → `test/demoGMPPimple.output.ref`.
+* Updated `Makefile`: target variables, build rules, `-DDEMO_WRAPPEDNATIVEPIMPLE`/`-DDEMO_GMPPIMPLE` flags, and source file references.
+* Updated `demo/src/demoTypedef.hpp`: `DEMO_WRAPPEDNATIVEPIMPLE` and `DEMO_GMPPIMPLE` macros.
+* Updated `test/test.sh`: all variable names and executable/output/ref file paths; widened `doProf()` column for `demoWrappedNativePimple`.
+* Updated `AGENTS.md`: new class and executable names throughout, added description of `demoGMPXX` variant, updated variant count from three to four.
+* All four `./test/test.sh all` diffs pass.
 
 ## What I have done since our last conversation
-I've updated *transcript.txt*, *CLAUDE.md*, *.gitignore.example*, and *test/prof_output.txt*.
 
 ## What I want Claude to do in the upcoming conversation
-Rename demo variant *GMP* to *GMPPimple*, and *WrappedNative* to *WrappedNativePimple*.
-Do that in *Makefile*, *demo/src/demoTypedef.hpp*, and *test/test.sh*. Also update
-*AGENTS.md* with respect to this name change and to the introduction of variant *GMPXX*.
