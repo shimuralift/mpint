@@ -18,19 +18,16 @@ which implements an integer with arbitrary precision.
 
 
 ## What Claude has done in our last conversation
-* Renamed demo variant *GMP* to *GMPPimple* and *WrappedNative* to *WrappedNativePimple* throughout.
-* Renamed source files: `src/MPintWrappedNative.cpp` → `src/MPintWrappedNativePimple.cpp` and `src/MPintGMP.cpp` → `src/MPintGMPPimple.cpp` (via `git mv`).
-* Renamed test ref files: `test/demoWrappedNative.output.ref` → `test/demoWrappedNativePimple.output.ref` and `test/demoGMP.output.ref` → `test/demoGMPPimple.output.ref`.
-* Updated `Makefile`: target variables, build rules, `-DDEMO_WRAPPEDNATIVEPIMPLE`/`-DDEMO_GMPPIMPLE` flags, and source file references.
-* Updated `demo/src/demoTypedef.hpp`: `DEMO_WRAPPEDNATIVEPIMPLE` and `DEMO_GMPPIMPLE` macros.
-* Updated `test/test.sh`: all variable names and executable/output/ref file paths; widened `doProf()` column for `demoWrappedNativePimple`.
-* Updated `AGENTS.md`: new class and executable names throughout, added description of `demoGMPXX` variant, updated variant count from three to four.
+* Renamed demo variant *GMPPimple* to *GMPPimpl* and *WrappedNativePimple* to *WrappedNativePimpl* throughout.
+* Renamed source files: `src/MPintWrappedNativePimple.cpp` → `src/MPintWrappedNativePimpl.cpp` and `src/MPintGMPPimple.cpp` → `src/MPintGMPPimpl.cpp` (via `git mv`).
+* Renamed test ref files: `test/demoWrappedNativePimple.output.ref` → `test/demoWrappedNativePimpl.output.ref` and `test/demoGMPPimple.output.ref` → `test/demoGMPPimpl.output.ref`.
+* Updated `Makefile`: target variables, build rules, `-DDEMO_WRAPPEDNATIVEPIMPL`/`-DDEMO_GMPPIMPL` flags, and source file references.
+* Updated `demo/src/demoTypedef.hpp`: `DEMO_WRAPPEDNATIVEPIMPL` and `DEMO_GMPPIMPL` macros.
+* Updated `test/test.sh`: all variable names and executable/output/ref file paths.
+* Updated `AGENTS.md`: new class and executable names throughout.
+* Updated `.gitignore.example` and copied it over `.gitignore`.
 * All four `./test/test.sh all` diffs pass.
 
 ## What I have done since our last conversation
-Nothing
 
 ## What I want Claude to do in the upcoming conversation
-In our last conversation, I gave you instructions to change certain *MPint* variant names from "Hmhmhm" to "HmhmhmPimple".
-Oops, my bad. Typical human mistake, you and your other instances might be familiar with that. Of course, i didn't mean
-pimple but pimpl. Go through the last iteration again, and remove the "e" (or "E") from the names.
