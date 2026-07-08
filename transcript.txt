@@ -10727,3 +10727,447 @@ See what i did in the meantime, and what instructions i have for you in CLAUDE.m
 
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 ❯ /exit
+
+#############################################################################################################################################################################################################
+
+❯ and? I assume that you now look for instructions in CLAUDE.md automatically when we start a session.
+
+● Yes, it's working — the hook injected CLAUDE.md as context before you typed anything.
+
+  Here's what I see:
+
+  You did: updated transcript.txt, minor cosmetic tweak to test/test.sh, updated CLAUDE.md.
+
+  Task this session:
+  1. Audit the MPint constructors (from native integers, from strings) and operator>> for injection attack vectors
+  2. Add a new test function to demo/src/exprTest.cpp / .hpp covering the security-relevant paths
+  3. Wire it into test/test.sh and update the reference output files in test/
+
+  Let me start by reading the relevant source files.
+
+  Searched for 1 pattern, read 2 files (ctrl+o to expand)
+
+● Now let me read the existing test structure before writing anything.
+
+  Read 3 files (ctrl+o to expand)
+
+● Good. Now I have the full picture. The findings:
+
+  parse_str (WrappedNative): hex letters a–f are parsed as valid digits regardless of base (e.g., MPint("abc") silently returns 1122). Invalid characters stop parsing instead of throwing. No null
+  check.
+
+  mpz_set_mpint_str (GMP): mpz_set_str return value unchecked — leaves mpz_t in undefined state on bad input.
+
+  operator>> (GMP): same unchecked mpz_set_str, plus v is left in undefined state on failure (no failbit set).
+
+  operator>> (WrappedNative/Native): correct — delegates to is >> long int which sets failbit natively.
+
+  Let me make all the fixes now.
+
+● Update(src/MPintWrappedNative.cpp)
+  ⎿  Added 9 lines, removed 2 lines
+      21  // --- string parsing helper --------------------------------------------------
+      22
+      23  static signed long int parse_str(const char* const s) {
+      24 +    if (!s) throw std::invalid_argument("MPint: null string pointer");
+      25      const char* p = s;
+      26      bool negative = false;
+      27      if (*p == '-')      { negative = true; ++p; }
+     ...
+      32          const char* const q = p + 1;
+      33          if      (*q == 'x' || *q == 'X') { base = 16; p += 2; }
+      34          else if (*q == 'b' || *q == 'B') { base =  2; p += 2; }
+      34 -        else                             { base =  8; p += 1; }
+      35 +        else                             { base =  8; }  // leave p at '0': it's the first octal digit
+      36      }
+      37
+      38      unsigned long int result = 0;
+      39 +    bool got_digit = false;
+      40      for (; *p; ++p) {
+      41          if (*p == '\'') continue;
+      42          unsigned int digit;
+     ...
+      44          if      (c >= '0' && c <= '9') digit = static_cast<unsigned int>(c - '0');
+      45          else if (c >= 'a' && c <= 'f') digit = static_cast<unsigned int>(c - 'a') + 10u;
+      46          else if (c >= 'A' && c <= 'F') digit = static_cast<unsigned int>(c - 'A') + 10u;
+      45 -        else break;
+      47 +        else throw std::invalid_argument(std::string("MPint: invalid integer string: ") + s);
+      48 +        if (digit >= static_cast<unsigned int>(base))
+      49 +            throw std::invalid_argument(std::string("MPint: invalid integer string: ") + s);
+      50          result = result * static_cast<unsigned long int>(base) + digit;
+      51 +        got_digit = true;
+      52      }
+      53 +    if (!got_digit)
+      54 +        throw std::invalid_argument(std::string("MPint: invalid integer string: ") + s);
+      55      return negative ? -static_cast<signed long int>(result)
+      56                      :  static_cast<signed long int>(result);
+      57  }
+
+● Now fix the GMP string parser and operator>>:
+
+● Update(src/MPintGMP.cpp)
+  ⎿  Added 3 lines, removed 1 line
+      30  // GMP's mpz_set_str does not recognise natively.
+      31
+      32  static void mpz_set_mpint_str(mpz_t dest, const char* const s) {
+      33 +    if (!s) throw std::invalid_argument("MPint: null string pointer");
+      34      const char* p = s;
+      35
+      36      // Preserve leading sign for the clean buffer
+     ...
+      54          if (*p != '\'') clean += *p;
+      55      }
+      56
+      56 -    mpz_set_str(dest, clean.c_str(), base);
+      57 +    if (mpz_set_str(dest, clean.c_str(), base) != 0)
+      58 +        throw std::invalid_argument(std::string("MPint: invalid integer string: ") + s);
+      59  }
+      60
+      61  // --- construction -----------------------------------------------------------
+  ⎿  Found 10 new diagnostic issues in 1 file (ctrl+o to expand)
+
+● Those are clangd false positives — it can't see the -Iinclude flag. The g++ build knows about it. Now fix operator>> in MPintGMP.cpp:
+
+● Update(src/MPintGMP.cpp)
+  ⎿  Added 9 lines, removed 1 line
+      182
+      183  std::istream& operator>>(std::istream& is, MPint& v) {
+      184      std::string s;
+      185 -    if (is >> s) mpz_set_str(v.pImpl->mVal, s.c_str(), 10);
+      185 +    if (is >> s) {
+      186 +        mpz_t tmp;
+      187 +        mpz_init(tmp);
+      188 +        if (mpz_set_str(tmp, s.c_str(), 10) == 0)
+      189 +            mpz_set(v.pImpl->mVal, tmp);
+      190 +        else
+      191 +            is.setstate(std::ios::failbit);
+      192 +        mpz_clear(tmp);
+      193 +    }
+      194      return is;
+      195  }
+
+● Now add injTest to the header and write the function:
+
+● Update(demo/src/exprTest.hpp)
+  ⎿  Added 1 line
+       7  int strconstr();
+       8  int floatconv();
+       9  int missingexpr();
+      10 +int injTest();
+  ⎿  Found 10 new diagnostic issues in 1 file (ctrl+o to expand)
+
+● Now add injTest() at the end of exprTest.cpp:
+
+● Update(demo/src/exprTest.cpp)
+  ⎿  Error editing file
+
+● Update(demo/src/exprTest.cpp)
+  ⎿  Added 42 lines
+      536    return 0;
+      537  }
+      538
+      539 +int injTest() {
+      540 +#ifndef DEMO_NATIVE
+      541 +  std::cout << "--- string ctor: valid edge cases ---" << std::endl;
+      542 +  {
+      543 +    MPint z0("0");    assert(z0 == MPint(0)); std::cout << "MPint(\"0\")    = " << z0 << std::endl;
+      544 +    MPint z1("-0");   assert(z1 == MPint(0)); std::cout << "MPint(\"-0\")   = " << z1 << std::endl;
+      545 +    MPint z2("+0x0"); assert(z2 == MPint(0)); std::cout << "MPint(\"+0x0\") = " << z2 << std::endl;
+      546 +  }
+      547 +
+      548 +  std::cout << std::endl << "--- string ctor: invalid inputs rejected ---" << std::endl;
+      549 +  {
+      550 +    auto strThrows = [](const char* s) -> bool {
+      551 +      try { MPint m(s); (void)m; return false; }
+      552 +      catch (const std::invalid_argument&) { return true; }
+      553 +    };
+      554 +    assert(strThrows(""));      std::cout << "MPint(\"\") threw ok"       << std::endl;
+      555 +    assert(strThrows("-"));     std::cout << "MPint(\"-\") threw ok"      << std::endl;
+      556 +    assert(strThrows("+"));     std::cout << "MPint(\"+\") threw ok"      << std::endl;
+      557 +    assert(strThrows("0x"));    std::cout << "MPint(\"0x\") threw ok"     << std::endl;
+      558 +    assert(strThrows("0b"));    std::cout << "MPint(\"0b\") threw ok"     << std::endl;
+      559 +    assert(strThrows("abc"));   std::cout << "MPint(\"abc\") threw ok"    << std::endl;
+      560 +    assert(strThrows("12abc")); std::cout << "MPint(\"12abc\") threw ok"  << std::endl;
+      561 +    assert(strThrows("08"));    std::cout << "MPint(\"08\") threw ok"     << std::endl;
+      562 +    assert(strThrows("0b012")); std::cout << "MPint(\"0b012\") threw ok"  << std::endl;
+      563 +    assert(strThrows("0xGG"));  std::cout << "MPint(\"0xGG\") threw ok"   << std::endl;
+      564 +  }
+      565 +
+      566 +  std::cout << std::endl;
+      567 +#endif
+      568 +
+      569 +  std::cout << "--- operator>> with invalid input ---" << std::endl;
+      570 +  {
+      571 +    MPint x(42);
+      572 +    std::istringstream iss("abc");
+      573 +    iss >> x;
+      574 +    assert(iss.fail());        std::cout << "stream(\"abc\") >> MPint : failbit set ok"      << std::endl;
+      575 +    assert(x == MPint(42));    std::cout << "stream(\"abc\") >> MPint : value unchanged ok"  << std::endl;
+      576 +  }
+      577 +
+      578 +  return 0;
+      579 +}
+ ▐▛███▜▌   Claude Code v2.1.202
+▝▜█████▛▘  Sonnet 4.6 · Claude Pro
+  ▘▘ ▝▝    ~/work/mpint
+
+ ▎ Fable 5 is back.
+ ▎ Until July 7, you can use up to 50% of your plan's weekly usage limit on Fable 5. If you hit your limit, you can continue on Fable 5 with usage credits. Fable 5 draws down usage faster than Opus
+ ▎ 4.8. Learn more (https://support.claude.com/en/articles/15424964-claude-fable-5-promotional-access)
+
+✻ Conversation compacted (ctrl+o for history)
+
+
+● Clean build across all three targets. Now run all three binaries to verify the new section, then update the ref files:
+
+● Bash(cd /home/claudeuser/work/mpint/test && ../demo/bin/demoNative 2>&1 | grep -A 20 "MPint: input safety")
+  ⎿  MPint: input safety tests
+
+     --- operator>> with invalid input ---
+     … +2 lines (ctrl+o to expand)
+ ▐▛███▜▌   Claude Code v2.1.202
+▝▜█████▛▘  Sonnet 4.6 · Claude Pro
+  ▘▘ ▝▝    ~/work/mpint
+
+ ▎ Fable 5 is back.
+ ▎ Until July 7, you can use up to 50% of your plan's weekly usage limit on Fable 5. If you hit your limit, you can continue on Fable 5 with usage credits. Fable 5 draws down usage faster than Opus
+ ▎ 4.8. Learn more (https://support.claude.com/en/articles/15424964-claude-fable-5-promotional-access)
+
+✻ Conversation compacted (ctrl+o for history)
+
+
+● Clean build across all three targets. Now run all three binaries to verify the new section, then update the ref files:
+
+● Bash(cd /home/claudeuser/work/mpint/test && ../demo/bin/demoNative 2>&1 | grep -A 20 "MPint: input safety")
+  ⎿  MPint: input safety tests
+
+     --- operator>> with invalid input ---
+     … +2 lines (ctrl+o to expand)
+  ⎿  Read ../demo/src/demo.cpp (109 lines)
+  ⎿  Referenced file ../demo/src/exprTest.cpp
+  ⎿  Read ../demo/src/exprTest.hpp (11 lines)
+  ⎿  Read ../src/MPintGMP.cpp (196 lines)
+  ⎿  Read ../src/MPintWrappedNative.cpp (168 lines)
+
+● The demoNative assertion x == MPint(42) fails because the C++ standard's native long int extractor sets the value to 0 on failure — only our custom operator>> preserves the old value. Need to
+  guard that assertion with #ifndef DEMO_NATIVE.
+
+  Read 1 file (ctrl+o to expand)
+
+● Update(~/work/mpint/demo/src/exprTest.cpp)
+  ⎿  Added 2 lines
+      572      std::istringstream iss("abc");
+      573      iss >> x;
+      574      assert(iss.fail());        std::cout << "stream(\"abc\") >> MPint : failbit set ok"      << std::endl;
+      575 +#ifndef DEMO_NATIVE
+      576      assert(x == MPint(42));    std::cout << "stream(\"abc\") >> MPint : value unchanged ok"  << std::endl;
+      577 +#endif
+      578    }
+      579
+      580    return 0;
+
+● Bash(cd /home/claudeuser/work/mpint && make 2>&1 | tail -5)
+  ⎿  g++ -std=c++14 -Wall -Wextra -pedantic -Werror -O2 -flto=auto -DDEMO_NATIVE -Idemo/src -o demo/bin/demoNative demo/src/demo.cpp demo/src/exprTest.cpp demo/src/det.cpp demo/src/redu.cpp dem
+     o/src/demoUtils.cpp
+     g++ -std=c++14 -Wall -Wextra -pedantic -Werror -O2 -flto=auto -DDEMO_WRAPPEDNATIVE -Idemo/src -Iinclude -o demo/bin/demoWrappedNative demo/src/demo.cpp demo/src/exprTest.cpp demo/src/det.c
+     … +3 lines (ctrl+o to expand)
+  ⎿  Found 10 new diagnostic issues in 1 file (ctrl+o to expand)
+
+● Build succeeded cleanly. Those clangd diagnostics are the same IDE false positives from before (clangd doesn't know the -DDEMO_* flags). Now run all three binaries and diff against existing ref
+  files:
+
+● Bash(cd /home/claudeuser/work/mpint/demo/bin && ./demoNative > /tmp/out_native.txt 2>&1; echo "exit: $?"
+      ./demoWrappedNative > /tmp/out_wrapped.txt 2>&1; echo "exit:…)
+  ⎿  exit: 0
+     /bin/bash: line 4: 1570546 Aborted                 ./demoWrappedNative > /tmp/out_wrapped.txt 2>&1
+     exit: 134
+     … +2 lines (ctrl+o to expand)
+
+● Both non-native builds abort. Let me see the assertion failure:
+
+● Bash(./demoWrappedNative 2>&1 | grep -A 3 "Assertion\|input safety" | head -20)
+  ⎿  MPint: input safety tests
+
+     --- string ctor: valid edge cases ---
+     … +3 lines (ctrl+o to expand)
+
+● Bash(./demoGMP 2>&1 | grep -A 3 "input safety\|Assertion" | head -20)
+  ⎿  MPint: input safety tests
+
+     --- string ctor: valid edge cases ---
+     … +3 lines (ctrl+o to expand)
+
+● Two issues to fix: MPintWrappedNative.cpp's operator>> delegates to native is >> long int which zeroes on failure; and MPintGMP.cpp's mpz_set_mpint_str leaves "0x" handling to GMP auto-detect,
+  which treats it as valid hex 0. Fix both:
+
+● Update(~/work/mpint/src/MPintWrappedNative.cpp)
+  ⎿  Added 12 lines, removed 1 line
+      164  // --- stream I/O -------------------------------------------------------------
+      165
+      166  std::ostream& operator<<(std::ostream& os, const MPint& v) { return os << v.pImpl->mVal; }
+      167 -std::istream& operator>>(std::istream& is,       MPint& v) { return is >> v.pImpl->mVal; }
+      167 +std::istream& operator>>(std::istream& is, MPint& v) {
+      168 +    std::string s;
+      169 +    if (is >> s) {
+      170 +        try {
+      171 +            const signed long int tmp = parse_str(s.c_str());
+      172 +            v.pImpl->mVal = tmp;
+      173 +        } catch (const std::invalid_argument&) {
+      174 +            is.setstate(std::ios::failbit);
+      175 +        }
+      176 +    }
+      177 +    return is;
+      178 +}
+
+● Now fix the GMP version to explicitly handle 0x/0X instead of relying on GMP's auto-detect (which accepts bare "0x" as valid):
+
+● Update(~/work/mpint/src/MPintGMP.cpp)
+  ⎿  Added 4 lines, removed 3 lines
+      39      else if (*p == '+') { ++p; }
+      40
+      41      // Detect base and advance past any prefix
+      42 -    int base = 0; // 0 → GMP auto-detects 0x (hex) and 0 (octal)
+      42 +    int base = 10;
+      43      if (*p == '0') {
+      44          const char* const q = p + 1;
+      45 -        if (*q == 'b' || *q == 'B') { base = 2; p += 2; }
+      46 -        // 0x and 0-prefix are left for GMP's base-0 auto-detection
+      45 +        if      (*q == 'x' || *q == 'X') { base = 16; p += 2; }
+      46 +        else if (*q == 'b' || *q == 'B') { base =  2; p += 2; }
+      47 +        else                             { base =  8; }  // leave p at '0': first octal digit
+      48      }
+      49
+      50      // Build a clean copy without single-quote separators
+  ⎿  Found 10 new diagnostic issues in 1 file (ctrl+o to expand)
+
+● Bash(cd /home/claudeuser/work/mpint && make 2>&1 | tail -6)
+  ⎿  g++ -std=c++14 -Wall -Wextra -pedantic -Werror -O2 -flto=auto -DDEMO_WRAPPEDNATIVE -Idemo/src -Iinclude -o demo/bin/demoWrappedNative demo/src/demo.cpp demo/src/exprTest.cpp demo/src/det.c
+     pp demo/src/redu.cpp demo/src/demoUtils.cpp src/MPintWrappedNative.cpp
+     g++ -std=c++14 -Wall -Wextra -pedantic -Werror -O2 -flto=auto -DDEMO_GMP -Idemo/src -Iinclude -o demo/bin/demoGMP demo/src/demo.cpp demo/src/exprTest.cpp demo/src/det.cpp demo/src/redu.cpp
+      demo/src/demoUtils.cpp  src/MPintGMP.cpp -lgmp
+  ⎿  Found 10 new diagnostic issues in 1 file (ctrl+o to expand)
+
+● Good, clean build. Now test all three binaries:
+
+● Bash(cd /home/claudeuser/work/mpint/demo/bin && ./demoNative > /tmp/out_native.txt 2>&1; echo "native: $?"
+      ./demoWrappedNative > /tmp/out_wrapped.txt 2>&1; echo "wra…)
+  ⎿  native: 0
+     wrapped: 0
+     gmp: 0
+
+● All pass. Check the new injTest section in the output:
+
+  Searched for 1 pattern (ctrl+o to expand)
+
+● All correct. Now update the reference files and run the regression suite:
+
+● Bash(cp /tmp/out_native.txt /home/claudeuser/work/mpint/test/demoNative.output.ref
+      cp /tmp/out_wrapped.txt /home/claudeuser/work/mpint/test/demoWrappedNative.output.…)
+  ⎿  Done
+
+● Bash(cd /home/claudeuser/work/mpint/test && ./test.sh all 2>&1)
+  ⎿  ############################## START : ../demo/bin/demoNative > demoNative.output 2>&1 ##########
+     ############################## EXIT  : ../demo/bin/demoNative > demoNative.output 2>&1 : EXITCODE : 0 ##########
+     ############################## START : cat demoNative.output ##########
+     … +1236 lines (ctrl+o to expand)
+
+● Bash(./test.sh all 2>&1 | grep -E "EXITCODE|DIFF|PASS|FAIL|ERROR" | tail -30)
+  ⎿  ############################## EXIT  : ../demo/bin/demoNative > demoNative.output 2>&1 : EXITCODE : 0 ##########
+     ############################## EXIT  : cat demoNative.output : EXITCODE : 0 ##########
+     ############################## EXIT  : ../demo/bin/demoWrappedNative > demoWrappedNative.output 2>&1 : EXITCODE : 0 ##########
+     … +6 lines (ctrl+o to expand)
+
+● All three diffs exit 0. Regression suite fully passes. Now update CLAUDE.md before committing:
+
+  Read 1 file (ctrl+o to expand)
+
+● Update(~/work/mpint/CLAUDE.md)
+  ⎿  User rejected update to ../CLAUDE.md
+      20  I've also updated *CLAUDE.md*.
+      21
+      22  ## What Claude has done since our last conversation
+      23 +* Reviewed `MPint` string constructors in both backends for injection vulnerabilities.
+      24 +* Fixed `parse_str` in `src/MPintWrappedNative.cpp`: now rejects invalid characters, validates each digit against the actual base, rejects "0x"/"0b" with no following digits, and re
+         +jects the empty string or sign-only inputs. Previously `"abc"` silently yielded 1122 (treating a/b/c as hex digits in base-10 context).
+      25 +* Fixed `mpz_set_mpint_str` in `src/MPintGMP.cpp`: now handles 0x/0X prefix explicitly (instead of relying on GMP auto-detect which accepted bare "0x" as valid), and checks the retu
+         +rn value of `mpz_set_str`, throwing `std::invalid_argument` on failure.
+      26 +* Fixed `operator>>` in both backends to preserve the existing value on parse failure and set `failbit` (previously the native delegating form could zero the variable on failure).
+      27 +* Added `injTest()` to `demo/src/exprTest.cpp` and `demo/src/exprTest.hpp`; called from `demo/src/demo.cpp` between `missingexpr` and `detTest`. The function tests valid edge cases
+         +("0", "-0", "+0x0"), rejects a range of malformed strings, and verifies that `operator>>` sets `failbit` and leaves the value unchanged on bad input.
+      28 +* Updated regression reference files `test/demoNative.output.ref`, `test/demoWrappedNative.output.ref`, `test/demoGMP.output.ref`; all three diffs pass.
+      29
+      30  ## What I want you to do in the upcoming conversation
+      31  The MPint(...) implementations have ctors from various other types,
+
+✻ Cooked for 16m 1s
+
+❯ What do we have to do here with "clangd diagnostics" and "IDE false positives" which you mentioned above?
+
+● Nothing has to be done — the actual g++ build is clean and the diagnostics don't affect correctness. They're purely an IDE nuisance.
+
+  The root cause: clangd reads source files without knowing the -DDEMO_* / -Iinclude flags from the Makefile, so it sees #error from demoTypedef.hpp and treats every MPint mention as undeclared.
+
+  The standard fix is a compile_commands.json (compilation database). You'd generate it once with:
+
+  bear -- make
+
+  (bear intercepts the compiler invocations and records all flags.) Clangd picks up compile_commands.json automatically and the false positives go away.
+
+  The one limitation here: each source file (e.g. exprTest.cpp) is compiled three times with different -D flags. Clangd will pick one compilation unit per file (whichever appears first in the JSON),
+  so it won't simultaneously understand all three variants — but at least it will have the correct include paths and one valid -D flag, which eliminates the bulk of the noise.
+
+  Worth doing if the IDE experience matters to you; easy to ignore if you're happy working from the terminal.
+
+✻ Baked for 21s
+
+❯ OK, so then update CLAUDE.md and commit.
+
+● Update(~/work/mpint/CLAUDE.md)
+  ⎿  Added 7 lines
+      20  I've also updated *CLAUDE.md*.
+      21
+      22  ## What Claude has done since our last conversation
+      23 +* Reviewed `MPint` string constructors in both backends for injection vulnerabilities.
+      24 +* Fixed `parse_str` in `src/MPintWrappedNative.cpp`: rejects invalid characters, validates each digit against the actual base, rejects "0x"/"0b" with no following digits, and reject
+         +s empty/sign-only inputs. Previously `"abc"` silently yielded 1122 (treating a/b/c as hex digits in base-10 context).
+      25 +* Fixed `mpz_set_mpint_str` in `src/MPintGMP.cpp`: now handles 0x/0X prefix explicitly instead of relying on GMP auto-detect (which accepted bare "0x" as valid), and checks the retu
+         +rn value of `mpz_set_str`, throwing `std::invalid_argument` on failure.
+      26 +* Fixed `operator>>` in both backends to preserve the existing value on parse failure and set `failbit` (the old delegating form could zero the variable on failure per C++ standard)
+         +.
+      27 +* Added `injTest()` to `demo/src/exprTest.cpp` and `demo/src/exprTest.hpp`; called from `demo/src/demo.cpp` between `missingexpr` and `detTest`. Tests valid edge cases ("0", "-0", "
+         ++0x0"), rejects a range of malformed strings, and verifies that `operator>>` sets `failbit` and leaves the value unchanged on bad input.
+      28 +* Updated regression reference files `test/demoNative.output.ref`, `test/demoWrappedNative.output.ref`, `test/demoGMP.output.ref`; all three diffs pass.
+      29 +* Noted that clangd IDE diagnostics (false positives from missing `-DDEMO_*`/`-Iinclude` flags) can be fixed by running `bear -- make` to generate `compile_commands.json`.
+      30
+      31  ## What I want you to do in the upcoming conversation
+      32  The MPint(...) implementations have ctors from various other types,
+
+● Bash(cd /home/claudeuser/work/mpint && git status && git diff --stat)
+  ⎿  On branch master
+     Changes not staged for commit:
+       (use "git add <file>..." to update what will be committed)
+     … +22 lines (ctrl+o to expand)
+
+● Bash(git log --oneline -3)
+  ⎿  a51d99b minor cosmetic change to test/test.sh, updated transcript.txt and CLAUDE.md
+     a0552f6 test/test.sh: route prof executables through runCmd(), factor out DRY_RUN_PREFIX; add SessionStart hook; update CLAUDE.md
+     f33cf21 minor cosmetic change to Makefile, updated transcript.txt and CLAUDE.md
+
+● Bash(git add CLAUDE.md demo/src/demo.cpp demo/src/exprTest.cpp demo/src/exprTest.hpp src/MPintGMP.cpp src/MPintWrappedNative.cpp test/demoGMP.output.ref test/demoNat…)
+  ⎿  [master 114efba] add injTest(): harden string ctors and operator>> against injection; update ref files
+      9 files changed, 152 insertions(+), 16 deletions(-)
+
+● Committed as 114efba. All done.
+
+✻ Cogitated for 58s
+
+❯ /status
+  ⎿  Settings dialog dismissed
+
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ /exit
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+#############################################################################################################################################################################################################
+
+
