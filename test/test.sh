@@ -10,16 +10,16 @@ OUTFILENATIVE="demoNative.output"
 EXECUTABLEGMPXX="../demo/bin/demoGMPXX"
 OUTFILEGMPXX="demoGMPXX.output"
 
-EXECUTABLEWRAPPEDNATIVE="../demo/bin/demoWrappedNative"
-OUTFILEWRAPPEDNATIVE="demoWrappedNative.output"
+EXECUTABLEWRAPPEDNATIVEPIMPLE="../demo/bin/demoWrappedNativePimple"
+OUTFILEWRAPPEDNATIVEPIMPLE="demoWrappedNativePimple.output"
 
-EXECUTABLEGMP="../demo/bin/demoGMP"
-OUTFILEGMP="demoGMP.output"
+EXECUTABLEGMPPIMPLE="../demo/bin/demoGMPPimple"
+OUTFILEGMPPIMPLE="demoGMPPimple.output"
 
 REFFILENATIVE="demoNative.output.ref"
 REFFILEGMPXX="demoGMPXX.output.ref"
-REFFILEWRAPPEDNATIVE="demoWrappedNative.output.ref"
-REFFILEGMP="demoGMP.output.ref"
+REFFILEWRAPPEDNATIVEPIMPLE="demoWrappedNativePimple.output.ref"
+REFFILEGMPPIMPLE="demoGMPPimple.output.ref"
 
 DIFFCMD="diff"
 RMCMD="rm"
@@ -77,13 +77,13 @@ doAll () {
         return ${retval}
     fi
 
-    runExecutable ${EXECUTABLEWRAPPEDNATIVE} ${OUTFILEWRAPPEDNATIVE}
+    runExecutable ${EXECUTABLEWRAPPEDNATIVEPIMPLE} ${OUTFILEWRAPPEDNATIVEPIMPLE}
     retval=$?
     if [ "${retval}" -ne 0 ]; then
         return ${retval}
     fi
 
-    runExecutable ${EXECUTABLEGMP} ${OUTFILEGMP}
+    runExecutable ${EXECUTABLEGMPPIMPLE} ${OUTFILEGMPPIMPLE}
     retval=$?
     if [ "${retval}" -ne 0 ]; then
         return ${retval}
@@ -102,13 +102,13 @@ doAll () {
         retval=${diffretval}
     fi
 
-    doDiff "${OUTFILEWRAPPEDNATIVE}" "${REFFILEWRAPPEDNATIVE}"
+    doDiff "${OUTFILEWRAPPEDNATIVEPIMPLE}" "${REFFILEWRAPPEDNATIVEPIMPLE}"
     diffretval=$?
     if [ "${diffretval}" -ne 0 ]; then
         retval=${diffretval}
     fi
 
-    doDiff "${OUTFILEGMP}" "${REFFILEGMP}"
+    doDiff "${OUTFILEGMPPIMPLE}" "${REFFILEGMPPIMPLE}"
     diffretval=$?
     if [ "${diffretval}" -ne 0 ]; then
         retval=${diffretval}
@@ -131,8 +131,8 @@ doProf () {
 
     runCmd "${EXECUTABLENATIVE} -prof > ${tmp1} 2>&1"
     runCmd "${EXECUTABLEGMPXX} -prof > ${tmp2} 2>&1"
-    runCmd "${EXECUTABLEWRAPPEDNATIVE} -prof > ${tmp3} 2>&1"
-    runCmd "${EXECUTABLEGMP} -prof > ${tmp4} 2>&1"
+    runCmd "${EXECUTABLEWRAPPEDNATIVEPIMPLE} -prof > ${tmp3} 2>&1"
+    runCmd "${EXECUTABLEGMPPIMPLE} -prof > ${tmp4} 2>&1"
 
     if [ "${DRYPARAM}" == "dry" ]; then
         echo "${DRY_RUN_PREFIX}<post processing results and printing a summarizing table on stdout>"
@@ -154,13 +154,13 @@ doProf () {
     # Each data line has the form "  name: cycles cycles".
     paste "${tdata1}" "${tdata2}" "${tdata3}" "${tdata4}" | awk -F'\t' '
     BEGIN {
-        printf "%-14s  %20s  %20s  %20s  %20s\n",
-               "function", "demoNative", "demoGMPXX", "demoWrappedNative", "demoGMP"
-        printf "%-14s  %20s  %20s  %20s  %20s\n",
+        printf "%-14s  %20s  %20s  %26s  %20s\n",
+               "function", "demoNative", "demoGMPXX", "demoWrappedNativePimple", "demoGMPPimple"
+        printf "%-14s  %20s  %20s  %26s  %20s\n",
                "--------------",
                "--------------------",
                "--------------------",
-               "--------------------",
+               "--------------------------",
                "--------------------"
     }
     {
@@ -174,7 +174,7 @@ doProf () {
         gsub(/[[:space:]]*cycles[[:space:]]*$/, "", c3); gsub(/^[[:space:]]+/, "", c3)
         split($4, e, ":"); c4 = e[2]
         gsub(/[[:space:]]*cycles[[:space:]]*$/, "", c4); gsub(/^[[:space:]]+/, "", c4)
-        printf "%-14s  %20s  %20s  %20s  %20s\n", name, c1, c2, c3, c4
+        printf "%-14s  %20s  %20s  %26s  %20s\n", name, c1, c2, c3, c4
     }
     '
 
