@@ -28,5 +28,9 @@ which implements an integer with arbitrary precision.
 * All four `./test/test.sh all` diffs pass.
 
 ## What I have done since our last conversation
+Nothing
 
 ## What I want Claude to do in the upcoming conversation
+In our last conversation, I gave you instructions to change certain *MPint* variant names from "Hmhmhm" to "HmhmhmPimple".
+Oops, my bad. Typical human mistake, you and your other instances might be familiar with that. Of course, i didn't mean
+pimple but pimpl. Go through the last iteration again, and remove the "e" (or "E") from the names.
