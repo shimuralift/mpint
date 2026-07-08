@@ -27,7 +27,9 @@ which implements an integer with arbitrary precision.
 * Generated `test/demoGMPXX.output.ref`; all four `./test/test.sh all` diffs pass.
 
 ## What I have done since our last conversation
-I've updated *transcript.txt*, and *CLAUDE.md*.
+I've updated *transcript.txt*, *CLAUDE.md*, *.gitignore.example*, and *test/prof_output.txt*.
 
 ## What I want Claude to do in the upcoming conversation
-(nothing yet)
+Rename demo variant *GMP* to *GMPPimple*, and *WrappedNative* to *WrappedNativePimple*.
+Do that in *Makefile*, *demo/src/demoTypedef.hpp*, and *test/test.sh*. Also update
+*AGENTS.md* with respect to this name change and to the introduction of variant *GMPXX*.

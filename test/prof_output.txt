@@ -1,17 +1,24 @@
-profiling ../demo/bin/demoNative ...
-profiling ../demo/bin/demoWrappedNative ...
-profiling ../demo/bin/demoGMP ...
+[claudeuser@gondwana:test]$ ./test.sh prof
+############################## START : ../demo/bin/demoNative -prof > /tmp/tmp.EtCITShduL 2>&1 ##########
+############################## EXIT  : ../demo/bin/demoNative -prof > /tmp/tmp.EtCITShduL 2>&1 : EXITCODE : 0 ##########
+############################## START : ../demo/bin/demoGMPXX -prof > /tmp/tmp.INmlPrUi32 2>&1 ##########
+############################## EXIT  : ../demo/bin/demoGMPXX -prof > /tmp/tmp.INmlPrUi32 2>&1 : EXITCODE : 0 ##########
+############################## START : ../demo/bin/demoWrappedNative -prof > /tmp/tmp.9aDsrzp5sr 2>&1 ##########
+############################## EXIT  : ../demo/bin/demoWrappedNative -prof > /tmp/tmp.9aDsrzp5sr 2>&1 : EXITCODE : 0 ##########
+############################## START : ../demo/bin/demoGMP -prof > /tmp/tmp.P3hf7y4KyS 2>&1 ##########
+############################## EXIT  : ../demo/bin/demoGMP -prof > /tmp/tmp.P3hf7y4KyS 2>&1 : EXITCODE : 0 ##########
 
 === profiling comparison (rdtsc cpu cycles, avg of 100000 runs) ===
 
-function                  demoNative     demoWrappedNative               demoGMP
---------------  --------------------  --------------------  --------------------
-expr                           4 770                 6 057                11 111
-basicexpr                     51 866                57 824                79 896
-moreexpr                      18 784                21 356                31 445
-extraexpr                     23 593                38 553                75 257
-strconstr                     10 289                14 877                26 797
-floatconv                      7 458                 7 626                25 765
-missingexpr                    6 392                 8 837                11 172
-detTest                      358 560               494 429               923 233
-reduTest                     880 835             2 688 315             9 212 402
+function                  demoNative             demoGMPXX     demoWrappedNative               demoGMP
+--------------  --------------------  --------------------  --------------------  --------------------
+expr                           4 576                14 645                 6 031                11 529
+basicexpr                     51 839               136 498                57 328                81 378
+moreexpr                      18 724                36 867                21 809                31 924
+extraexpr                     24 167                55 962                38 519                76 946
+strconstr                     10 150                27 048                15 053                27 234
+floatconv                      7 468                 8 253                 7 673                25 904
+missingexpr                    6 425                10 630                 8 422                12 394
+injTest                        1 000                51 646                80 984                71 940
+detTest                      360 313               954 631               492 620               931 859
+reduTest                   1 286 382             2 232 178             3 147 329            10 006 316

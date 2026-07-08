@@ -11,20 +11,10 @@ core
 lib/bin/core
 demo/bin/core
 test/core
+test/demoNative.output
+test/demoGMPXX.output
 test/demoWrappedNative.output
 test/demoGMP.output
-test/demoNative.output
 .cproject
 .project
 .settings/
-
-# files copied from mpint into dist/multiPrecOperators
-# by mpint 'make all', removed again by 'make clean',
-# and artifacts of the dist/multiPrecOperators build
-# are not meant to be tracked here.
-dist/multiPrecOperators/lib/src/*.cpp
-dist/multiPrecOperators/lib/src/*.hpp
-dist/multiPrecOperators/lib/include/*.hpp
-dist/multiPrecOperators/demo/src/*.hpp
-dist/multiPrecOperators/demo/src/*.cpp
-dist/multiPrecOperators/demo/bin/demo*
