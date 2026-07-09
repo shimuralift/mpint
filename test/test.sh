@@ -10,6 +10,12 @@ OUTFILENATIVE="demoNative.output"
 EXECUTABLEGMPXX="../demo/bin/demoGMPXX"
 OUTFILEGMPXX="demoGMPXX.output"
 
+EXECUTABLEWRAPPEDNATIVE="../demo/bin/demoWrappedNative"
+OUTFILEWRAPPEDNATIVE="demoWrappedNative.output"
+
+EXECUTABLEGMP="../demo/bin/demoGMP"
+OUTFILEGMP="demoGMP.output"
+
 EXECUTABLEWRAPPEDNATIVEPIMPL="../demo/bin/demoWrappedNativePimpl"
 OUTFILEWRAPPEDNATIVEPIMPL="demoWrappedNativePimpl.output"
 
@@ -18,6 +24,8 @@ OUTFILEGMPPIMPL="demoGMPPimpl.output"
 
 REFFILENATIVE="demoNative.output.ref"
 REFFILEGMPXX="demoGMPXX.output.ref"
+REFFILEWRAPPEDNATIVE="demoWrappedNative.output.ref"
+REFFILEGMP="demoGMP.output.ref"
 REFFILEWRAPPEDNATIVEPIMPL="demoWrappedNativePimpl.output.ref"
 REFFILEGMPPIMPL="demoGMPPimpl.output.ref"
 
@@ -77,6 +85,18 @@ doRegression () {
         return ${retval}
     fi
 
+    runExecutable ${EXECUTABLEWRAPPEDNATIVE} ${OUTFILEWRAPPEDNATIVE}
+    retval=$?
+    if [ "${retval}" -ne 0 ]; then
+        return ${retval}
+    fi
+
+    runExecutable ${EXECUTABLEGMP} ${OUTFILEGMP}
+    retval=$?
+    if [ "${retval}" -ne 0 ]; then
+        return ${retval}
+    fi
+
     runExecutable ${EXECUTABLEWRAPPEDNATIVEPIMPL} ${OUTFILEWRAPPEDNATIVEPIMPL}
     retval=$?
     if [ "${retval}" -ne 0 ]; then
@@ -102,6 +122,18 @@ doRegression () {
         retval=${diffretval}
     fi
 
+    doDiff "${OUTFILEWRAPPEDNATIVE}" "${REFFILEWRAPPEDNATIVE}"
+    diffretval=$?
+    if [ "${diffretval}" -ne 0 ]; then
+        retval=${diffretval}
+    fi
+
+    doDiff "${OUTFILEGMP}" "${REFFILEGMP}"
+    diffretval=$?
+    if [ "${diffretval}" -ne 0 ]; then
+        retval=${diffretval}
+    fi
+
     doDiff "${OUTFILEWRAPPEDNATIVEPIMPL}" "${REFFILEWRAPPEDNATIVEPIMPL}"
     diffretval=$?
     if [ "${diffretval}" -ne 0 ]; then
@@ -119,24 +151,23 @@ doRegression () {
 }
 
 doProf () {
-    local tmp1 tmp2 tmp3 tmp4 tdata1 tdata2 tdata3 tdata4
-    tmp1=$(mktemp)
-    tmp2=$(mktemp)
-    tmp3=$(mktemp)
-    tmp4=$(mktemp)
-    tdata1=$(mktemp)
-    tdata2=$(mktemp)
-    tdata3=$(mktemp)
-    tdata4=$(mktemp)
+    local tmp1 tmp2 tmp3 tmp4 tmp5 tmp6 tdata1 tdata2 tdata3 tdata4 tdata5 tdata6
+    tmp1=$(mktemp); tmp2=$(mktemp); tmp3=$(mktemp)
+    tmp4=$(mktemp); tmp5=$(mktemp); tmp6=$(mktemp)
+    tdata1=$(mktemp); tdata2=$(mktemp); tdata3=$(mktemp)
+    tdata4=$(mktemp); tdata5=$(mktemp); tdata6=$(mktemp)
 
     runCmd "${EXECUTABLENATIVE} -prof > ${tmp1} 2>&1"
     runCmd "${EXECUTABLEGMPXX} -prof > ${tmp2} 2>&1"
-    runCmd "${EXECUTABLEWRAPPEDNATIVEPIMPL} -prof > ${tmp3} 2>&1"
-    runCmd "${EXECUTABLEGMPPIMPL} -prof > ${tmp4} 2>&1"
+    runCmd "${EXECUTABLEWRAPPEDNATIVE} -prof > ${tmp3} 2>&1"
+    runCmd "${EXECUTABLEGMP} -prof > ${tmp4} 2>&1"
+    runCmd "${EXECUTABLEWRAPPEDNATIVEPIMPL} -prof > ${tmp5} 2>&1"
+    runCmd "${EXECUTABLEGMPPIMPL} -prof > ${tmp6} 2>&1"
 
     if [ "${DRYPARAM}" == "dry" ]; then
         echo "${DRY_RUN_PREFIX}<post processing results and printing a summarizing table on stdout>"
-        rm -f "${tmp1}" "${tmp2}" "${tmp3}" "${tmp4}" "${tdata1}" "${tdata2}" "${tdata3}" "${tdata4}"
+        rm -f "${tmp1}" "${tmp2}" "${tmp3}" "${tmp4}" "${tmp5}" "${tmp6}" \
+              "${tdata1}" "${tdata2}" "${tdata3}" "${tdata4}" "${tdata5}" "${tdata6}"
         return 0
     fi
 
@@ -145,40 +176,42 @@ doProf () {
     grep -v '^===' "${tmp2}" > "${tdata2}"
     grep -v '^===' "${tmp3}" > "${tdata3}"
     grep -v '^===' "${tmp4}" > "${tdata4}"
+    grep -v '^===' "${tmp5}" > "${tdata5}"
+    grep -v '^===' "${tmp6}" > "${tdata6}"
 
     echo ""
     grep '===' "${tmp1}" | sed 's/profiling report/profiling comparison/'
     echo ""
 
-    # Merge the four data files side-by-side and format as a table.
+    # Merge the six data files side-by-side and format as a table.
     # Each data line has the form "  name: cycles cycles".
-    paste "${tdata1}" "${tdata2}" "${tdata3}" "${tdata4}" | awk -F'\t' '
+    paste "${tdata1}" "${tdata2}" "${tdata3}" "${tdata4}" "${tdata5}" "${tdata6}" | awk -F'\t' '
     BEGIN {
-        printf "%-14s  %20s  %20s  %26s  %20s\n",
-               "function", "demoNative", "demoGMPXX", "demoWrappedNativePimpl", "demoGMPPimpl"
-        printf "%-14s  %20s  %20s  %26s  %20s\n",
+        printf "%-14s  %20s  %20s  %22s  %20s  %26s  %20s\n",
+               "function", "demoNative", "demoGMPXX",
+               "demoWrappedNative", "demoGMP",
+               "demoWrappedNativePimpl", "demoGMPPimpl"
+        printf "%-14s  %20s  %20s  %22s  %20s  %26s  %20s\n",
                "--------------",
-               "--------------------",
-               "--------------------",
-               "--------------------------",
-               "--------------------"
+               "--------------------", "--------------------",
+               "----------------------", "--------------------",
+               "--------------------------", "--------------------"
     }
     {
         split($1, a, ":"); name = a[1]
         gsub(/^[[:space:]]+|[[:space:]]+$/, "", name)
-        c1 = a[2]
-        gsub(/[[:space:]]*cycles[[:space:]]*$/, "", c1); gsub(/^[[:space:]]+/, "", c1)
-        split($2, b, ":"); c2 = b[2]
-        gsub(/[[:space:]]*cycles[[:space:]]*$/, "", c2); gsub(/^[[:space:]]+/, "", c2)
-        split($3, d, ":"); c3 = d[2]
-        gsub(/[[:space:]]*cycles[[:space:]]*$/, "", c3); gsub(/^[[:space:]]+/, "", c3)
-        split($4, e, ":"); c4 = e[2]
-        gsub(/[[:space:]]*cycles[[:space:]]*$/, "", c4); gsub(/^[[:space:]]+/, "", c4)
-        printf "%-14s  %20s  %20s  %26s  %20s\n", name, c1, c2, c3, c4
+        c1 = a[2];  gsub(/[[:space:]]*cycles[[:space:]]*$/, "", c1); gsub(/^[[:space:]]+/, "", c1)
+        split($2, b, ":"); c2 = b[2]; gsub(/[[:space:]]*cycles[[:space:]]*$/, "", c2); gsub(/^[[:space:]]+/, "", c2)
+        split($3, d, ":"); c3 = d[2]; gsub(/[[:space:]]*cycles[[:space:]]*$/, "", c3); gsub(/^[[:space:]]+/, "", c3)
+        split($4, e, ":"); c4 = e[2]; gsub(/[[:space:]]*cycles[[:space:]]*$/, "", c4); gsub(/^[[:space:]]+/, "", c4)
+        split($5, f, ":"); c5 = f[2]; gsub(/[[:space:]]*cycles[[:space:]]*$/, "", c5); gsub(/^[[:space:]]+/, "", c5)
+        split($6, g, ":"); c6 = g[2]; gsub(/[[:space:]]*cycles[[:space:]]*$/, "", c6); gsub(/^[[:space:]]+/, "", c6)
+        printf "%-14s  %20s  %20s  %22s  %20s  %26s  %20s\n", name, c1, c2, c3, c4, c5, c6
     }
     '
 
-    rm -f "${tmp1}" "${tmp2}" "${tmp3}" "${tmp4}" "${tdata1}" "${tdata2}" "${tdata3}" "${tdata4}"
+    rm -f "${tmp1}" "${tmp2}" "${tmp3}" "${tmp4}" "${tmp5}" "${tmp6}" \
+          "${tdata1}" "${tdata2}" "${tdata3}" "${tdata4}" "${tdata5}" "${tdata6}"
     return 0
 }
 
