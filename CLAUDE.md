@@ -27,5 +27,8 @@ which implements an integer with arbitrary precision.
 * Generated `test/demoWrappedNative.output.ref` and `test/demoGMP.output.ref`; all six `./test/test.sh regr` diffs pass.
 
 ## What I have done since our last conversation
+updated transcript.txt, CLAUDE.md, .gitignore.example, and test/prof_output.txt
 
 ## What I want Claude to do in the upcoming conversation
+In directory test, after *test.sh regr*, why are *demoGMP.output*, *demoGMPPimpl.output*, and *demoGMPXX.output* different from each other?
+Why does *demoNative.output* differ from *demoWrappedNative.output*?

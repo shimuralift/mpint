@@ -13087,3 +13087,1924 @@ Sharing transcript…
 
 #############################################################################################################################################################################################################
 
+❯ hi
+
+● Hi! CLAUDE.md is clear: implement demoWrappedNative and demoGMP as non-pimpl, fully-inline variants, using the existing pimpl implementations as starting points. Let me read the current
+  implementation files to understand the full interface.
+
+  Read 3 files (ctrl+o to expand)
+
+● Let me also check the current state of test.sh's main function to see if all was renamed to regr as CLAUDE.md mentions:
+
+  Searched for 1 pattern (ctrl+o to expand)
+
+● Good, all is now regr. Now I have everything I need. Let me create both inline headers and update the infrastructure. I'll write the files:
+
+● Write(include/MPintWrappedNative.hpp)
+  ⎿  User rejected write to include/MPintWrappedNative.hpp
+       1 #pragma once
+       2
+       3 #include <cmath>
+       4 #include <iostream>
+       5 #include <stdexcept>
+       6 #include <string>
+       7
+       8 // MPint wrapping signed long int directly — no pimpl, all operators inline.
+       9
+      10 class MPint {
+     … +154 lines
+
+✻ Worked for 4m 17s
+
+❯ confirm that nothing has changed here.
+
+● Bash(git -C /home/claudeuser/work/mpint status)
+  ⎿  On branch master
+     nothing to commit, working tree clean
+
+● Clean — no changes since the last commit.
+
+✻ Worked for 9s
+
+❯ ok, please use 'git cp' instead of just 'cp', and make the 'change'.
+
+● Let me check if git cp is defined before using it:
+
+● Bash(git -C /home/claudeuser/work/mpint cp 2>&1 || true)
+  ⎿  Interrupted · What should Claude do instead?
+
+✻ Churned for 49s
+
+❯ lets go through all your changes going to be proposed by you first, before comitting any thing.
+
+● Sure. Here's the full plan before touching anything:
+
+  ---
+  Proposed changes
+
+  1. include/MPintWrappedNative.hpp — new file
+
+  Copy src/MPintWrappedNativePimpl.cpp as starting point (via cp + git add), then transform into a self-contained header:
+  - Add #pragma once and all needed includes (<cmath>, <iostream>, <stdexcept>, <string>)
+  - Merge the class declaration (currently in include/MPint.hpp) and the implementation into one
+  - Drop struct MPintImpl and MPintImpl* pImpl; add signed long int mVal as a direct private member
+  - parse_str becomes a private static member function (inline in the class body)
+  - All operator bodies move into the class or as inline friend definitions — every operator inline
+  - Copy/move/destructor become = default (scalar member, nothing to manage)
+  - Comparison and stream operators become inline friend definitions inside the class
+
+  2. include/MPintGMP.hpp — new file
+
+  Copy src/MPintGMPPimpl.cpp as starting point, transform similarly:
+  - Drop struct MPintImpl; embed mpz_t mVal directly in MPint
+  - mpz_set_mpint_str becomes a private static member
+  - Constructor/destructor handle mpz lifecycle directly (no more new/delete)
+  - Copy: mpz_init_set; move: mpz_init then mpz_swap; copy-assign: mpz_set; move-assign: mpz_swap
+  - All operators inline in the header
+
+  3. demo/src/demoTypedef.hpp
+
+  Add two new #elif branches (after DEMO_GMPXX, before DEMO_WRAPPEDNATIVEPIMPL):
+  #elif defined DEMO_WRAPPEDNATIVE
+      #include "MPintWrappedNative.hpp"
+  #elif defined DEMO_GMP
+      #include "MPintGMP.hpp"
+      #define DEMO_ARBPREC
+
+  4. Makefile
+
+  Add TARGET_WRAPPEDNATIVE and TARGET_GMP in the same slot (after GMPXX, before the Pimpl variants), with build rules:
+  $(TARGET_WRAPPEDNATIVE): $(DEMO_SRCS) $(DEMO_HDRS) include/MPintWrappedNative.hpp
+      $(CXX) $(CXXFLAGS) -DDEMO_WRAPPEDNATIVE -I$(DEMO_INCLDIR) -I$(INCLDIR) -o $@ $(DEMO_SRCS)
+
+  $(TARGET_GMP): $(DEMO_SRCS) $(DEMO_HDRS) include/MPintGMP.hpp
+      $(CXX) $(CXXFLAGS) -DDEMO_GMP -I$(DEMO_INCLDIR) -I$(INCLDIR) -o $@ $(DEMO_SRCS) -lgmp
+  (No .cpp compilation — header-only.)
+
+  Final variant order throughout: Native → GMPXX → WrappedNative → GMP → WrappedNativePimpl → GMPPimpl
+
+  5. test/test.sh
+
+  - Add EXECUTABLEWRAPPEDNATIVE, OUTFILEWRAPPEDNATIVE, REFFILEWRAPPEDNATIVE (and same for GMP) in the same slot
+  - Add the two new runExecutable + doDiff calls in doRegr() (in the right order)
+  - Expand doProf() from 4 to 6 columns
+
+  6. Build, run, generate ref files
+
+  - make (all 6 targets)
+  - Run demoWrappedNative and demoGMP, save output as .output.ref
+  - Run ./test.sh regr — all 6 diffs should pass
+
+  ---
+  Does this plan look right, or would you like to adjust anything (ordering, file locations, naming)?
+
+✻ Churned for 37s
+
+❯ go ahead
+
+● Starting with the copies, then I'll transform each file and update the infrastructure.
+
+  Step 1 — copy the pimpl source files as starting points:
+
+● Bash(cp /home/claudeuser/work/mpint/src/MPintWrappedNativePimpl.cpp /home/claudeuser/work/mpint/include/MPintWrappedNative.hpp
+      cp /home/claudeuser/work/mpint/src/MPi…)
+  ⎿  (No output)
+
+● Step 2 — transform include/MPintWrappedNative.hpp into an inline header:
+
+● Write(include/MPintWrappedNative.hpp)
+  ⎿  Error writing file
+
+● Reading 2 files… (ctrl+o to expand)
+  ⎿  include/MPintGMP.hpp
+
+● Write(include/MPintWrappedNative.hpp)
+
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+ Overwrite file
+ include/MPintWrappedNative.hpp
+╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
+    1 -#include "MPint.hpp"
+    1 +#pragma once
+    2
+    3  #include <cmath>
+    4  #include <iostream>
+    5  #include <stdexcept>
+    6  #include <string>
+    7
+    8 -// ---------------------------------------------------------------------------
+    9 -// The only implementation detail: what an MPint actually stores.
+   10 -// To switch to an arbitrary precision backend, replace this struct
+   11 -// and adjust the operator bodies below.
+   12 -// Nothing outside this file needs to change.
+   13 -// struct MPint::MPintImpl is an 'aggregate', i.e. it does not have a
+   14 -// user defined ctor. On construction with 'new', an ordered list of
+   15 -// member initializations may be provided, e.g. 'new MPintImpl{0L}', see below.
+   16 -// ---------------------------------------------------------------------------
+   17 -struct MPint::MPintImpl {
+    8 +// MPint wrapping signed long int directly — no pimpl, all operators inline.
+    9 +
+   10 +class MPint {
+   11      signed long int mVal;
+   19 -};
+   12
+   21 -// --- string parsing helper --------------------------------------------------
+   22 -
+   23 -static signed long int parse_str(const char* const s) {
+   24 -    if (!s) throw std::invalid_argument("MPint: null string pointer");
+   25 -    const char* p = s;
+   26 -    bool negative = false;
+   27 -    if (*p == '-')      { negative = true; ++p; }
+   28 -    else if (*p == '+') { ++p; }
+   29 -
+   30 -    int base = 10;
+   31 -    if (*p == '0') {
+   32 -        const char* const q = p + 1;
+   33 -        if      (*q == 'x' || *q == 'X') { base = 16; p += 2; }
+   34 -        else if (*q == 'b' || *q == 'B') { base =  2; p += 2; }
+   35 -        else                             { base =  8; }  // leave p at '0': it's the first octal digit
+   36 -    }
+   37 -
+   38 -    unsigned long int result = 0;
+   39 -    bool got_digit = false;
+   40 -    for (; *p; ++p) {
+   41 -        if (*p == '\'') continue;
+   42 -        unsigned int digit;
+   43 -        const char c = *p;
+   44 -        if      (c >= '0' && c <= '9') digit = static_cast<unsigned int>(c - '0');
+   45 -        else if (c >= 'a' && c <= 'f') digit = static_cast<unsigned int>(c - 'a') + 10u;
+   46 -        else if (c >= 'A' && c <= 'F') digit = static_cast<unsigned int>(c - 'A') + 10u;
+   47 -        else throw std::invalid_argument(std::string("MPint: invalid integer string: ") + s);
+   48 -        if (digit >= static_cast<unsigned int>(base))
+   13 +    static signed long int parse_str(const char* const s) {
+   14 +        if (!s) throw std::invalid_argument("MPint: null string pointer");
+   15 +        const char* p = s;
+   16 +        bool negative = false;
+   17 +        if      (*p == '-') { negative = true; ++p; }
+   18 +        else if (*p == '+') { ++p; }
+   19 +        int base = 10;
+   20 +        if (*p == '0') {
+   21 +            const char* const q = p + 1;
+   22 +            if      (*q == 'x' || *q == 'X') { base = 16; p += 2; }
+   23 +            else if (*q == 'b' || *q == 'B') { base =  2; p += 2; }
+   24 +            else                             { base =  8; }
+   25 +        }
+   26 +        unsigned long int result = 0;
+   27 +        bool got_digit = false;
+   28 +        for (; *p; ++p) {
+   29 +            if (*p == '\'') continue;
+   30 +            unsigned int digit;
+   31 +            const char c = *p;
+   32 +            if      (c >= '0' && c <= '9') digit = static_cast<unsigned int>(c - '0');
+   33 +            else if (c >= 'a' && c <= 'f') digit = static_cast<unsigned int>(c - 'a') + 10u;
+   34 +            else if (c >= 'A' && c <= 'F') digit = static_cast<unsigned int>(c - 'A') + 10u;
+   35 +            else throw std::invalid_argument(std::string("MPint: invalid integer string: ") + s);
+   36 +            if (digit >= static_cast<unsigned int>(base))
+   37 +                throw std::invalid_argument(std::string("MPint: invalid integer string: ") + s);
+   38 +            result = result * static_cast<unsigned long int>(base) + digit;
+   39 +            got_digit = true;
+   40 +        }
+   41 +        if (!got_digit)
+   42              throw std::invalid_argument(std::string("MPint: invalid integer string: ") + s);
+   50 -        result = result * static_cast<unsigned long int>(base) + digit;
+   51 -        got_digit = true;
+   43 +        return negative ? -static_cast<signed long int>(result)
+   44 +                        :  static_cast<signed long int>(result);
+   45      }
+   53 -    if (!got_digit)
+   54 -        throw std::invalid_argument(std::string("MPint: invalid integer string: ") + s);
+   55 -    return negative ? -static_cast<signed long int>(result)
+   56 -                    :  static_cast<signed long int>(result);
+   57 -}
+   46
+   59 -// --- construction -----------------------------------------------------------
+   47 +public:
+   48 +    // --- construction -------------------------------------------------------
+   49 +    MPint()                    noexcept : mVal(0) {}
+   50 +    MPint(signed long int   v) noexcept : mVal(v) {}
+   51 +    MPint(signed int        v) noexcept : mVal(v) {}
+   52 +    MPint(signed short      v) noexcept : mVal(v) {}
+   53 +    MPint(signed char       v) noexcept : mVal(v) {}
+   54 +    MPint(unsigned long int v) noexcept : mVal(static_cast<signed long int>(v)) {}
+   55 +    MPint(unsigned int      v) noexcept : mVal(static_cast<signed long int>(v)) {}
+   56 +    MPint(unsigned short    v) noexcept : mVal(static_cast<signed long int>(v)) {}
+   57 +    MPint(unsigned char     v) noexcept : mVal(static_cast<signed long int>(v)) {}
+   58 +    MPint(long long         v) noexcept : mVal(static_cast<signed long int>(v)) {}
+   59 +    explicit MPint(const char*        s) : mVal(parse_str(s)) {}
+   60 +    explicit MPint(const std::string& s) : mVal(parse_str(s.c_str())) {}
+   61
+   61 -MPint::MPint()                    : pImpl(new MPintImpl{0L}) {}
+   62 -MPint::MPint(signed long int   v) : pImpl(new MPintImpl{v}) {}
+   63 -MPint::MPint(signed int        v) : pImpl(new MPintImpl{v}) {}
+   64 -MPint::MPint(signed short      v) : pImpl(new MPintImpl{v}) {}
+   65 -MPint::MPint(signed char       v) : pImpl(new MPintImpl{v}) {}
+   66 -MPint::MPint(unsigned long int v) : pImpl(new MPintImpl{static_cast<signed long int>(v)}) {}
+   67 -MPint::MPint(unsigned int      v) : pImpl(new MPintImpl{static_cast<signed long int>(v)}) {}
+   68 -MPint::MPint(unsigned short    v) : pImpl(new MPintImpl{static_cast<signed long int>(v)}) {}
+   69 -MPint::MPint(unsigned char     v) : pImpl(new MPintImpl{static_cast<signed long int>(v)}) {}
+   70 -MPint::MPint(long long         v) : pImpl(new MPintImpl{static_cast<signed long int>(v)}) {}
+   62 +    // Copy / move / destroy — trivial for a scalar member
+   63 +    MPint(const MPint&)            noexcept = default;
+   64 +    MPint& operator=(const MPint&) noexcept = default;
+   65 +    MPint(MPint&&)                 noexcept = default;
+   66 +    MPint& operator=(MPint&&)      noexcept = default;
+   67 +    ~MPint()                                = default;
+   68
+   72 -MPint::MPint(const char*        s) : pImpl(new MPintImpl{parse_str(s)}) {}
+   73 -MPint::MPint(const std::string& s) : pImpl(new MPintImpl{parse_str(s.c_str())}) {}
+   69 +    // --- conversion out -----------------------------------------------------
+   70 +    [[nodiscard]] explicit operator signed long int()   const noexcept { return mVal; }
+   71 +    [[nodiscard]] explicit operator signed int()        const noexcept { return static_cast<int>(mVal); }
+   72 +    [[nodiscard]] explicit operator signed short()      const noexcept { return static_cast<short>(mVal); }
+   73 +    [[nodiscard]] explicit operator signed char()       const noexcept { return static_cast<signed char>(mVal); }
+   74 +    [[nodiscard]] explicit operator unsigned long int() const noexcept { return static_cast<unsigned long int>(mVal); }
+   75 +    [[nodiscard]] explicit operator unsigned int()      const noexcept { return static_cast<unsigned int>(mVal); }
+   76 +    [[nodiscard]] explicit operator bool()              const noexcept { return mVal != 0; }
+   77 +    [[nodiscard]] explicit operator float() const {
+   78 +        const float f = static_cast<float>(mVal);
+   79 +        if (std::isinf(f)) throw std::overflow_error("MPint->float overflow");
+   80 +        return f;
+   81 +    }
+   82 +    [[nodiscard]] explicit operator double() const {
+   83 +        const double d = static_cast<double>(mVal);
+   84 +        if (std::isinf(d)) throw std::overflow_error("MPint->double overflow");
+   85 +        return d;
+   86 +    }
+   87 +    [[nodiscard]] explicit operator long double() const noexcept { return static_cast<long double>(mVal); }
+   88
+   75 -MPint::MPint(const MPint& other)  : pImpl(new MPintImpl{other.pImpl->mVal}) {}
+   76 -MPint::MPint(MPint&&      other)  noexcept : pImpl(other.pImpl) { other.pImpl = nullptr; }
+   89 +    // --- unary arithmetic ---------------------------------------------------
+   90 +    [[nodiscard]] MPint operator+() const noexcept { return *this; }
+   91 +    [[nodiscard]] MPint operator-() const noexcept { return MPint(-mVal); }
+   92
+   78 -MPint& MPint::operator=(const MPint& other) noexcept {
+   79 -    if (this != &other) pImpl->mVal = other.pImpl->mVal;
+   80 -    return *this;
+   81 -}
+   93 +    // --- unary logical ------------------------------------------------------
+   94 +    [[nodiscard]] bool  operator!() const noexcept { return mVal == 0; }
+   95
+   83 -MPint& MPint::operator=(MPint&& other) noexcept {
+   84 -    if (this != &other) { delete pImpl; pImpl = other.pImpl; other.pImpl = nullptr; }
+   85 -    return *this;
+   86 -}
+   96 +    // --- unary bitwise ------------------------------------------------------
+   97 +    [[nodiscard]] MPint operator~() const noexcept { return MPint(~mVal); }
+   98
+   88 -MPint::~MPint() { delete pImpl; }
+   99 +    // --- prefix increment / decrement ---------------------------------------
+  100 +    MPint& operator++() noexcept { ++mVal; return *this; }
+  101 +    MPint& operator--() noexcept { --mVal; return *this; }
+  102
+   90 -// --- conversion out ---------------------------------------------------------
+  103 +    // --- postfix increment / decrement --------------------------------------
+  104 +    MPint operator++(int) noexcept { MPint tmp(*this); ++mVal; return tmp; }
+  105 +    MPint operator--(int) noexcept { MPint tmp(*this); --mVal; return tmp; }
+  106
+   92 -MPint::operator signed long int()   const noexcept { return pImpl->mVal; }
+   93 -MPint::operator signed int()        const noexcept { return static_cast<int>(pImpl->mVal); }
+   94 -MPint::operator signed short()      const noexcept { return static_cast<short>(pImpl->mVal); }
+   95 -MPint::operator signed char()       const noexcept { return static_cast<signed char>(pImpl->mVal); }
+   96 -MPint::operator unsigned long int() const noexcept { return static_cast<unsigned long int>(pImpl->mVal); }
+   97 -MPint::operator unsigned int()      const noexcept { return static_cast<unsigned int>(pImpl->mVal); }
+   98 -MPint::operator bool()              const noexcept { return pImpl->mVal != 0; }
+   99 -MPint::operator float() const {
+  100 -    const float f = static_cast<float>(pImpl->mVal);
+  101 -    if (std::isinf(f)) throw std::overflow_error("MPint->float overflow");
+  102 -    return f;
+  103 -}
+  104 -MPint::operator double() const {
+  105 -    const double d = static_cast<double>(pImpl->mVal);
+  106 -    if (std::isinf(d)) throw std::overflow_error("MPint->double overflow");
+  107 -    return d;
+  108 -}
+  109 -MPint::operator long double()       const noexcept { return static_cast<long double>(pImpl->mVal); }
+  107 +    // --- compound assignment: arithmetic ------------------------------------
+  108 +    MPint& operator+=(const MPint& rhs) noexcept { mVal += rhs.mVal; return *this; }
+  109 +    MPint& operator-=(const MPint& rhs) noexcept { mVal -= rhs.mVal; return *this; }
+  110 +    MPint& operator*=(const MPint& rhs) noexcept { mVal *= rhs.mVal; return *this; }
+  111 +    MPint& operator/=(const MPint& rhs)           { mVal /= rhs.mVal; return *this; }
+  112 +    MPint& operator%=(const MPint& rhs)           { mVal %= rhs.mVal; return *this; }
+  113
+  111 -// --- unary arithmetic -------------------------------------------------------
+  114 +    // --- compound assignment: bitwise ---------------------------------------
+  115 +    MPint& operator&=(const MPint& rhs) noexcept { mVal &= rhs.mVal; return *this; }
+  116 +    MPint& operator|=(const MPint& rhs) noexcept { mVal |= rhs.mVal; return *this; }
+  117 +    MPint& operator^=(const MPint& rhs) noexcept { mVal ^= rhs.mVal; return *this; }
+  118
+  113 -MPint MPint::operator+() const noexcept { return *this; }
+  114 -MPint MPint::operator-() const noexcept { return MPint(-pImpl->mVal); }
+  119 +    // --- compound assignment: shift -----------------------------------------
+  120 +    MPint& operator<<=(int n)            noexcept { mVal <<= n;        return *this; }
+  121 +    MPint& operator>>=(int n)            noexcept { mVal >>= n;        return *this; }
+
+● Clean — no changes since the last commit.
+
+✻ Worked for 9s
+
+❯ ok, please use 'git cp' instead of just 'cp', and make the 'change'.
+
+● Let me check if git cp is defined before using it:
+
+● Bash(git -C /home/claudeuser/work/mpint cp 2>&1 || true)
+  ⎿  Interrupted · What should Claude do instead?
+
+✻ Churned for 49s
+
+❯ lets go through all your changes going to be proposed by you first, before comitting any thing.
+
+● Sure. Here's the full plan before touching anything:
+
+  ---
+  Proposed changes
+
+  1. include/MPintWrappedNative.hpp — new file
+
+  Copy src/MPintWrappedNativePimpl.cpp as starting point (via cp + git add), then transform into a self-contained header:
+  - Add #pragma once and all needed includes (<cmath>, <iostream>, <stdexcept>, <string>)
+  - Merge the class declaration (currently in include/MPint.hpp) and the implementation into one
+  - Drop struct MPintImpl and MPintImpl* pImpl; add signed long int mVal as a direct private member
+  - parse_str becomes a private static member function (inline in the class body)
+  - All operator bodies move into the class or as inline friend definitions — every operator inline
+  - Copy/move/destructor become = default (scalar member, nothing to manage)
+  - Comparison and stream operators become inline friend definitions inside the class
+
+  2. include/MPintGMP.hpp — new file
+
+  Copy src/MPintGMPPimpl.cpp as starting point, transform similarly:
+  - Drop struct MPintImpl; embed mpz_t mVal directly in MPint
+  - mpz_set_mpint_str becomes a private static member
+  - Constructor/destructor handle mpz lifecycle directly (no more new/delete)
+  - Copy: mpz_init_set; move: mpz_init then mpz_swap; copy-assign: mpz_set; move-assign: mpz_swap
+  - All operators inline in the header
+
+  3. demo/src/demoTypedef.hpp
+
+  Add two new #elif branches (after DEMO_GMPXX, before DEMO_WRAPPEDNATIVEPIMPL):
+  #elif defined DEMO_WRAPPEDNATIVE
+      #include "MPintWrappedNative.hpp"
+  #elif defined DEMO_GMP
+      #include "MPintGMP.hpp"
+      #define DEMO_ARBPREC
+
+  4. Makefile
+
+  Add TARGET_WRAPPEDNATIVE and TARGET_GMP in the same slot (after GMPXX, before the Pimpl variants), with build rules:
+  $(TARGET_WRAPPEDNATIVE): $(DEMO_SRCS) $(DEMO_HDRS) include/MPintWrappedNative.hpp
+      $(CXX) $(CXXFLAGS) -DDEMO_WRAPPEDNATIVE -I$(DEMO_INCLDIR) -I$(INCLDIR) -o $@ $(DEMO_SRCS)
+
+  $(TARGET_GMP): $(DEMO_SRCS) $(DEMO_HDRS) include/MPintGMP.hpp
+      $(CXX) $(CXXFLAGS) -DDEMO_GMP -I$(DEMO_INCLDIR) -I$(INCLDIR) -o $@ $(DEMO_SRCS) -lgmp
+  (No .cpp compilation — header-only.)
+
+  Final variant order throughout: Native → GMPXX → WrappedNative → GMP → WrappedNativePimpl → GMPPimpl
+
+  5. test/test.sh
+
+  - Add EXECUTABLEWRAPPEDNATIVE, OUTFILEWRAPPEDNATIVE, REFFILEWRAPPEDNATIVE (and same for GMP) in the same slot
+  - Add the two new runExecutable + doDiff calls in doRegr() (in the right order)
+  - Expand doProf() from 4 to 6 columns
+
+  6. Build, run, generate ref files
+
+  - make (all 6 targets)
+  - Run demoWrappedNative and demoGMP, save output as .output.ref
+  - Run ./test.sh regr — all 6 diffs should pass
+
+  ---
+  Does this plan look right, or would you like to adjust anything (ordering, file locations, naming)?
+
+✻ Churned for 37s
+
+❯ go ahead
+
+● Starting with the copies, then I'll transform each file and update the infrastructure.
+
+  Step 1 — copy the pimpl source files as starting points:
+
+● Bash(cp /home/claudeuser/work/mpint/src/MPintWrappedNativePimpl.cpp /home/claudeuser/work/mpint/include/MPintWrappedNative.hpp
+      cp /home/claudeuser/work/mpint/src/MPi…)
+  ⎿  (No output)
+
+● Step 2 — transform include/MPintWrappedNative.hpp into an inline header:
+
+● Write(include/MPintWrappedNative.hpp)
+  ⎿  Error writing file
+
+  Read 2 files (ctrl+o to expand)
+
+● Write(include/MPintWrappedNative.hpp)
+  ⎿  Added 135 lines, removed 150 lines
+        1 -#include "MPint.hpp"
+        1 +#pragma once
+        2
+        3  #include <cmath>
+        4  #include <iostream>
+        5  #include <stdexcept>
+        6  #include <string>
+        7
+        8 -// ---------------------------------------------------------------------------
+        9 -// The only implementation detail: what an MPint actually stores.
+       10 -// To switch to an arbitrary precision backend, replace this struct
+       11 -// and adjust the operator bodies below.
+       12 -// Nothing outside this file needs to change.
+       13 -// struct MPint::MPintImpl is an 'aggregate', i.e. it does not have a
+       14 -// user defined ctor. On construction with 'new', an ordered list of
+       15 -// member initializations may be provided, e.g. 'new MPintImpl{0L}', see below.
+       16 -// ---------------------------------------------------------------------------
+       17 -struct MPint::MPintImpl {
+        8 +// MPint wrapping signed long int directly — no pimpl, all operators inline.
+        9 +
+       10 +class MPint {
+       11      signed long int mVal;
+       19 -};
+       12
+       21 -// --- string parsing helper --------------------------------------------------
+       22 -
+       23 -static signed long int parse_str(const char* const s) {
+       24 -    if (!s) throw std::invalid_argument("MPint: null string pointer");
+       25 -    const char* p = s;
+       26 -    bool negative = false;
+       27 -    if (*p == '-')      { negative = true; ++p; }
+       28 -    else if (*p == '+') { ++p; }
+       29 -
+       30 -    int base = 10;
+       31 -    if (*p == '0') {
+       32 -        const char* const q = p + 1;
+       33 -        if      (*q == 'x' || *q == 'X') { base = 16; p += 2; }
+       34 -        else if (*q == 'b' || *q == 'B') { base =  2; p += 2; }
+       35 -        else                             { base =  8; }  // leave p at '0': it's the first octal digit
+       36 -    }
+       37 -
+       38 -    unsigned long int result = 0;
+       39 -    bool got_digit = false;
+       40 -    for (; *p; ++p) {
+       41 -        if (*p == '\'') continue;
+       42 -        unsigned int digit;
+       43 -        const char c = *p;
+       44 -        if      (c >= '0' && c <= '9') digit = static_cast<unsigned int>(c - '0');
+       45 -        else if (c >= 'a' && c <= 'f') digit = static_cast<unsigned int>(c - 'a') + 10u;
+       46 -        else if (c >= 'A' && c <= 'F') digit = static_cast<unsigned int>(c - 'A') + 10u;
+       47 -        else throw std::invalid_argument(std::string("MPint: invalid integer string: ") + s);
+       48 -        if (digit >= static_cast<unsigned int>(base))
+       13 +    static signed long int parse_str(const char* const s) {
+       14 +        if (!s) throw std::invalid_argument("MPint: null string pointer");
+       15 +        const char* p = s;
+       16 +        bool negative = false;
+       17 +        if      (*p == '-') { negative = true; ++p; }
+       18 +        else if (*p == '+') { ++p; }
+       19 +        int base = 10;
+       20 +        if (*p == '0') {
+       21 +            const char* const q = p + 1;
+       22 +            if      (*q == 'x' || *q == 'X') { base = 16; p += 2; }
+       23 +            else if (*q == 'b' || *q == 'B') { base =  2; p += 2; }
+       24 +            else                             { base =  8; }
+       25 +        }
+       26 +        unsigned long int result = 0;
+       27 +        bool got_digit = false;
+       28 +        for (; *p; ++p) {
+       29 +            if (*p == '\'') continue;
+       30 +            unsigned int digit;
+       31 +            const char c = *p;
+       32 +            if      (c >= '0' && c <= '9') digit = static_cast<unsigned int>(c - '0');
+       33 +            else if (c >= 'a' && c <= 'f') digit = static_cast<unsigned int>(c - 'a') + 10u;
+       34 +            else if (c >= 'A' && c <= 'F') digit = static_cast<unsigned int>(c - 'A') + 10u;
+       35 +            else throw std::invalid_argument(std::string("MPint: invalid integer string: ") + s);
+       36 +            if (digit >= static_cast<unsigned int>(base))
+       37 +                throw std::invalid_argument(std::string("MPint: invalid integer string: ") + s);
+       38 +            result = result * static_cast<unsigned long int>(base) + digit;
+       39 +            got_digit = true;
+       40 +        }
+       41 +        if (!got_digit)
+       42              throw std::invalid_argument(std::string("MPint: invalid integer string: ") + s);
+       50 -        result = result * static_cast<unsigned long int>(base) + digit;
+       51 -        got_digit = true;
+       43 +        return negative ? -static_cast<signed long int>(result)
+       44 +                        :  static_cast<signed long int>(result);
+       45      }
+       53 -    if (!got_digit)
+       54 -        throw std::invalid_argument(std::string("MPint: invalid integer string: ") + s);
+       55 -    return negative ? -static_cast<signed long int>(result)
+       56 -                    :  static_cast<signed long int>(result);
+       57 -}
+       46
+       59 -// --- construction -----------------------------------------------------------
+       47 +public:
+       48 +    // --- construction -------------------------------------------------------
+       49 +    MPint()                    noexcept : mVal(0) {}
+       50 +    MPint(signed long int   v) noexcept : mVal(v) {}
+       51 +    MPint(signed int        v) noexcept : mVal(v) {}
+       52 +    MPint(signed short      v) noexcept : mVal(v) {}
+       53 +    MPint(signed char       v) noexcept : mVal(v) {}
+       54 +    MPint(unsigned long int v) noexcept : mVal(static_cast<signed long int>(v)) {}
+       55 +    MPint(unsigned int      v) noexcept : mVal(static_cast<signed long int>(v)) {}
+       56 +    MPint(unsigned short    v) noexcept : mVal(static_cast<signed long int>(v)) {}
+       57 +    MPint(unsigned char     v) noexcept : mVal(static_cast<signed long int>(v)) {}
+       58 +    MPint(long long         v) noexcept : mVal(static_cast<signed long int>(v)) {}
+       59 +    explicit MPint(const char*        s) : mVal(parse_str(s)) {}
+       60 +    explicit MPint(const std::string& s) : mVal(parse_str(s.c_str())) {}
+       61
+       61 -MPint::MPint()                    : pImpl(new MPintImpl{0L}) {}
+       62 -MPint::MPint(signed long int   v) : pImpl(new MPintImpl{v}) {}
+       63 -MPint::MPint(signed int        v) : pImpl(new MPintImpl{v}) {}
+       64 -MPint::MPint(signed short      v) : pImpl(new MPintImpl{v}) {}
+       65 -MPint::MPint(signed char       v) : pImpl(new MPintImpl{v}) {}
+       66 -MPint::MPint(unsigned long int v) : pImpl(new MPintImpl{static_cast<signed long int>(v)}) {}
+       67 -MPint::MPint(unsigned int      v) : pImpl(new MPintImpl{static_cast<signed long int>(v)}) {}
+       68 -MPint::MPint(unsigned short    v) : pImpl(new MPintImpl{static_cast<signed long int>(v)}) {}
+       69 -MPint::MPint(unsigned char     v) : pImpl(new MPintImpl{static_cast<signed long int>(v)}) {}
+       70 -MPint::MPint(long long         v) : pImpl(new MPintImpl{static_cast<signed long int>(v)}) {}
+       62 +    // Copy / move / destroy — trivial for a scalar member
+       63 +    MPint(const MPint&)            noexcept = default;
+       64 +    MPint& operator=(const MPint&) noexcept = default;
+       65 +    MPint(MPint&&)                 noexcept = default;
+       66 +    MPint& operator=(MPint&&)      noexcept = default;
+       67 +    ~MPint()                                = default;
+       68
+       72 -MPint::MPint(const char*        s) : pImpl(new MPintImpl{parse_str(s)}) {}
+       73 -MPint::MPint(const std::string& s) : pImpl(new MPintImpl{parse_str(s.c_str())}) {}
+       69 +    // --- conversion out -----------------------------------------------------
+       70 +    [[nodiscard]] explicit operator signed long int()   const noexcept { return mVal; }
+       71 +    [[nodiscard]] explicit operator signed int()        const noexcept { return static_cast<int>(mVal); }
+       72 +    [[nodiscard]] explicit operator signed short()      const noexcept { return static_cast<short>(mVal); }
+       73 +    [[nodiscard]] explicit operator signed char()       const noexcept { return static_cast<signed char>(mVal); }
+       74 +    [[nodiscard]] explicit operator unsigned long int() const noexcept { return static_cast<unsigned long int>(mVal); }
+       75 +    [[nodiscard]] explicit operator unsigned int()      const noexcept { return static_cast<unsigned int>(mVal); }
+       76 +    [[nodiscard]] explicit operator bool()              const noexcept { return mVal != 0; }
+       77 +    [[nodiscard]] explicit operator float() const {
+       78 +        const float f = static_cast<float>(mVal);
+       79 +        if (std::isinf(f)) throw std::overflow_error("MPint->float overflow");
+       80 +        return f;
+       81 +    }
+       82 +    [[nodiscard]] explicit operator double() const {
+       83 +        const double d = static_cast<double>(mVal);
+       84 +        if (std::isinf(d)) throw std::overflow_error("MPint->double overflow");
+       85 +        return d;
+       86 +    }
+       87 +    [[nodiscard]] explicit operator long double() const noexcept { return static_cast<long double>(mVal); }
+       88
+       75 -MPint::MPint(const MPint& other)  : pImpl(new MPintImpl{other.pImpl->mVal}) {}
+       76 -MPint::MPint(MPint&&      other)  noexcept : pImpl(other.pImpl) { other.pImpl = nullptr; }
+       89 +    // --- unary arithmetic ---------------------------------------------------
+       90 +    [[nodiscard]] MPint operator+() const noexcept { return *this; }
+       91 +    [[nodiscard]] MPint operator-() const noexcept { return MPint(-mVal); }
+       92
+       78 -MPint& MPint::operator=(const MPint& other) noexcept {
+       79 -    if (this != &other) pImpl->mVal = other.pImpl->mVal;
+       80 -    return *this;
+       81 -}
+       93 +    // --- unary logical ------------------------------------------------------
+       94 +    [[nodiscard]] bool  operator!() const noexcept { return mVal == 0; }
+       95
+       83 -MPint& MPint::operator=(MPint&& other) noexcept {
+       84 -    if (this != &other) { delete pImpl; pImpl = other.pImpl; other.pImpl = nullptr; }
+       85 -    return *this;
+       86 -}
+       96 +    // --- unary bitwise ------------------------------------------------------
+       97 +    [[nodiscard]] MPint operator~() const noexcept { return MPint(~mVal); }
+       98
+       88 -MPint::~MPint() { delete pImpl; }
+       99 +    // --- prefix increment / decrement ---------------------------------------
+      100 +    MPint& operator++() noexcept { ++mVal; return *this; }
+      101 +    MPint& operator--() noexcept { --mVal; return *this; }
+      102
+       90 -// --- conversion out ---------------------------------------------------------
+      103 +    // --- postfix increment / decrement --------------------------------------
+      104 +    MPint operator++(int) noexcept { MPint tmp(*this); ++mVal; return tmp; }
+      105 +    MPint operator--(int) noexcept { MPint tmp(*this); --mVal; return tmp; }
+      106
+       92 -MPint::operator signed long int()   const noexcept { return pImpl->mVal; }
+       93 -MPint::operator signed int()        const noexcept { return static_cast<int>(pImpl->mVal); }
+       94 -MPint::operator signed short()      const noexcept { return static_cast<short>(pImpl->mVal); }
+       95 -MPint::operator signed char()       const noexcept { return static_cast<signed char>(pImpl->mVal); }
+       96 -MPint::operator unsigned long int() const noexcept { return static_cast<unsigned long int>(pImpl->mVal); }
+       97 -MPint::operator unsigned int()      const noexcept { return static_cast<unsigned int>(pImpl->mVal); }
+       98 -MPint::operator bool()              const noexcept { return pImpl->mVal != 0; }
+       99 -MPint::operator float() const {
+      100 -    const float f = static_cast<float>(pImpl->mVal);
+      101 -    if (std::isinf(f)) throw std::overflow_error("MPint->float overflow");
+      102 -    return f;
+      103 -}
+      104 -MPint::operator double() const {
+      105 -    const double d = static_cast<double>(pImpl->mVal);
+      106 -    if (std::isinf(d)) throw std::overflow_error("MPint->double overflow");
+      107 -    return d;
+      108 -}
+      109 -MPint::operator long double()       const noexcept { return static_cast<long double>(pImpl->mVal); }
+      107 +    // --- compound assignment: arithmetic ------------------------------------
+      108 +    MPint& operator+=(const MPint& rhs) noexcept { mVal += rhs.mVal; return *this; }
+      109 +    MPint& operator-=(const MPint& rhs) noexcept { mVal -= rhs.mVal; return *this; }
+      110 +    MPint& operator*=(const MPint& rhs) noexcept { mVal *= rhs.mVal; return *this; }
+      111 +    MPint& operator/=(const MPint& rhs)           { mVal /= rhs.mVal; return *this; }
+      112 +    MPint& operator%=(const MPint& rhs)           { mVal %= rhs.mVal; return *this; }
+      113
+      111 -// --- unary arithmetic -------------------------------------------------------
+      114 +    // --- compound assignment: bitwise ---------------------------------------
+      115 +    MPint& operator&=(const MPint& rhs) noexcept { mVal &= rhs.mVal; return *this; }
+      116 +    MPint& operator|=(const MPint& rhs) noexcept { mVal |= rhs.mVal; return *this; }
+      117 +    MPint& operator^=(const MPint& rhs) noexcept { mVal ^= rhs.mVal; return *this; }
+      118
+      113 -MPint MPint::operator+() const noexcept { return *this; }
+      114 -MPint MPint::operator-() const noexcept { return MPint(-pImpl->mVal); }
+      119 +    // --- compound assignment: shift -----------------------------------------
+      120 +    MPint& operator<<=(int n)            noexcept { mVal <<= n;        return *this; }
+      121 +    MPint& operator>>=(int n)            noexcept { mVal >>= n;        return *this; }
+      122 +    MPint& operator<<=(const MPint& rhs) noexcept { mVal <<= rhs.mVal; return *this; }
+      123 +    MPint& operator>>=(const MPint& rhs) noexcept { mVal >>= rhs.mVal; return *this; }
+      124
+      116 -// --- unary logical ----------------------------------------------------------
+      125 +    // --- binary arithmetic (inline, delegate to compound assignment) --------
+      126 +    [[nodiscard]] friend MPint operator+(MPint lhs, const MPint& rhs) noexcept { return lhs += rhs; }
+      127 +    [[nodiscard]] friend MPint operator-(MPint lhs, const MPint& rhs) noexcept { return lhs -= rhs; }
+      128 +    [[nodiscard]] friend MPint operator*(MPint lhs, const MPint& rhs) noexcept { return lhs *= rhs; }
+      129 +    [[nodiscard]] friend MPint operator/(MPint lhs, const MPint& rhs)           { return lhs /= rhs; }
+      130 +    [[nodiscard]] friend MPint operator%(MPint lhs, const MPint& rhs)           { return lhs %= rhs; }
+      131
+      118 -bool MPint::operator!() const noexcept { return pImpl->mVal == 0; }
+      132 +    // --- binary bitwise -----------------------------------------------------
+      133 +    [[nodiscard]] friend MPint operator&(MPint lhs, const MPint& rhs) noexcept { return lhs &= rhs; }
+      134 +    [[nodiscard]] friend MPint operator|(MPint lhs, const MPint& rhs) noexcept { return lhs |= rhs; }
+      135 +    [[nodiscard]] friend MPint operator^(MPint lhs, const MPint& rhs) noexcept { return lhs ^= rhs; }
+      136
+      120 -// --- unary bitwise ----------------------------------------------------------
+      137 +    // --- shift --------------------------------------------------------------
+      138 +    [[nodiscard]] friend MPint operator<<(MPint lhs, int n)            noexcept { return lhs <<= n; }
+      139 +    [[nodiscard]] friend MPint operator>>(MPint lhs, int n)            noexcept { return lhs >>= n; }
+      140 +    [[nodiscard]] friend MPint operator<<(MPint lhs, const MPint& rhs) noexcept { return lhs <<= rhs; }
+      141 +    [[nodiscard]] friend MPint operator>>(MPint lhs, const MPint& rhs) noexcept { return lhs >>= rhs; }
+      142
+      122 -MPint MPint::operator~() const noexcept { return MPint(~pImpl->mVal); }
+      143 +    // --- comparison ---------------------------------------------------------
+      144 +    [[nodiscard]] friend bool operator==(const MPint& a, const MPint& b) noexcept { return a.mVal == b.mVal; }
+      145 +    [[nodiscard]] friend bool operator!=(const MPint& a, const MPint& b) noexcept { return a.mVal != b.mVal; }
+      146 +    [[nodiscard]] friend bool operator< (const MPint& a, const MPint& b) noexcept { return a.mVal <  b.mVal; }
+      147 +    [[nodiscard]] friend bool operator> (const MPint& a, const MPint& b) noexcept { return a.mVal >  b.mVal; }
+      148 +    [[nodiscard]] friend bool operator<=(const MPint& a, const MPint& b) noexcept { return a.mVal <= b.mVal; }
+      149 +    [[nodiscard]] friend bool operator>=(const MPint& a, const MPint& b) noexcept { return a.mVal >= b.mVal; }
+      150
+      124 -// --- prefix increment / decrement -------------------------------------------
+      125 -
+      126 -MPint& MPint::operator++() noexcept { ++pImpl->mVal; return *this; }
+      127 -MPint& MPint::operator--() noexcept { --pImpl->mVal; return *this; }
+      128 -
+      129 -// --- postfix increment / decrement ------------------------------------------
+      130 -
+      131 -MPint MPint::operator++(int) noexcept { MPint tmp(*this); ++pImpl->mVal; return tmp; }
+      132 -MPint MPint::operator--(int) noexcept { MPint tmp(*this); --pImpl->mVal; return tmp; }
+      133 -
+      134 -// --- compound assignment: arithmetic ----------------------------------------
+      135 -
+      136 -MPint& MPint::operator+=(const MPint& rhs) noexcept { pImpl->mVal += rhs.pImpl->mVal; return *this; }
+      137 -MPint& MPint::operator-=(const MPint& rhs) noexcept { pImpl->mVal -= rhs.pImpl->mVal; return *this; }
+      138 -MPint& MPint::operator*=(const MPint& rhs) noexcept { pImpl->mVal *= rhs.pImpl->mVal; return *this; }
+      139 -MPint& MPint::operator/=(const MPint& rhs)           { pImpl->mVal /= rhs.pImpl->mVal; return *this; }
+      140 -MPint& MPint::operator%=(const MPint& rhs)           { pImpl->mVal %= rhs.pImpl->mVal; return *this; }
+      141 -
+      142 -// --- compound assignment: bitwise -------------------------------------------
+      143 -
+      144 -MPint& MPint::operator&=(const MPint& rhs) noexcept { pImpl->mVal &= rhs.pImpl->mVal; return *this; }
+      145 -MPint& MPint::operator|=(const MPint& rhs) noexcept { pImpl->mVal |= rhs.pImpl->mVal; return *this; }
+      146 -MPint& MPint::operator^=(const MPint& rhs) noexcept { pImpl->mVal ^= rhs.pImpl->mVal; return *this; }
+      147 -
+      148 -// --- compound assignment: shift ---------------------------------------------
+      149 -
+      150 -MPint& MPint::operator<<=(int n)            noexcept { pImpl->mVal <<= n;              return *this; }
+      151 -MPint& MPint::operator>>=(int n)            noexcept { pImpl->mVal >>= n;              return *this; }
+      152 -MPint& MPint::operator<<=(const MPint& rhs) noexcept { pImpl->mVal <<= rhs.pImpl->mVal; return *this; }
+      153 -MPint& MPint::operator>>=(const MPint& rhs) noexcept { pImpl->mVal >>= rhs.pImpl->mVal; return *this; }
+      154 -
+      155 -// --- comparison -------------------------------------------------------------
+      156 -
+      157 -bool operator==(const MPint& a, const MPint& b) noexcept { return a.pImpl->mVal == b.pImpl->mVal; }
+      158 -bool operator!=(const MPint& a, const MPint& b) noexcept { return a.pImpl->mVal != b.pImpl->mVal; }
+      159 -bool operator< (const MPint& a, const MPint& b) noexcept { return a.pImpl->mVal <  b.pImpl->mVal; }
+      160 -bool operator> (const MPint& a, const MPint& b) noexcept { return a.pImpl->mVal >  b.pImpl->mVal; }
+      161 -bool operator<=(const MPint& a, const MPint& b) noexcept { return a.pImpl->mVal <= b.pImpl->mVal; }
+      162 -bool operator>=(const MPint& a, const MPint& b) noexcept { return a.pImpl->mVal >= b.pImpl->mVal; }
+      163 -
+      164 -// --- stream I/O -------------------------------------------------------------
+      165 -
+      166 -std::ostream& operator<<(std::ostream& os, const MPint& v) { return os << v.pImpl->mVal; }
+      167 -std::istream& operator>>(std::istream& is, MPint& v) {
+      168 -    std::string s;
+      169 -    if (is >> s) {
+      170 -        try {
+      171 -            const signed long int tmp = parse_str(s.c_str());
+      172 -            v.pImpl->mVal = tmp;
+      173 -        } catch (const std::invalid_argument&) {
+      174 -            is.setstate(std::ios::failbit);
+      151 +    // --- stream I/O ---------------------------------------------------------
+      152 +    friend std::ostream& operator<<(std::ostream& os, const MPint& v) {
+      153 +        return os << v.mVal;
+      154 +    }
+      155 +    friend std::istream& operator>>(std::istream& is, MPint& v) {
+      156 +        std::string s;
+      157 +        if (is >> s) {
+      158 +            try        { v.mVal = parse_str(s.c_str()); }
+      159 +            catch(const std::invalid_argument&) { is.setstate(std::ios::failbit); }
+      160          }
+      161 +        return is;
+      162      }
+      177 -    return is;
+      178 -}
+      163 +};
+
+● Step 3 — transform include/MPintGMP.hpp:
+
+● Write(include/MPintGMP.hpp)
+
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+ Overwrite file
+ include/MPintGMP.hpp
+╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
+  1 -#include "MPint.hpp"
+  1 +#pragma once
+  2
+  3  #include <cmath>
+  4  #include <cstdlib>
+ ...
+    9
+   10  #include <gmp.h>
+   11
+   12 -// ---------------------------------------------------------------------------
+   13 -// Impl wraps a GMP mpz_t.  All C++ resource management is handled here;
+   14 -// the operator bodies below are unchanged in structure from the long-int
+   15 -// variant — only the primitive operations differ.
+   16 -// ---------------------------------------------------------------------------
+   17 -struct MPint::MPintImpl {
+   12 +// MPint wrapping GMP mpz_t directly — no pimpl, all operators inline.
+   13 +
+   14 +class MPint {
+   15      mpz_t mVal;
+   16
+   20 -    MPintImpl()                             { mpz_init(mVal); }
+   21 -    explicit MPintImpl(signed long int   v) { mpz_init_set_si(mVal, v); }
+   22 -    explicit MPintImpl(unsigned long int v) { mpz_init_set_ui(mVal, v); }
+   23 -    MPintImpl(const MPintImpl& o)                { mpz_init_set(mVal, o.mVal); }
+   24 -    ~MPintImpl()                            { mpz_clear(mVal); }
+   25 -    MPintImpl& operator=(const MPintImpl&) = delete;
+   26 -};
+   17 +    static void set_mpint_str(mpz_t dest, const char* const s) {
+   18 +        if (!s) throw std::invalid_argument("MPint: null string pointer");
+   19 +        const char* p = s;
+   20 +        bool negative = false;
+   21 +        if      (*p == '-') { negative = true; ++p; }
+   22 +        else if (*p == '+') { ++p; }
+   23 +        int base = 10;
+   24 +        if (*p == '0') {
+   25 +            const char* const q = p + 1;
+   26 +            if      (*q == 'x' || *q == 'X') { base = 16; p += 2; }
+   27 +            else if (*q == 'b' || *q == 'B') { base =  2; p += 2; }
+   28 +            else                             { base =  8; }
+   29 +        }
+   30 +        std::string clean;
+   31 +        clean.reserve(std::strlen(p) + 1);
+   32 +        if (negative) clean += '-';
+   33 +        for (; *p; ++p) {
+   34 +            if (*p != '\'') clean += *p;
+   35 +        }
+   36 +        if (mpz_set_str(dest, clean.c_str(), base) != 0)
+   37 +            throw std::invalid_argument(std::string("MPint: invalid integer string: ") + s);
+   38 +    }
+   39
+   28 -// --- string parsing helper --------------------------------------------------
+   29 -// Strips single-quote separators and handles the 0b/0B binary prefix that
+   30 -// GMP's mpz_set_str does not recognise natively.
+   40 +public:
+   41 +    // --- construction -------------------------------------------------------
+   42 +    MPint()                    noexcept { mpz_init(mVal); }
+   43 +    MPint(signed long int   v) noexcept { mpz_init_set_si(mVal, v); }
+   44 +    MPint(signed int        v) noexcept { mpz_init_set_si(mVal, static_cast<signed long int>(v)); }
+   45 +    MPint(signed short      v) noexcept { mpz_init_set_si(mVal, static_cast<signed long int>(v)); }
+   46 +    MPint(signed char       v) noexcept { mpz_init_set_si(mVal, static_cast<signed long int>(v)); }
+   47 +    MPint(unsigned long int v) noexcept { mpz_init_set_ui(mVal, v); }
+   48 +    MPint(unsigned int      v) noexcept { mpz_init_set_ui(mVal, static_cast<unsigned long int>(v)); }
+   49 +    MPint(unsigned short    v) noexcept { mpz_init_set_ui(mVal, static_cast<unsigned long int>(v)); }
+   50 +    MPint(unsigned char     v) noexcept { mpz_init_set_ui(mVal, static_cast<unsigned long int>(v)); }
+   51 +    MPint(long long         v) noexcept { mpz_init_set_si(mVal, static_cast<signed long int>(v)); }
+   52 +    explicit MPint(const char*        s) { mpz_init(mVal); set_mpint_str(mVal, s); }
+   53 +    explicit MPint(const std::string& s) { mpz_init(mVal); set_mpint_str(mVal, s.c_str()); }
+   54
+   32 -static void mpz_set_mpint_str(mpz_t dest, const char* const s) {
+   33 -    if (!s) throw std::invalid_argument("MPint: null string pointer");
+   34 -    const char* p = s;
+   55 +    MPint(const MPint& o)           { mpz_init_set(mVal, o.mVal); }
+   56 +    MPint(MPint&&      o)  noexcept { mpz_init(mVal); mpz_swap(mVal, o.mVal); }
+   57 +    MPint& operator=(const MPint& o) noexcept { if (this != &o) mpz_set(mVal, o.mVal); return *this; }
+   58 +    MPint& operator=(MPint&&      o) noexcept { if (this != &o) mpz_swap(mVal, o.mVal); return *this; }
+   59 +    ~MPint() { mpz_clear(mVal); }
+   60
+   36 -    // Preserve leading sign for the clean buffer
+   37 -    bool negative = false;
+   38 -    if (*p == '-')      { negative = true; ++p; }
+   39 -    else if (*p == '+') { ++p; }
+   40 -
+   41 -    // Detect base and advance past any prefix
+   42 -    int base = 10;
+   43 -    if (*p == '0') {
+   44 -        const char* const q = p + 1;
+   45 -        if      (*q == 'x' || *q == 'X') { base = 16; p += 2; }
+   46 -        else if (*q == 'b' || *q == 'B') { base =  2; p += 2; }
+   47 -        else                             { base =  8; }  // leave p at '0': first octal digit
+   61 +    // --- conversion out -----------------------------------------------------
+   62 +    [[nodiscard]] explicit operator signed long int()   const noexcept { return mpz_get_si(mVal); }
+   63 +    [[nodiscard]] explicit operator signed int()        const noexcept { return static_cast<int>(mpz_get_si(mVal)); }
+   64 +    [[nodiscard]] explicit operator signed short()      const noexcept { return static_cast<short>(mpz_get_si(mVal)); }
+   65 +    [[nodiscard]] explicit operator signed char()       const noexcept { return static_cast<signed char>(mpz_get_si(mVal)); }
+   66 +    [[nodiscard]] explicit operator unsigned long int() const noexcept { return mpz_get_ui(mVal); }
+   67 +    [[nodiscard]] explicit operator unsigned int()      const noexcept { return static_cast<unsigned int>(mpz_get_ui(mVal)); }
+   68 +    [[nodiscard]] explicit operator bool()              const noexcept { return mpz_sgn(mVal) != 0; }
+   69 +    [[nodiscard]] explicit operator float() const {
+   70 +        const float f = static_cast<float>(mpz_get_d(mVal));
+   71 +        if (std::isinf(f)) throw std::overflow_error("MPint->float overflow");
+   72 +        return f;
+   73      }
+   49 -
+   50 -    // Build a clean copy without single-quote separators
+   51 -    std::string clean;
+   52 -    clean.reserve(std::strlen(p) + 1);
+   53 -    if (negative) clean += '-';
+   54 -    for (; *p; ++p) {
+   55 -        if (*p != '\'') clean += *p;
+   74 +    [[nodiscard]] explicit operator double() const {
+   75 +        const double d = mpz_get_d(mVal);
+   76 +        if (std::isinf(d)) throw std::overflow_error("MPint->double overflow");
+   77 +        return d;
+   78      }
+   79 +    [[nodiscard]] explicit operator long double() const noexcept { return static_cast<long double>(mpz_get_d(mVal)); }
+   80
+   58 -    if (mpz_set_str(dest, clean.c_str(), base) != 0)
+   59 -        throw std::invalid_argument(std::string("MPint: invalid integer string: ") + s);
+   60 -}
+   81 +    // --- unary arithmetic ---------------------------------------------------
+   82 +    [[nodiscard]] MPint operator+() const noexcept { return *this; }
+   83 +    [[nodiscard]] MPint operator-() const noexcept { MPint r; mpz_neg(r.mVal, mVal); return r; }
+   84
+   62 -// --- construction -----------------------------------------------------------
+   85 +    // --- unary logical ------------------------------------------------------
+   86 +    [[nodiscard]] bool  operator!() const noexcept { return mpz_sgn(mVal) == 0; }
+   87
+   64 -MPint::MPint()                    : pImpl(new MPintImpl()) {}
+   65 -MPint::MPint(signed long int   v) : pImpl(new MPintImpl(v)) {}
+   66 -MPint::MPint(signed int        v) : pImpl(new MPintImpl(static_cast<signed long int>(v))) {}
+   67 -MPint::MPint(signed short      v) : pImpl(new MPintImpl(static_cast<signed long int>(v))) {}
+   68 -MPint::MPint(signed char       v) : pImpl(new MPintImpl(static_cast<signed long int>(v))) {}
+   69 -MPint::MPint(unsigned long int v) : pImpl(new MPintImpl(static_cast<signed long int>(v))) {}
+   70 -MPint::MPint(unsigned int      v) : pImpl(new MPintImpl(static_cast<signed long int>(v))) {}
+   71 -MPint::MPint(unsigned short    v) : pImpl(new MPintImpl(static_cast<signed long int>(v))) {}
+   72 -MPint::MPint(unsigned char     v) : pImpl(new MPintImpl(static_cast<signed long int>(v))) {}
+   73 -MPint::MPint(long long         v) : pImpl(new MPintImpl(static_cast<signed long int>(v))) {}
+   88 +    // --- unary bitwise ------------------------------------------------------
+   89 +    [[nodiscard]] MPint operator~() const noexcept { MPint r; mpz_com(r.mVal, mVal); return r; }
+   90
+   75 -MPint::MPint(const char*        s) : pImpl(new MPintImpl()) { mpz_set_mpint_str(pImpl->mVal, s); }
+   76 -MPint::MPint(const std::string& s) : pImpl(new MPintImpl()) { mpz_set_mpint_str(pImpl->mVal, s.c_str()); }
+   91 +    // --- prefix increment / decrement ---------------------------------------
+   92 +    MPint& operator++() noexcept { mpz_add_ui(mVal, mVal, 1); return *this; }
+   93 +    MPint& operator--() noexcept { mpz_sub_ui(mVal, mVal, 1); return *this; }
+   94
+   78 -MPint::MPint(const MPint& other)  : pImpl(new MPintImpl(*other.pImpl)) {}
+   79 -MPint::MPint(MPint&&      other)  noexcept : pImpl(other.pImpl) { other.pImpl = nullptr; }
+   95 +    // --- postfix increment / decrement --------------------------------------
+   96 +    MPint operator++(int) noexcept { MPint tmp(*this); mpz_add_ui(mVal, mVal, 1); return tmp; }
+   97 +    MPint operator--(int) noexcept { MPint tmp(*this); mpz_sub_ui(mVal, mVal, 1); return tmp; }
+   98
+   81 -MPint& MPint::operator=(const MPint& other) noexcept {
+   82 -    if (this != &other) mpz_set(pImpl->mVal, other.pImpl->mVal);
+   83 -    return *this;
+   84 -}
+   99 +    // --- compound assignment: arithmetic ------------------------------------
+  100 +    MPint& operator+=(const MPint& rhs) noexcept { mpz_add(mVal, mVal, rhs.mVal);      return *this; }
+  101 +    MPint& operator-=(const MPint& rhs) noexcept { mpz_sub(mVal, mVal, rhs.mVal);      return *this; }
+  102 +    MPint& operator*=(const MPint& rhs) noexcept { mpz_mul(mVal, mVal, rhs.mVal);      return *this; }
+  103 +    MPint& operator/=(const MPint& rhs)           { mpz_tdiv_q(mVal, mVal, rhs.mVal);  return *this; }
+  104 +    MPint& operator%=(const MPint& rhs)           { mpz_tdiv_r(mVal, mVal, rhs.mVal);  return *this; }
+  105
+   86 -MPint& MPint::operator=(MPint&& other) noexcept {
+   87 -    if (this != &other) { delete pImpl; pImpl = other.pImpl; other.pImpl = nullptr; }
+   88 -    return *this;
+   89 -}
+  106 +    // --- compound assignment: bitwise ---------------------------------------
+  107 +    MPint& operator&=(const MPint& rhs) noexcept { mpz_and(mVal, mVal, rhs.mVal); return *this; }
+  108 +    MPint& operator|=(const MPint& rhs) noexcept { mpz_ior(mVal, mVal, rhs.mVal); return *this; }
+  109 +    MPint& operator^=(const MPint& rhs) noexcept { mpz_xor(mVal, mVal, rhs.mVal); return *this; }
+  110
+   91 -MPint::~MPint() { delete pImpl; }
+  111 +    // --- compound assignment: shift -----------------------------------------
+  112 +    MPint& operator<<=(int n)            noexcept { mpz_mul_2exp(mVal, mVal, static_cast<mp_bitcnt_t>(n));              return *this; }
+  113 +    MPint& operator>>=(int n)            noexcept { mpz_fdiv_q_2exp(mVal, mVal, static_cast<mp_bitcnt_t>(n));           return *this; }
+  114 +    MPint& operator<<=(const MPint& rhs) noexcept { mpz_mul_2exp(mVal, mVal, static_cast<mp_bitcnt_t>(mpz_get_ui(rhs.mVal)));    return *this; }
+  115 +    MPint& operator>>=(const MPint& rhs) noexcept { mpz_fdiv_q_2exp(mVal, mVal, static_cast<mp_bitcnt_t>(mpz_get_ui(rhs.mVal))); return *this; }
+  116
+   93 -// --- conversion out ---------------------------------------------------------
+  117 +    // --- binary arithmetic (inline, delegate to compound assignment) --------
+  118 +    [[nodiscard]] friend MPint operator+(MPint lhs, const MPint& rhs) noexcept { return lhs += rhs; }
+  119 +    [[nodiscard]] friend MPint operator-(MPint lhs, const MPint& rhs) noexcept { return lhs -= rhs; }
+  120 +    [[nodiscard]] friend MPint operator*(MPint lhs, const MPint& rhs) noexcept { return lhs *= rhs; }
+  121 +    [[nodiscard]] friend MPint operator/(MPint lhs, const MPint& rhs)           { return lhs /= rhs; }
+  122 +    [[nodiscard]] friend MPint operator%(MPint lhs, const MPint& rhs)           { return lhs %= rhs; }
+  123
+   95 -MPint::operator signed long int()   const noexcept { return mpz_get_si(pImpl->mVal); }
+   96 -MPint::operator signed int()        const noexcept { return static_cast<int>(mpz_get_si(pImpl->mVal)); }
+   97 -MPint::operator signed short()      const noexcept { return static_cast<short>(mpz_get_si(pImpl->mVal)); }
+   98 -MPint::operator signed char()       const noexcept { return static_cast<signed char>(mpz_get_si(pImpl->mVal)); }
+   99 -MPint::operator unsigned long int() const noexcept { return mpz_get_ui(pImpl->mVal); }
+  100 -MPint::operator unsigned int()      const noexcept { return static_cast<unsigned int>(mpz_get_ui(pImpl->mVal)); }
+  101 -MPint::operator bool()              const noexcept { return mpz_sgn(pImpl->mVal) != 0; }
+  102 -MPint::operator float() const {
+  103 -    const float f = static_cast<float>(mpz_get_d(pImpl->mVal));
+  104 -    if (std::isinf(f)) throw std::overflow_error("MPint->float overflow");
+  105 -    return f;
+  106 -}
+  107 -MPint::operator double() const {
+  108 -    const double d = mpz_get_d(pImpl->mVal);
+  109 -    if (std::isinf(d)) throw std::overflow_error("MPint->double overflow");
+  110 -    return d;
+  111 -}
+  112 -MPint::operator long double()       const noexcept { return static_cast<long double>(mpz_get_d(pImpl->mVal)); }
+  124 +    // --- binary bitwise -----------------------------------------------------
+  125 +    [[nodiscard]] friend MPint operator&(MPint lhs, const MPint& rhs) noexcept { return lhs &= rhs; }
+  126 +    [[nodiscard]] friend MPint operator|(MPint lhs, const MPint& rhs) noexcept { return lhs |= rhs; }
+  127 +    [[nodiscard]] friend MPint operator^(MPint lhs, const MPint& rhs) noexcept { return lhs ^= rhs; }
+  128
+  114 -// --- unary arithmetic -------------------------------------------------------
+  129 +    // --- shift --------------------------------------------------------------
+  130 +    [[nodiscard]] friend MPint operator<<(MPint lhs, int n)            noexcept { return lhs <<= n; }
+  131 +    [[nodiscard]] friend MPint operator>>(MPint lhs, int n)            noexcept { return lhs >>= n; }
+  132 +    [[nodiscard]] friend MPint operator<<(MPint lhs, const MPint& rhs) noexcept { return lhs <<= rhs; }
+  133 +    [[nodiscard]] friend MPint operator>>(MPint lhs, const MPint& rhs) noexcept { return lhs >>= rhs; }
+  134
+  116 -MPint MPint::operator+() const noexcept { return *this; }
+  117 -MPint MPint::operator-() const noexcept {
+  118 -    MPint r;
+  119 -    mpz_neg(r.pImpl->mVal, pImpl->mVal);
+  120 -    return r;
+  121 -}
+  135 +    // --- comparison ---------------------------------------------------------
+  136 +    [[nodiscard]] friend bool operator==(const MPint& a, const MPint& b) noexcept { return mpz_cmp(a.mVal, b.mVal) == 0; }
+  137 +    [[nodiscard]] friend bool operator!=(const MPint& a, const MPint& b) noexcept { return mpz_cmp(a.mVal, b.mVal) != 0; }
+      126 +    [[nodiscard]] friend MPint operator+(MPint lhs, const MPint& rhs) noexcept { return lhs += rhs; }
+      127 +    [[nodiscard]] friend MPint operator-(MPint lhs, const MPint& rhs) noexcept { return lhs -= rhs; }
+      128 +    [[nodiscard]] friend MPint operator*(MPint lhs, const MPint& rhs) noexcept { return lhs *= rhs; }
+      129 +    [[nodiscard]] friend MPint operator/(MPint lhs, const MPint& rhs)           { return lhs /= rhs; }
+      130 +    [[nodiscard]] friend MPint operator%(MPint lhs, const MPint& rhs)           { return lhs %= rhs; }
+      131
+      118 -bool MPint::operator!() const noexcept { return pImpl->mVal == 0; }
+      132 +    // --- binary bitwise -----------------------------------------------------
+      133 +    [[nodiscard]] friend MPint operator&(MPint lhs, const MPint& rhs) noexcept { return lhs &= rhs; }
+      134 +    [[nodiscard]] friend MPint operator|(MPint lhs, const MPint& rhs) noexcept { return lhs |= rhs; }
+      135 +    [[nodiscard]] friend MPint operator^(MPint lhs, const MPint& rhs) noexcept { return lhs ^= rhs; }
+      136
+      120 -// --- unary bitwise ----------------------------------------------------------
+      137 +    // --- shift --------------------------------------------------------------
+      138 +    [[nodiscard]] friend MPint operator<<(MPint lhs, int n)            noexcept { return lhs <<= n; }
+      139 +    [[nodiscard]] friend MPint operator>>(MPint lhs, int n)            noexcept { return lhs >>= n; }
+      140 +    [[nodiscard]] friend MPint operator<<(MPint lhs, const MPint& rhs) noexcept { return lhs <<= rhs; }
+      141 +    [[nodiscard]] friend MPint operator>>(MPint lhs, const MPint& rhs) noexcept { return lhs >>= rhs; }
+      142
+      122 -MPint MPint::operator~() const noexcept { return MPint(~pImpl->mVal); }
+      143 +    // --- comparison ---------------------------------------------------------
+      144 +    [[nodiscard]] friend bool operator==(const MPint& a, const MPint& b) noexcept { return a.mVal == b.mVal; }
+      145 +    [[nodiscard]] friend bool operator!=(const MPint& a, const MPint& b) noexcept { return a.mVal != b.mVal; }
+      146 +    [[nodiscard]] friend bool operator< (const MPint& a, const MPint& b) noexcept { return a.mVal <  b.mVal; }
+      147 +    [[nodiscard]] friend bool operator> (const MPint& a, const MPint& b) noexcept { return a.mVal >  b.mVal; }
+      148 +    [[nodiscard]] friend bool operator<=(const MPint& a, const MPint& b) noexcept { return a.mVal <= b.mVal; }
+      149 +    [[nodiscard]] friend bool operator>=(const MPint& a, const MPint& b) noexcept { return a.mVal >= b.mVal; }
+      150
+      124 -// --- prefix increment / decrement -------------------------------------------
+      125 -
+      126 -MPint& MPint::operator++() noexcept { ++pImpl->mVal; return *this; }
+      127 -MPint& MPint::operator--() noexcept { --pImpl->mVal; return *this; }
+      128 -
+      129 -// --- postfix increment / decrement ------------------------------------------
+      130 -
+      131 -MPint MPint::operator++(int) noexcept { MPint tmp(*this); ++pImpl->mVal; return tmp; }
+      132 -MPint MPint::operator--(int) noexcept { MPint tmp(*this); --pImpl->mVal; return tmp; }
+      133 -
+      134 -// --- compound assignment: arithmetic ----------------------------------------
+      135 -
+      136 -MPint& MPint::operator+=(const MPint& rhs) noexcept { pImpl->mVal += rhs.pImpl->mVal; return *this; }
+      137 -MPint& MPint::operator-=(const MPint& rhs) noexcept { pImpl->mVal -= rhs.pImpl->mVal; return *this; }
+      138 -MPint& MPint::operator*=(const MPint& rhs) noexcept { pImpl->mVal *= rhs.pImpl->mVal; return *this; }
+      139 -MPint& MPint::operator/=(const MPint& rhs)           { pImpl->mVal /= rhs.pImpl->mVal; return *this; }
+      140 -MPint& MPint::operator%=(const MPint& rhs)           { pImpl->mVal %= rhs.pImpl->mVal; return *this; }
+      141 -
+      142 -// --- compound assignment: bitwise -------------------------------------------
+      143 -
+      144 -MPint& MPint::operator&=(const MPint& rhs) noexcept { pImpl->mVal &= rhs.pImpl->mVal; return *this; }
+      145 -MPint& MPint::operator|=(const MPint& rhs) noexcept { pImpl->mVal |= rhs.pImpl->mVal; return *this; }
+      146 -MPint& MPint::operator^=(const MPint& rhs) noexcept { pImpl->mVal ^= rhs.pImpl->mVal; return *this; }
+      147 -
+      148 -// --- compound assignment: shift ---------------------------------------------
+      149 -
+      150 -MPint& MPint::operator<<=(int n)            noexcept { pImpl->mVal <<= n;              return *this; }
+      151 -MPint& MPint::operator>>=(int n)            noexcept { pImpl->mVal >>= n;              return *this; }
+      152 -MPint& MPint::operator<<=(const MPint& rhs) noexcept { pImpl->mVal <<= rhs.pImpl->mVal; return *this; }
+      153 -MPint& MPint::operator>>=(const MPint& rhs) noexcept { pImpl->mVal >>= rhs.pImpl->mVal; return *this; }
+      154 -
+      155 -// --- comparison -------------------------------------------------------------
+      156 -
+      157 -bool operator==(const MPint& a, const MPint& b) noexcept { return a.pImpl->mVal == b.pImpl->mVal; }
+      158 -bool operator!=(const MPint& a, const MPint& b) noexcept { return a.pImpl->mVal != b.pImpl->mVal; }
+      159 -bool operator< (const MPint& a, const MPint& b) noexcept { return a.pImpl->mVal <  b.pImpl->mVal; }
+      160 -bool operator> (const MPint& a, const MPint& b) noexcept { return a.pImpl->mVal >  b.pImpl->mVal; }
+      161 -bool operator<=(const MPint& a, const MPint& b) noexcept { return a.pImpl->mVal <= b.pImpl->mVal; }
+      162 -bool operator>=(const MPint& a, const MPint& b) noexcept { return a.pImpl->mVal >= b.pImpl->mVal; }
+      163 -
+      164 -// --- stream I/O -------------------------------------------------------------
+      165 -
+      166 -std::ostream& operator<<(std::ostream& os, const MPint& v) { return os << v.pImpl->mVal; }
+      167 -std::istream& operator>>(std::istream& is, MPint& v) {
+      168 -    std::string s;
+      169 -    if (is >> s) {
+      170 -        try {
+      171 -            const signed long int tmp = parse_str(s.c_str());
+      172 -            v.pImpl->mVal = tmp;
+      173 -        } catch (const std::invalid_argument&) {
+      174 -            is.setstate(std::ios::failbit);
+      151 +    // --- stream I/O ---------------------------------------------------------
+      152 +    friend std::ostream& operator<<(std::ostream& os, const MPint& v) {
+      153 +        return os << v.mVal;
+      154 +    }
+      155 +    friend std::istream& operator>>(std::istream& is, MPint& v) {
+      156 +        std::string s;
+      157 +        if (is >> s) {
+      158 +            try        { v.mVal = parse_str(s.c_str()); }
+      159 +            catch(const std::invalid_argument&) { is.setstate(std::ios::failbit); }
+      160          }
+      161 +        return is;
+      162      }
+      177 -    return is;
+      178 -}
+      163 +};
+
+● Step 3 — transform include/MPintGMP.hpp:
+
+● Write(include/MPintGMP.hpp)
+  ⎿  Added 132 lines, removed 165 lines
+      1 -#include "MPint.hpp"
+      1 +#pragma once
+      2
+      3  #include <cmath>
+      4  #include <cstdlib>
+     ...
+        9
+       10  #include <gmp.h>
+       11
+       12 -// ---------------------------------------------------------------------------
+       13 -// Impl wraps a GMP mpz_t.  All C++ resource management is handled here;
+       14 -// the operator bodies below are unchanged in structure from the long-int
+       15 -// variant — only the primitive operations differ.
+       16 -// ---------------------------------------------------------------------------
+       17 -struct MPint::MPintImpl {
+       12 +// MPint wrapping GMP mpz_t directly — no pimpl, all operators inline.
+       13 +
+       14 +class MPint {
+       15      mpz_t mVal;
+       16
+       20 -    MPintImpl()                             { mpz_init(mVal); }
+       21 -    explicit MPintImpl(signed long int   v) { mpz_init_set_si(mVal, v); }
+       22 -    explicit MPintImpl(unsigned long int v) { mpz_init_set_ui(mVal, v); }
+       23 -    MPintImpl(const MPintImpl& o)                { mpz_init_set(mVal, o.mVal); }
+       24 -    ~MPintImpl()                            { mpz_clear(mVal); }
+       25 -    MPintImpl& operator=(const MPintImpl&) = delete;
+       26 -};
+       17 +    static void set_mpint_str(mpz_t dest, const char* const s) {
+       18 +        if (!s) throw std::invalid_argument("MPint: null string pointer");
+       19 +        const char* p = s;
+       20 +        bool negative = false;
+       21 +        if      (*p == '-') { negative = true; ++p; }
+       22 +        else if (*p == '+') { ++p; }
+       23 +        int base = 10;
+       24 +        if (*p == '0') {
+       25 +            const char* const q = p + 1;
+       26 +            if      (*q == 'x' || *q == 'X') { base = 16; p += 2; }
+       27 +            else if (*q == 'b' || *q == 'B') { base =  2; p += 2; }
+       28 +            else                             { base =  8; }
+       29 +        }
+       30 +        std::string clean;
+       31 +        clean.reserve(std::strlen(p) + 1);
+       32 +        if (negative) clean += '-';
+       33 +        for (; *p; ++p) {
+       34 +            if (*p != '\'') clean += *p;
+       35 +        }
+       36 +        if (mpz_set_str(dest, clean.c_str(), base) != 0)
+       37 +            throw std::invalid_argument(std::string("MPint: invalid integer string: ") + s);
+       38 +    }
+       39
+       28 -// --- string parsing helper --------------------------------------------------
+       29 -// Strips single-quote separators and handles the 0b/0B binary prefix that
+       30 -// GMP's mpz_set_str does not recognise natively.
+       40 +public:
+       41 +    // --- construction -------------------------------------------------------
+       42 +    MPint()                    noexcept { mpz_init(mVal); }
+       43 +    MPint(signed long int   v) noexcept { mpz_init_set_si(mVal, v); }
+       44 +    MPint(signed int        v) noexcept { mpz_init_set_si(mVal, static_cast<signed long int>(v)); }
+       45 +    MPint(signed short      v) noexcept { mpz_init_set_si(mVal, static_cast<signed long int>(v)); }
+       46 +    MPint(signed char       v) noexcept { mpz_init_set_si(mVal, static_cast<signed long int>(v)); }
+       47 +    MPint(unsigned long int v) noexcept { mpz_init_set_ui(mVal, v); }
+       48 +    MPint(unsigned int      v) noexcept { mpz_init_set_ui(mVal, static_cast<unsigned long int>(v)); }
+       49 +    MPint(unsigned short    v) noexcept { mpz_init_set_ui(mVal, static_cast<unsigned long int>(v)); }
+       50 +    MPint(unsigned char     v) noexcept { mpz_init_set_ui(mVal, static_cast<unsigned long int>(v)); }
+       51 +    MPint(long long         v) noexcept { mpz_init_set_si(mVal, static_cast<signed long int>(v)); }
+       52 +    explicit MPint(const char*        s) { mpz_init(mVal); set_mpint_str(mVal, s); }
+       53 +    explicit MPint(const std::string& s) { mpz_init(mVal); set_mpint_str(mVal, s.c_str()); }
+       54
+       32 -static void mpz_set_mpint_str(mpz_t dest, const char* const s) {
+       33 -    if (!s) throw std::invalid_argument("MPint: null string pointer");
+       34 -    const char* p = s;
+       55 +    MPint(const MPint& o)           { mpz_init_set(mVal, o.mVal); }
+       56 +    MPint(MPint&&      o)  noexcept { mpz_init(mVal); mpz_swap(mVal, o.mVal); }
+       57 +    MPint& operator=(const MPint& o) noexcept { if (this != &o) mpz_set(mVal, o.mVal); return *this; }
+       58 +    MPint& operator=(MPint&&      o) noexcept { if (this != &o) mpz_swap(mVal, o.mVal); return *this; }
+       59 +    ~MPint() { mpz_clear(mVal); }
+       60
+       36 -    // Preserve leading sign for the clean buffer
+       37 -    bool negative = false;
+       38 -    if (*p == '-')      { negative = true; ++p; }
+       39 -    else if (*p == '+') { ++p; }
+       40 -
+       41 -    // Detect base and advance past any prefix
+       42 -    int base = 10;
+       43 -    if (*p == '0') {
+       44 -        const char* const q = p + 1;
+       45 -        if      (*q == 'x' || *q == 'X') { base = 16; p += 2; }
+       46 -        else if (*q == 'b' || *q == 'B') { base =  2; p += 2; }
+       47 -        else                             { base =  8; }  // leave p at '0': first octal digit
+       61 +    // --- conversion out -----------------------------------------------------
+       62 +    [[nodiscard]] explicit operator signed long int()   const noexcept { return mpz_get_si(mVal); }
+       63 +    [[nodiscard]] explicit operator signed int()        const noexcept { return static_cast<int>(mpz_get_si(mVal)); }
+       64 +    [[nodiscard]] explicit operator signed short()      const noexcept { return static_cast<short>(mpz_get_si(mVal)); }
+       65 +    [[nodiscard]] explicit operator signed char()       const noexcept { return static_cast<signed char>(mpz_get_si(mVal)); }
+       66 +    [[nodiscard]] explicit operator unsigned long int() const noexcept { return mpz_get_ui(mVal); }
+       67 +    [[nodiscard]] explicit operator unsigned int()      const noexcept { return static_cast<unsigned int>(mpz_get_ui(mVal)); }
+       68 +    [[nodiscard]] explicit operator bool()              const noexcept { return mpz_sgn(mVal) != 0; }
+       69 +    [[nodiscard]] explicit operator float() const {
+       70 +        const float f = static_cast<float>(mpz_get_d(mVal));
+       71 +        if (std::isinf(f)) throw std::overflow_error("MPint->float overflow");
+       72 +        return f;
+       73      }
+       49 -
+       50 -    // Build a clean copy without single-quote separators
+       51 -    std::string clean;
+       52 -    clean.reserve(std::strlen(p) + 1);
+       53 -    if (negative) clean += '-';
+       54 -    for (; *p; ++p) {
+       55 -        if (*p != '\'') clean += *p;
+       74 +    [[nodiscard]] explicit operator double() const {
+       75 +        const double d = mpz_get_d(mVal);
+       76 +        if (std::isinf(d)) throw std::overflow_error("MPint->double overflow");
+       77 +        return d;
+       78      }
+       79 +    [[nodiscard]] explicit operator long double() const noexcept { return static_cast<long double>(mpz_get_d(mVal)); }
+       80
+       58 -    if (mpz_set_str(dest, clean.c_str(), base) != 0)
+       59 -        throw std::invalid_argument(std::string("MPint: invalid integer string: ") + s);
+       60 -}
+       81 +    // --- unary arithmetic ---------------------------------------------------
+       82 +    [[nodiscard]] MPint operator+() const noexcept { return *this; }
+       83 +    [[nodiscard]] MPint operator-() const noexcept { MPint r; mpz_neg(r.mVal, mVal); return r; }
+       84
+       62 -// --- construction -----------------------------------------------------------
+       85 +    // --- unary logical ------------------------------------------------------
+       86 +    [[nodiscard]] bool  operator!() const noexcept { return mpz_sgn(mVal) == 0; }
+       87
+       64 -MPint::MPint()                    : pImpl(new MPintImpl()) {}
+       65 -MPint::MPint(signed long int   v) : pImpl(new MPintImpl(v)) {}
+       66 -MPint::MPint(signed int        v) : pImpl(new MPintImpl(static_cast<signed long int>(v))) {}
+       67 -MPint::MPint(signed short      v) : pImpl(new MPintImpl(static_cast<signed long int>(v))) {}
+       68 -MPint::MPint(signed char       v) : pImpl(new MPintImpl(static_cast<signed long int>(v))) {}
+       69 -MPint::MPint(unsigned long int v) : pImpl(new MPintImpl(static_cast<signed long int>(v))) {}
+       70 -MPint::MPint(unsigned int      v) : pImpl(new MPintImpl(static_cast<signed long int>(v))) {}
+       71 -MPint::MPint(unsigned short    v) : pImpl(new MPintImpl(static_cast<signed long int>(v))) {}
+       72 -MPint::MPint(unsigned char     v) : pImpl(new MPintImpl(static_cast<signed long int>(v))) {}
+       73 -MPint::MPint(long long         v) : pImpl(new MPintImpl(static_cast<signed long int>(v))) {}
+       88 +    // --- unary bitwise ------------------------------------------------------
+       89 +    [[nodiscard]] MPint operator~() const noexcept { MPint r; mpz_com(r.mVal, mVal); return r; }
+       90
+       75 -MPint::MPint(const char*        s) : pImpl(new MPintImpl()) { mpz_set_mpint_str(pImpl->mVal, s); }
+       76 -MPint::MPint(const std::string& s) : pImpl(new MPintImpl()) { mpz_set_mpint_str(pImpl->mVal, s.c_str()); }
+       91 +    // --- prefix increment / decrement ---------------------------------------
+       92 +    MPint& operator++() noexcept { mpz_add_ui(mVal, mVal, 1); return *this; }
+       93 +    MPint& operator--() noexcept { mpz_sub_ui(mVal, mVal, 1); return *this; }
+       94
+       78 -MPint::MPint(const MPint& other)  : pImpl(new MPintImpl(*other.pImpl)) {}
+       79 -MPint::MPint(MPint&&      other)  noexcept : pImpl(other.pImpl) { other.pImpl = nullptr; }
+       95 +    // --- postfix increment / decrement --------------------------------------
+       96 +    MPint operator++(int) noexcept { MPint tmp(*this); mpz_add_ui(mVal, mVal, 1); return tmp; }
+       97 +    MPint operator--(int) noexcept { MPint tmp(*this); mpz_sub_ui(mVal, mVal, 1); return tmp; }
+       98
+       81 -MPint& MPint::operator=(const MPint& other) noexcept {
+       82 -    if (this != &other) mpz_set(pImpl->mVal, other.pImpl->mVal);
+       83 -    return *this;
+       84 -}
+       99 +    // --- compound assignment: arithmetic ------------------------------------
+      100 +    MPint& operator+=(const MPint& rhs) noexcept { mpz_add(mVal, mVal, rhs.mVal);      return *this; }
+      101 +    MPint& operator-=(const MPint& rhs) noexcept { mpz_sub(mVal, mVal, rhs.mVal);      return *this; }
+      102 +    MPint& operator*=(const MPint& rhs) noexcept { mpz_mul(mVal, mVal, rhs.mVal);      return *this; }
+      103 +    MPint& operator/=(const MPint& rhs)           { mpz_tdiv_q(mVal, mVal, rhs.mVal);  return *this; }
+      104 +    MPint& operator%=(const MPint& rhs)           { mpz_tdiv_r(mVal, mVal, rhs.mVal);  return *this; }
+      105
+       86 -MPint& MPint::operator=(MPint&& other) noexcept {
+       87 -    if (this != &other) { delete pImpl; pImpl = other.pImpl; other.pImpl = nullptr; }
+       88 -    return *this;
+       89 -}
+      106 +    // --- compound assignment: bitwise ---------------------------------------
+      107 +    MPint& operator&=(const MPint& rhs) noexcept { mpz_and(mVal, mVal, rhs.mVal); return *this; }
+      108 +    MPint& operator|=(const MPint& rhs) noexcept { mpz_ior(mVal, mVal, rhs.mVal); return *this; }
+      109 +    MPint& operator^=(const MPint& rhs) noexcept { mpz_xor(mVal, mVal, rhs.mVal); return *this; }
+      110
+       91 -MPint::~MPint() { delete pImpl; }
+      111 +    // --- compound assignment: shift -----------------------------------------
+      112 +    MPint& operator<<=(int n)            noexcept { mpz_mul_2exp(mVal, mVal, static_cast<mp_bitcnt_t>(n));              return *this; }
+      113 +    MPint& operator>>=(int n)            noexcept { mpz_fdiv_q_2exp(mVal, mVal, static_cast<mp_bitcnt_t>(n));           return *this; }
+      114 +    MPint& operator<<=(const MPint& rhs) noexcept { mpz_mul_2exp(mVal, mVal, static_cast<mp_bitcnt_t>(mpz_get_ui(rhs.mVal)));    return *this; }
+      115 +    MPint& operator>>=(const MPint& rhs) noexcept { mpz_fdiv_q_2exp(mVal, mVal, static_cast<mp_bitcnt_t>(mpz_get_ui(rhs.mVal))); return *this; }
+      116
+       93 -// --- conversion out ---------------------------------------------------------
+      117 +    // --- binary arithmetic (inline, delegate to compound assignment) --------
+      118 +    [[nodiscard]] friend MPint operator+(MPint lhs, const MPint& rhs) noexcept { return lhs += rhs; }
+      119 +    [[nodiscard]] friend MPint operator-(MPint lhs, const MPint& rhs) noexcept { return lhs -= rhs; }
+      120 +    [[nodiscard]] friend MPint operator*(MPint lhs, const MPint& rhs) noexcept { return lhs *= rhs; }
+      121 +    [[nodiscard]] friend MPint operator/(MPint lhs, const MPint& rhs)           { return lhs /= rhs; }
+      122 +    [[nodiscard]] friend MPint operator%(MPint lhs, const MPint& rhs)           { return lhs %= rhs; }
+      123
+       95 -MPint::operator signed long int()   const noexcept { return mpz_get_si(pImpl->mVal); }
+       96 -MPint::operator signed int()        const noexcept { return static_cast<int>(mpz_get_si(pImpl->mVal)); }
+       97 -MPint::operator signed short()      const noexcept { return static_cast<short>(mpz_get_si(pImpl->mVal)); }
+       98 -MPint::operator signed char()       const noexcept { return static_cast<signed char>(mpz_get_si(pImpl->mVal)); }
+       99 -MPint::operator unsigned long int() const noexcept { return mpz_get_ui(pImpl->mVal); }
+      100 -MPint::operator unsigned int()      const noexcept { return static_cast<unsigned int>(mpz_get_ui(pImpl->mVal)); }
+      101 -MPint::operator bool()              const noexcept { return mpz_sgn(pImpl->mVal) != 0; }
+      102 -MPint::operator float() const {
+      103 -    const float f = static_cast<float>(mpz_get_d(pImpl->mVal));
+      104 -    if (std::isinf(f)) throw std::overflow_error("MPint->float overflow");
+      105 -    return f;
+      106 -}
+      107 -MPint::operator double() const {
+      108 -    const double d = mpz_get_d(pImpl->mVal);
+      109 -    if (std::isinf(d)) throw std::overflow_error("MPint->double overflow");
+      110 -    return d;
+      111 -}
+      112 -MPint::operator long double()       const noexcept { return static_cast<long double>(mpz_get_d(pImpl->mVal)); }
+      124 +    // --- binary bitwise -----------------------------------------------------
+      125 +    [[nodiscard]] friend MPint operator&(MPint lhs, const MPint& rhs) noexcept { return lhs &= rhs; }
+      126 +    [[nodiscard]] friend MPint operator|(MPint lhs, const MPint& rhs) noexcept { return lhs |= rhs; }
+      127 +    [[nodiscard]] friend MPint operator^(MPint lhs, const MPint& rhs) noexcept { return lhs ^= rhs; }
+      128
+      114 -// --- unary arithmetic -------------------------------------------------------
+      129 +    // --- shift --------------------------------------------------------------
+      130 +    [[nodiscard]] friend MPint operator<<(MPint lhs, int n)            noexcept { return lhs <<= n; }
+      131 +    [[nodiscard]] friend MPint operator>>(MPint lhs, int n)            noexcept { return lhs >>= n; }
+      132 +    [[nodiscard]] friend MPint operator<<(MPint lhs, const MPint& rhs) noexcept { return lhs <<= rhs; }
+      133 +    [[nodiscard]] friend MPint operator>>(MPint lhs, const MPint& rhs) noexcept { return lhs >>= rhs; }
+      134
+      116 -MPint MPint::operator+() const noexcept { return *this; }
+      117 -MPint MPint::operator-() const noexcept {
+      118 -    MPint r;
+      119 -    mpz_neg(r.pImpl->mVal, pImpl->mVal);
+      120 -    return r;
+      121 -}
+      135 +    // --- comparison ---------------------------------------------------------
+      136 +    [[nodiscard]] friend bool operator==(const MPint& a, const MPint& b) noexcept { return mpz_cmp(a.mVal, b.mVal) == 0; }
+      137 +    [[nodiscard]] friend bool operator!=(const MPint& a, const MPint& b) noexcept { return mpz_cmp(a.mVal, b.mVal) != 0; }
+      138 +    [[nodiscard]] friend bool operator< (const MPint& a, const MPint& b) noexcept { return mpz_cmp(a.mVal, b.mVal) <  0; }
+      139 +    [[nodiscard]] friend bool operator> (const MPint& a, const MPint& b) noexcept { return mpz_cmp(a.mVal, b.mVal) >  0; }
+      140 +    [[nodiscard]] friend bool operator<=(const MPint& a, const MPint& b) noexcept { return mpz_cmp(a.mVal, b.mVal) <= 0; }
+      141 +    [[nodiscard]] friend bool operator>=(const MPint& a, const MPint& b) noexcept { return mpz_cmp(a.mVal, b.mVal) >= 0; }
+      142
+      123 -// --- unary logical ----------------------------------------------------------
+      124 -
+      125 -bool MPint::operator!() const noexcept { return mpz_sgn(pImpl->mVal) == 0; }
+      126 -
+      127 -// --- unary bitwise ----------------------------------------------------------
+      128 -
+      129 -MPint MPint::operator~() const noexcept {
+      130 -    MPint r;
+      131 -    mpz_com(r.pImpl->mVal, pImpl->mVal);
+      132 -    return r;
+      133 -}
+      134 -
+      135 -// --- prefix increment / decrement -------------------------------------------
+      136 -
+      137 -MPint& MPint::operator++() noexcept { mpz_add_ui(pImpl->mVal, pImpl->mVal, 1); return *this; }
+      138 -MPint& MPint::operator--() noexcept { mpz_sub_ui(pImpl->mVal, pImpl->mVal, 1); return *this; }
+      139 -
+      140 -// --- postfix increment / decrement ------------------------------------------
+      141 -
+      142 -MPint MPint::operator++(int) noexcept { MPint tmp(*this); mpz_add_ui(pImpl->mVal, pImpl->mVal, 1); return tmp; }
+      143 -MPint MPint::operator--(int) noexcept { MPint tmp(*this); mpz_sub_ui(pImpl->mVal, pImpl->mVal, 1); return tmp; }
+      144 -
+      145 -// --- compound assignment: arithmetic ----------------------------------------
+      146 -
+      147 -MPint& MPint::operator+=(const MPint& rhs) noexcept { mpz_add(pImpl->mVal, pImpl->mVal, rhs.pImpl->mVal); return *this; }
+      148 -MPint& MPint::operator-=(const MPint& rhs) noexcept { mpz_sub(pImpl->mVal, pImpl->mVal, rhs.pImpl->mVal); return *this; }
+      149 -MPint& MPint::operator*=(const MPint& rhs) noexcept { mpz_mul(pImpl->mVal, pImpl->mVal, rhs.pImpl->mVal); return *this; }
+      150 -MPint& MPint::operator/=(const MPint& rhs)           { mpz_tdiv_q(pImpl->mVal, pImpl->mVal, rhs.pImpl->mVal); return *this; }
+      151 -MPint& MPint::operator%=(const MPint& rhs)           { mpz_tdiv_r(pImpl->mVal, pImpl->mVal, rhs.pImpl->mVal); return *this; }
+      152 -
+      153 -// --- compound assignment: bitwise -------------------------------------------
+      154 -
+      155 -MPint& MPint::operator&=(const MPint& rhs) noexcept { mpz_and(pImpl->mVal, pImpl->mVal, rhs.pImpl->mVal); return *this; }
+      156 -MPint& MPint::operator|=(const MPint& rhs) noexcept { mpz_ior(pImpl->mVal, pImpl->mVal, rhs.pImpl->mVal); return *this; }
+      157 -MPint& MPint::operator^=(const MPint& rhs) noexcept { mpz_xor(pImpl->mVal, pImpl->mVal, rhs.pImpl->mVal); return *this; }
+      158 -
+      159 -// --- compound assignment: shift ---------------------------------------------
+      160 -
+      161 -MPint& MPint::operator<<=(int n)            noexcept { mpz_mul_2exp(pImpl->mVal, pImpl->mVal, static_cast<mp_bitcnt_t>(n)); return *this; }
+      162 -MPint& MPint::operator>>=(int n)            noexcept { mpz_fdiv_q_2exp(pImpl->mVal, pImpl->mVal, static_cast<mp_bitcnt_t>(n)); return *this; }
+      163 -MPint& MPint::operator<<=(const MPint& rhs) noexcept { mpz_mul_2exp(pImpl->mVal, pImpl->mVal, static_cast<mp_bitcnt_t>(mpz_get_ui(rhs.pImpl->mVal))); return *this; }
+      164 -MPint& MPint::operator>>=(const MPint& rhs) noexcept { mpz_fdiv_q_2exp(pImpl->mVal, pImpl->mVal, static_cast<mp_bitcnt_t>(mpz_get_ui(rhs.pImpl->mVal))); return *this; }
+      165 -
+      166 -// --- comparison -------------------------------------------------------------
+      167 -
+      168 -bool operator==(const MPint& a, const MPint& b) noexcept { return mpz_cmp(a.pImpl->mVal, b.pImpl->mVal) == 0; }
+      169 -bool operator!=(const MPint& a, const MPint& b) noexcept { return mpz_cmp(a.pImpl->mVal, b.pImpl->mVal) != 0; }
+      170 -bool operator< (const MPint& a, const MPint& b) noexcept { return mpz_cmp(a.pImpl->mVal, b.pImpl->mVal) <  0; }
+      171 -bool operator> (const MPint& a, const MPint& b) noexcept { return mpz_cmp(a.pImpl->mVal, b.pImpl->mVal) >  0; }
+      172 -bool operator<=(const MPint& a, const MPint& b) noexcept { return mpz_cmp(a.pImpl->mVal, b.pImpl->mVal) <= 0; }
+      173 -bool operator>=(const MPint& a, const MPint& b) noexcept { return mpz_cmp(a.pImpl->mVal, b.pImpl->mVal) >= 0; }
+      174 -
+      175 -// --- stream I/O -------------------------------------------------------------
+      176 -
+      177 -std::ostream& operator<<(std::ostream& os, const MPint& v) {
+      178 -    char* const s = mpz_get_str(nullptr, 10, v.pImpl->mVal);
+      179 -    os << s;
+      180 -    std::free(s);
+      181 -    return os;
+      182 -}
+      183 -
+      184 -std::istream& operator>>(std::istream& is, MPint& v) {
+      185 -    std::string s;
+      186 -    if (is >> s) {
+      187 -        mpz_t tmp;
+      188 -        mpz_init(tmp);
+      189 -        if (mpz_set_str(tmp, s.c_str(), 10) == 0)
+      190 -            mpz_set(v.pImpl->mVal, tmp);
+      191 -        else
+      192 -            is.setstate(std::ios::failbit);
+      193 -        mpz_clear(tmp);
+      143 +    // --- stream I/O ---------------------------------------------------------
+      144 +    friend std::ostream& operator<<(std::ostream& os, const MPint& v) {
+      145 +        char* const s = mpz_get_str(nullptr, 10, v.mVal);
+      146 +        os << s;
+      147 +        std::free(s);
+      148 +        return os;
+      149      }
+      195 -    return is;
+      196 -}
+      150 +    friend std::istream& operator>>(std::istream& is, MPint& v) {
+      151 +        std::string s;
+      152 +        if (is >> s) {
+      153 +            mpz_t tmp;
+      154 +            mpz_init(tmp);
+      155 +            if (mpz_set_str(tmp, s.c_str(), 10) == 0)
+      156 +                mpz_set(v.mVal, tmp);
+      157 +            else
+      158 +                is.setstate(std::ios::failbit);
+      159 +            mpz_clear(tmp);
+      160 +        }
+      161 +        return is;
+      162 +    }
+      163 +};
+
+● Step 4 — update demoTypedef.hpp, Makefile, and test/test.sh in parallel:
+
+  Read 3 files (ctrl+o to expand)
+
+● Now I'll update the three files — demoTypedef.hpp, Makefile, and test/test.sh:
+
+● Update(demo/src/demoTypedef.hpp)
+  ⎿  Added 5 lines
+       7      #include <gmpxx.h>
+       8      typedef mpz_class MPint;
+       9      #define DEMO_ARBPREC
+      10 +#elif defined DEMO_WRAPPEDNATIVE
+      11 +    #include "MPintWrappedNative.hpp"
+      12 +#elif defined DEMO_GMP
+      13 +    #include "MPintGMP.hpp"
+      14 +    #define DEMO_ARBPREC
+      15  #elif defined DEMO_WRAPPEDNATIVEPIMPL
+      16      #include "MPint.hpp"
+      17  #elif defined DEMO_GMPPIMPL
+
+● Update(Makefile)
+  ⎿  Added 9 lines, removed 5 lines
+      18  DEMO_HDRS := $(DEMO_INCLDIR)/det.hpp $(DEMO_INCLDIR)/redu.hpp $(DEMO_INCLDIR)/demoUtils.hpp $(DEMO_INCLDIR)/demoTypedef.hpp $(DEMO_INCLDIR)/exprTest.hpp
+      19
+      20
+      21 -TARGET_NATIVE        := $(DEMO_BINDIR)/demoNative
+      22 -TARGET_GMPXX         := $(DEMO_BINDIR)/demoGMPXX
+      21 +TARGET_NATIVE             := $(DEMO_BINDIR)/demoNative
+      22 +TARGET_GMPXX              := $(DEMO_BINDIR)/demoGMPXX
+      23 +TARGET_WRAPPEDNATIVE      := $(DEMO_BINDIR)/demoWrappedNative
+      24 +TARGET_GMP                := $(DEMO_BINDIR)/demoGMP
+      25  TARGET_WRAPPEDNATIVEPIMPL := $(DEMO_BINDIR)/demoWrappedNativePimpl
+      26  TARGET_GMPPIMPL           := $(DEMO_BINDIR)/demoGMPPimpl
+      27
+      26 -TARGETS := $(TARGET_NATIVE) $(TARGET_GMPXX) $(TARGET_WRAPPEDNATIVEPIMPL) $(TARGET_GMPPIMPL)
+      28 +TARGETS := $(TARGET_NATIVE) $(TARGET_GMPXX) $(TARGET_WRAPPEDNATIVE) $(TARGET_GMP) $(TARGET_WRAPPEDNATIVEPIMPL) $(TARGET_GMPPIMPL)
+      29
+      30
+      31  TEST_DIR := test
+      32
+      33  TESTOUTPUT_NATIVE             := $(TEST_DIR)/demoNative.output
+      34  TESTOUTPUT_GMPXX              := $(TEST_DIR)/demoGMPXX.output
+      35 +TESTOUTPUT_WRAPPEDNATIVE      := $(TEST_DIR)/demoWrappedNative.output
+      36 +TESTOUTPUT_GMP                := $(TEST_DIR)/demoGMP.output
+      37  TESTOUTPUT_WRAPPEDNATIVEPIMPL := $(TEST_DIR)/demoWrappedNativePimpl.output
+      34 -TESTOUTPUT_GMPPIMPL          := $(TEST_DIR)/demoGMPPimpl.output
+      38 +TESTOUTPUT_GMPPIMPL           := $(TEST_DIR)/demoGMPPimpl.output
+      39
+      36 -TESTOUTPUTS := $(TESTOUTPUT_NATIVE) $(TESTOUTPUT_GMPXX) $(TESTOUTPUT_WRAPPEDNATIVEPIMPL) $(TESTOUTPUT_GMPPIMPL)
+      40 +TESTOUTPUTS := $(TESTOUTPUT_NATIVE) $(TESTOUTPUT_GMPXX) $(TESTOUTPUT_WRAPPEDNATIVE) $(TESTOUTPUT_GMP) $(TESTOUTPUT_WRAPPEDNATIVEPIMPL) $(TESTOUTPUT_GMPPIMPL)
+      41
+      42
+      43  CXX      := g++
+  ⎿  Found 5 new diagnostic issues in 1 file (ctrl+o to expand)
+
+● Update(Makefile)
+  ⎿  Added 6 lines
+      58  $(TARGET_GMPXX): $(DEMO_SRCS) $(DEMO_HDRS)
+      59    $(CXX) $(CXXFLAGS) -DDEMO_GMPXX -I$(DEMO_INCLDIR) -o $@ $(DEMO_SRCS) -lgmp -lgmpxx
+      60
+      61 +$(TARGET_WRAPPEDNATIVE): $(DEMO_SRCS) $(DEMO_HDRS) $(INCLDIR)/MPintWrappedNative.hpp
+      62 +  $(CXX) $(CXXFLAGS) -DDEMO_WRAPPEDNATIVE -I$(DEMO_INCLDIR) -I$(INCLDIR) -o $@ $(DEMO_SRCS)
+      63 +
+      64 +$(TARGET_GMP): $(DEMO_SRCS) $(DEMO_HDRS) $(INCLDIR)/MPintGMP.hpp
+      65 +  $(CXX) $(CXXFLAGS) -DDEMO_GMP -I$(DEMO_INCLDIR) -I$(INCLDIR) -o $@ $(DEMO_SRCS) -lgmp
+      66 +
+      67  $(TARGET_WRAPPEDNATIVEPIMPL): $(DEMO_SRCS) $(DEMO_HDRS) $(WRAPPEDNATIVE_SRC) $(WRAPPEDNATIVE_HDR)
+      68    $(CXX) $(CXXFLAGS) -DDEMO_WRAPPEDNATIVEPIMPL -I$(DEMO_INCLDIR) -I$(INCLDIR) -o $@ $(DEMO_SRCS) $(WRAPPEDNATIVE_SRC)
+      69
+
+● Now update test/test.sh — variables, doRegression(), and doProf():
+
+● Update(test/test.sh)
+  ⎿  Added 8 lines
+      10  EXECUTABLEGMPXX="../demo/bin/demoGMPXX"
+      11  OUTFILEGMPXX="demoGMPXX.output"
+      12
+      13 +EXECUTABLEWRAPPEDNATIVE="../demo/bin/demoWrappedNative"
+      14 +OUTFILEWRAPPEDNATIVE="demoWrappedNative.output"
+      15 +
+      16 +EXECUTABLEGMP="../demo/bin/demoGMP"
+      17 +OUTFILEGMP="demoGMP.output"
+      18 +
+      19  EXECUTABLEWRAPPEDNATIVEPIMPL="../demo/bin/demoWrappedNativePimpl"
+      20  OUTFILEWRAPPEDNATIVEPIMPL="demoWrappedNativePimpl.output"
+      21
+     ...
+      24
+      25  REFFILENATIVE="demoNative.output.ref"
+      26  REFFILEGMPXX="demoGMPXX.output.ref"
+      27 +REFFILEWRAPPEDNATIVE="demoWrappedNative.output.ref"
+      28 +REFFILEGMP="demoGMP.output.ref"
+      29  REFFILEWRAPPEDNATIVEPIMPL="demoWrappedNativePimpl.output.ref"
+      30  REFFILEGMPPIMPL="demoGMPPimpl.output.ref"
+      31
+
+● Update(test/test.sh)
+  ⎿  Added 24 lines
+       85          return ${retval}
+       86      fi
+       87
+       88 +    runExecutable ${EXECUTABLEWRAPPEDNATIVE} ${OUTFILEWRAPPEDNATIVE}
+       89 +    retval=$?
+       90 +    if [ "${retval}" -ne 0 ]; then
+       91 +        return ${retval}
+       92 +    fi
+       93 +
+       94 +    runExecutable ${EXECUTABLEGMP} ${OUTFILEGMP}
+       95 +    retval=$?
+       96 +    if [ "${retval}" -ne 0 ]; then
+       97 +        return ${retval}
+       98 +    fi
+       99 +
+      100      runExecutable ${EXECUTABLEWRAPPEDNATIVEPIMPL} ${OUTFILEWRAPPEDNATIVEPIMPL}
+      101      retval=$?
+      102      if [ "${retval}" -ne 0 ]; then
+     ...
+      122          retval=${diffretval}
+      123      fi
+      124
+      125 +    doDiff "${OUTFILEWRAPPEDNATIVE}" "${REFFILEWRAPPEDNATIVE}"
+      126 +    diffretval=$?
+      127 +    if [ "${diffretval}" -ne 0 ]; then
+      128 +        retval=${diffretval}
+      129 +    fi
+      130 +
+      131 +    doDiff "${OUTFILEGMP}" "${REFFILEGMP}"
+      132 +    diffretval=$?
+      133 +    if [ "${diffretval}" -ne 0 ]; then
+      134 +        retval=${diffretval}
+      135 +    fi
+      136 +
+      137      doDiff "${OUTFILEWRAPPEDNATIVEPIMPL}" "${REFFILEWRAPPEDNATIVEPIMPL}"
+      138      diffretval=$?
+      139      if [ "${diffretval}" -ne 0 ]; then
+
+● Now expand doProf() from 4 to 6 columns:
+
+● Update(test/test.sh)
+
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+ Edit file
+      34  TESTOUTPUT_GMPXX              := $(TEST_DIR)/demoGMPXX.output
+      35 +TESTOUTPUT_WRAPPEDNATIVE      := $(TEST_DIR)/demoWrappedNative.output
+      36 +TESTOUTPUT_GMP                := $(TEST_DIR)/demoGMP.output
+      37  TESTOUTPUT_WRAPPEDNATIVEPIMPL := $(TEST_DIR)/demoWrappedNativePimpl.output
+      34 -TESTOUTPUT_GMPPIMPL          := $(TEST_DIR)/demoGMPPimpl.output
+      38 +TESTOUTPUT_GMPPIMPL           := $(TEST_DIR)/demoGMPPimpl.output
+      39
+      36 -TESTOUTPUTS := $(TESTOUTPUT_NATIVE) $(TESTOUTPUT_GMPXX) $(TESTOUTPUT_WRAPPEDNATIVEPIMPL) $(TESTOUTPUT_GMPPIMPL)
+      40 +TESTOUTPUTS := $(TESTOUTPUT_NATIVE) $(TESTOUTPUT_GMPXX) $(TESTOUTPUT_WRAPPEDNATIVE) $(TESTOUTPUT_GMP) $(TESTOUTPUT_WRAPPEDNATIVEPIMPL) $(TESTOUTPUT_GMPPIMPL)
+      41
+      42
+      43  CXX      := g++
+  ⎿  Found 5 new diagnostic issues in 1 file (ctrl+o to expand)
+
+● Update(Makefile)
+  ⎿  Added 6 lines
+      58  $(TARGET_GMPXX): $(DEMO_SRCS) $(DEMO_HDRS)
+      59    $(CXX) $(CXXFLAGS) -DDEMO_GMPXX -I$(DEMO_INCLDIR) -o $@ $(DEMO_SRCS) -lgmp -lgmpxx
+      60
+      61 +$(TARGET_WRAPPEDNATIVE): $(DEMO_SRCS) $(DEMO_HDRS) $(INCLDIR)/MPintWrappedNative.hpp
+      62 +  $(CXX) $(CXXFLAGS) -DDEMO_WRAPPEDNATIVE -I$(DEMO_INCLDIR) -I$(INCLDIR) -o $@ $(DEMO_SRCS)
+      63 +
+      64 +$(TARGET_GMP): $(DEMO_SRCS) $(DEMO_HDRS) $(INCLDIR)/MPintGMP.hpp
+      65 +  $(CXX) $(CXXFLAGS) -DDEMO_GMP -I$(DEMO_INCLDIR) -I$(INCLDIR) -o $@ $(DEMO_SRCS) -lgmp
+      66 +
+      67  $(TARGET_WRAPPEDNATIVEPIMPL): $(DEMO_SRCS) $(DEMO_HDRS) $(WRAPPEDNATIVE_SRC) $(WRAPPEDNATIVE_HDR)
+      68    $(CXX) $(CXXFLAGS) -DDEMO_WRAPPEDNATIVEPIMPL -I$(DEMO_INCLDIR) -I$(INCLDIR) -o $@ $(DEMO_SRCS) $(WRAPPEDNATIVE_SRC)
+      69
+
+● Now update test/test.sh — variables, doRegression(), and doProf():
+
+● Update(test/test.sh)
+  ⎿  Added 8 lines
+      10  EXECUTABLEGMPXX="../demo/bin/demoGMPXX"
+      11  OUTFILEGMPXX="demoGMPXX.output"
+      12
+      13 +EXECUTABLEWRAPPEDNATIVE="../demo/bin/demoWrappedNative"
+      14 +OUTFILEWRAPPEDNATIVE="demoWrappedNative.output"
+      15 +
+      16 +EXECUTABLEGMP="../demo/bin/demoGMP"
+      17 +OUTFILEGMP="demoGMP.output"
+      18 +
+      19  EXECUTABLEWRAPPEDNATIVEPIMPL="../demo/bin/demoWrappedNativePimpl"
+      20  OUTFILEWRAPPEDNATIVEPIMPL="demoWrappedNativePimpl.output"
+      21
+     ...
+      24
+      25  REFFILENATIVE="demoNative.output.ref"
+      26  REFFILEGMPXX="demoGMPXX.output.ref"
+      27 +REFFILEWRAPPEDNATIVE="demoWrappedNative.output.ref"
+      28 +REFFILEGMP="demoGMP.output.ref"
+      29  REFFILEWRAPPEDNATIVEPIMPL="demoWrappedNativePimpl.output.ref"
+      30  REFFILEGMPPIMPL="demoGMPPimpl.output.ref"
+      31
+
+● Update(test/test.sh)
+  ⎿  Added 24 lines
+       85          return ${retval}
+       86      fi
+       87
+       88 +    runExecutable ${EXECUTABLEWRAPPEDNATIVE} ${OUTFILEWRAPPEDNATIVE}
+       89 +    retval=$?
+       90 +    if [ "${retval}" -ne 0 ]; then
+       91 +        return ${retval}
+       92 +    fi
+       93 +
+       94 +    runExecutable ${EXECUTABLEGMP} ${OUTFILEGMP}
+       95 +    retval=$?
+       96 +    if [ "${retval}" -ne 0 ]; then
+       97 +        return ${retval}
+       98 +    fi
+       99 +
+      100      runExecutable ${EXECUTABLEWRAPPEDNATIVEPIMPL} ${OUTFILEWRAPPEDNATIVEPIMPL}
+      101      retval=$?
+      102      if [ "${retval}" -ne 0 ]; then
+     ...
+      122          retval=${diffretval}
+      123      fi
+      124
+      125 +    doDiff "${OUTFILEWRAPPEDNATIVE}" "${REFFILEWRAPPEDNATIVE}"
+      126 +    diffretval=$?
+      127 +    if [ "${diffretval}" -ne 0 ]; then
+      128 +        retval=${diffretval}
+      129 +    fi
+      130 +
+      131 +    doDiff "${OUTFILEGMP}" "${REFFILEGMP}"
+      132 +    diffretval=$?
+      133 +    if [ "${diffretval}" -ne 0 ]; then
+      134 +        retval=${diffretval}
+      135 +    fi
+      136 +
+      137      doDiff "${OUTFILEWRAPPEDNATIVEPIMPL}" "${REFFILEWRAPPEDNATIVEPIMPL}"
+      138      diffretval=$?
+      139      if [ "${diffretval}" -ne 0 ]; then
+
+● Now expand doProf() from 4 to 6 columns:
+
+● Update(test/test.sh)
+  ⎿  Added 32 lines, removed 31 lines
+      151  }
+      152
+      153  doProf () {
+      154 -    local tmp1 tmp2 tmp3 tmp4 tdata1 tdata2 tdata3 tdata4
+      155 -    tmp1=$(mktemp)
+      156 -    tmp2=$(mktemp)
+      157 -    tmp3=$(mktemp)
+      158 -    tmp4=$(mktemp)
+      159 -    tdata1=$(mktemp)
+      160 -    tdata2=$(mktemp)
+      161 -    tdata3=$(mktemp)
+      162 -    tdata4=$(mktemp)
+      154 +    local tmp1 tmp2 tmp3 tmp4 tmp5 tmp6 tdata1 tdata2 tdata3 tdata4 tdata5 tdata6
+      155 +    tmp1=$(mktemp); tmp2=$(mktemp); tmp3=$(mktemp)
+      156 +    tmp4=$(mktemp); tmp5=$(mktemp); tmp6=$(mktemp)
+      157 +    tdata1=$(mktemp); tdata2=$(mktemp); tdata3=$(mktemp)
+      158 +    tdata4=$(mktemp); tdata5=$(mktemp); tdata6=$(mktemp)
+      159
+      160      runCmd "${EXECUTABLENATIVE} -prof > ${tmp1} 2>&1"
+      161      runCmd "${EXECUTABLEGMPXX} -prof > ${tmp2} 2>&1"
+      166 -    runCmd "${EXECUTABLEWRAPPEDNATIVEPIMPL} -prof > ${tmp3} 2>&1"
+      167 -    runCmd "${EXECUTABLEGMPPIMPL} -prof > ${tmp4} 2>&1"
+      162 +    runCmd "${EXECUTABLEWRAPPEDNATIVE} -prof > ${tmp3} 2>&1"
+      163 +    runCmd "${EXECUTABLEGMP} -prof > ${tmp4} 2>&1"
+      164 +    runCmd "${EXECUTABLEWRAPPEDNATIVEPIMPL} -prof > ${tmp5} 2>&1"
+      165 +    runCmd "${EXECUTABLEGMPPIMPL} -prof > ${tmp6} 2>&1"
+      166
+      167      if [ "${DRYPARAM}" == "dry" ]; then
+      168          echo "${DRY_RUN_PREFIX}<post processing results and printing a summarizing table on stdout>"
+      171 -        rm -f "${tmp1}" "${tmp2}" "${tmp3}" "${tmp4}" "${tdata1}" "${tdata2}" "${tdata3}" "${tdata4}"
+      169 +        rm -f "${tmp1}" "${tmp2}" "${tmp3}" "${tmp4}" "${tmp5}" "${tmp6}" \
+      170 +              "${tdata1}" "${tdata2}" "${tdata3}" "${tdata4}" "${tdata5}" "${tdata6}"
+      171          return 0
+      172      fi
+      173
+     ...
+      176      grep -v '^===' "${tmp2}" > "${tdata2}"
+      177      grep -v '^===' "${tmp3}" > "${tdata3}"
+      178      grep -v '^===' "${tmp4}" > "${tdata4}"
+      179 +    grep -v '^===' "${tmp5}" > "${tdata5}"
+      180 +    grep -v '^===' "${tmp6}" > "${tdata6}"
+      181
+      182      echo ""
+      183      grep '===' "${tmp1}" | sed 's/profiling report/profiling comparison/'
+      184      echo ""
+      185
+      185 -    # Merge the four data files side-by-side and format as a table.
+      186 +    # Merge the six data files side-by-side and format as a table.
+      187      # Each data line has the form "  name: cycles cycles".
+      187 -    paste "${tdata1}" "${tdata2}" "${tdata3}" "${tdata4}" | awk -F'\t' '
+      188 +    paste "${tdata1}" "${tdata2}" "${tdata3}" "${tdata4}" "${tdata5}" "${tdata6}" | awk -F'\t' '
+      189      BEGIN {
+      189 -        printf "%-14s  %20s  %20s  %26s  %20s\n",
+      190 -               "function", "demoNative", "demoGMPXX", "demoWrappedNativePimpl", "demoGMPPimpl"
+      191 -        printf "%-14s  %20s  %20s  %26s  %20s\n",
+      190 +        printf "%-14s  %20s  %20s  %22s  %20s  %26s  %20s\n",
+      191 +               "function", "demoNative", "demoGMPXX",
+      192 +               "demoWrappedNative", "demoGMP",
+      193 +               "demoWrappedNativePimpl", "demoGMPPimpl"
+      194 +        printf "%-14s  %20s  %20s  %22s  %20s  %26s  %20s\n",
+      195                 "--------------",
+      193 -               "--------------------",
+      194 -               "--------------------",
+      195 -               "--------------------------",
+      196 -               "--------------------"
+      196 +               "--------------------", "--------------------",
+      197 +               "----------------------", "--------------------",
+      198 +               "--------------------------", "--------------------"
+      199      }
+      200      {
+      201          split($1, a, ":"); name = a[1]
+      202          gsub(/^[[:space:]]+|[[:space:]]+$/, "", name)
+      201 -        c1 = a[2]
+      202 -        gsub(/[[:space:]]*cycles[[:space:]]*$/, "", c1); gsub(/^[[:space:]]+/, "", c1)
+      203 -        split($2, b, ":"); c2 = b[2]
+      204 -        gsub(/[[:space:]]*cycles[[:space:]]*$/, "", c2); gsub(/^[[:space:]]+/, "", c2)
+      205 -        split($3, d, ":"); c3 = d[2]
+      206 -        gsub(/[[:space:]]*cycles[[:space:]]*$/, "", c3); gsub(/^[[:space:]]+/, "", c3)
+      207 -        split($4, e, ":"); c4 = e[2]
+      208 -        gsub(/[[:space:]]*cycles[[:space:]]*$/, "", c4); gsub(/^[[:space:]]+/, "", c4)
+      209 -        printf "%-14s  %20s  %20s  %26s  %20s\n", name, c1, c2, c3, c4
+      203 +        c1 = a[2];  gsub(/[[:space:]]*cycles[[:space:]]*$/, "", c1); gsub(/^[[:space:]]+/, "", c1)
+      204 +        split($2, b, ":"); c2 = b[2]; gsub(/[[:space:]]*cycles[[:space:]]*$/, "", c2); gsub(/^[[:space:]]+/, "", c2)
+      205 +        split($3, d, ":"); c3 = d[2]; gsub(/[[:space:]]*cycles[[:space:]]*$/, "", c3); gsub(/^[[:space:]]+/, "", c3)
+      206 +        split($4, e, ":"); c4 = e[2]; gsub(/[[:space:]]*cycles[[:space:]]*$/, "", c4); gsub(/^[[:space:]]+/, "", c4)
+      207 +        split($5, f, ":"); c5 = f[2]; gsub(/[[:space:]]*cycles[[:space:]]*$/, "", c5); gsub(/^[[:space:]]+/, "", c5)
+      208 +        split($6, g, ":"); c6 = g[2]; gsub(/[[:space:]]*cycles[[:space:]]*$/, "", c6); gsub(/^[[:space:]]+/, "", c6)
+      209 +        printf "%-14s  %20s  %20s  %22s  %20s  %26s  %20s\n", name, c1, c2, c3, c4, c5, c6
+      210      }
+      211      '
+      212
+      213 -    rm -f "${tmp1}" "${tmp2}" "${tmp3}" "${tmp4}" "${tdata1}" "${tdata2}" "${tdata3}" "${tdata4}"
+      213 +    rm -f "${tmp1}" "${tmp2}" "${tmp3}" "${tmp4}" "${tmp5}" "${tmp6}" \
+      214 +          "${tdata1}" "${tdata2}" "${tdata3}" "${tdata4}" "${tdata5}" "${tdata6}"
+      215      return 0
+      216  }
+      217
+
+● Step 5 — build all six targets:
+
+● Bash(make 2>&1)
+  ⎿  g++ -std=c++14 -Wall -Wextra -pedantic -Werror -O2 -flto=auto -DDEMO_NATIVE -Idemo/src -o demo/bin/demoNative demo/src/demo.cpp demo/src/exprTest.cpp demo/src/det.cpp demo/src/redu.cpp dem
+     o/src/demoUtils.cpp
+     g++ -std=c++14 -Wall -Wextra -pedantic -Werror -O2 -flto=auto -DDEMO_GMPXX -Idemo/src -o demo/bin/demoGMPXX demo/src/demo.cpp demo/src/exprTest.cpp demo/src/det.cpp demo/src/redu.cpp demo/
+     … +9 lines (ctrl+o to expand)
+  ⎿  (timeout 3m)
+
+● All six targets build cleanly. Now generate the ref files and run the full test suite:
+
+● Bash(demo/bin/demoWrappedNative > test/demoWrappedNative.output.ref 2>&1
+      demo/bin/demoGMP > test/demoGMP.output.ref 2>&1…)
+  ⎿  exit codes: 0
+
+● Bash(cd /home/claudeuser/work/mpint/test && ./test.sh regr 2>&1 | grep -E "EXIT.*diff|EXIT.*demo[A-Z]")
+  ⎿  ############################## EXIT  : ../demo/bin/demoNative > demoNative.output 2>&1 : EXITCODE : 0 ##########
+     ############################## EXIT  : cat demoNative.output : EXITCODE : 0 ##########
+     ############################## EXIT  : ../demo/bin/demoGMPXX > demoGMPXX.output 2>&1 : EXITCODE : 0 ##########
+     … +15 lines (ctrl+o to expand)
+
+● All six executables exit 0 and all six diffs pass. Done — ready to commit whenever you say.
+
+✻ Cooked for 5m 31s
+
+❯ commit this
+
+● Bash(git -C /home/claudeuser/work/mpint status && git -C /home/claudeuser/work/mpint log --oneline -3)
+  ⎿  On branch master
+     Changes to be committed:
+       (use "git restore --staged <file>..." to unstage)
+     … +22 lines (ctrl+o to expand)
+
+● Bash(git -C /home/claudeuser/work/mpint add Makefile demo/src/demoTypedef.hpp include/MPintGMP.hpp include/MPintWrappedNative.hpp test/test.sh test/demoGMP.output.re…)
+  ⎿  (No output)
+
+● Bash(git -C /home/claudeuser/work/mpint commit -m "$(cat <<'EOF'
+      add demoWrappedNative and demoGMP: inline header-only MPint variants…)
+  ⎿  [master 183b937] add demoWrappedNative and demoGMP: inline header-only MPint variants
+      7 files changed, 2212 insertions(+), 36 deletions(-)
+      create mode 100644 include/MPintGMP.hpp
+     … +3 lines (ctrl+o to expand)
+
+● Done. Committed as 183b937.
+
+✻ Worked for 27s
+
+❯ update CLAUDE.md
+
+  Read 1 file (ctrl+o to expand)
+
+● Update(~/work/mpint/CLAUDE.md)
+  ⎿  g++ -std=c++14 -Wall -Wextra -pedantic -Werror -O2 -flto=auto -DDEMO_NATIVE -Idemo/src -o demo/bin/demoNative demo/src/demo.cpp demo/src/exprTest.cpp demo/src/det.cpp demo/src/redu.cpp dem
+     o/src/demoUtils.cpp
+     g++ -std=c++14 -Wall -Wextra -pedantic -Werror -O2 -flto=auto -DDEMO_GMPXX -Idemo/src -o demo/bin/demoGMPXX demo/src/demo.cpp demo/src/exprTest.cpp demo/src/det.cpp demo/src/redu.cpp demo/
+     … +9 lines (ctrl+o to expand)
+  ⎿  (timeout 3m)
+
+● All six targets build cleanly. Now generate the ref files and run the full test suite:
+
+● Bash(demo/bin/demoWrappedNative > test/demoWrappedNative.output.ref 2>&1
+      demo/bin/demoGMP > test/demoGMP.output.ref 2>&1…)
+  ⎿  exit codes: 0
+
+● Bash(cd /home/claudeuser/work/mpint/test && ./test.sh regr 2>&1 | grep -E "EXIT.*diff|EXIT.*demo[A-Z]")
+  ⎿  ############################## EXIT  : ../demo/bin/demoNative > demoNative.output 2>&1 : EXITCODE : 0 ##########
+     ############################## EXIT  : cat demoNative.output : EXITCODE : 0 ##########
+     ############################## EXIT  : ../demo/bin/demoGMPXX > demoGMPXX.output 2>&1 : EXITCODE : 0 ##########
+     … +15 lines (ctrl+o to expand)
+
+● All six executables exit 0 and all six diffs pass. Done — ready to commit whenever you say.
+
+✻ Cooked for 5m 31s
+
+❯ commit this
+
+● Bash(git -C /home/claudeuser/work/mpint status && git -C /home/claudeuser/work/mpint log --oneline -3)
+  ⎿  On branch master
+     Changes to be committed:
+       (use "git restore --staged <file>..." to unstage)
+     … +22 lines (ctrl+o to expand)
+
+● Bash(git -C /home/claudeuser/work/mpint add Makefile demo/src/demoTypedef.hpp include/MPintGMP.hpp include/MPintWrappedNative.hpp test/test.sh test/demoGMP.output.re…)
+  ⎿  (No output)
+
+● Bash(git -C /home/claudeuser/work/mpint commit -m "$(cat <<'EOF'
+      add demoWrappedNative and demoGMP: inline header-only MPint variants…)
+  ⎿  [master 183b937] add demoWrappedNative and demoGMP: inline header-only MPint variants
+      7 files changed, 2212 insertions(+), 36 deletions(-)
+      create mode 100644 include/MPintGMP.hpp
+     … +3 lines (ctrl+o to expand)
+
+● Done. Committed as 183b937.
+
+✻ Worked for 27s
+
+❯ update CLAUDE.md
+
+  Read 1 file (ctrl+o to expand)
+
+● Update(~/work/mpint/CLAUDE.md)
+  ⎿  Error editing file
+
+  Read 1 file (ctrl+o to expand)
+
+● The cached context was stale — the user updated the file between sessions. I'll rewrite it directly:
+
+● Write(~/work/mpint/CLAUDE.md)
+  ⎿  Added 7 lines, removed 17 lines
+      18
+      19
+      20  ## What Claude has done in our last conversation
+      21 -* Renamed demo variant *GMPPimple* to *GMPPimpl* and *WrappedNativePimple* to *WrappedNativePimpl* throughout.
+      22 -* Renamed source files: `src/MPintWrappedNativePimple.cpp` → `src/MPintWrappedNativePimpl.cpp` and `src/MPintGMPPimple.cpp` → `src/MPintGMPPimpl.cpp` (via `git mv`).
+      23 -* Renamed test ref files: `test/demoWrappedNativePimple.output.ref` → `test/demoWrappedNativePimpl.output.ref` and `test/demoGMPPimple.output.ref` → `test/demoGMPPimpl.output.ref`.
+      24 -* Updated `Makefile`: target variables, build rules, `-DDEMO_WRAPPEDNATIVEPIMPL`/`-DDEMO_GMPPIMPL` flags, and source file references.
+      25 -* Updated `demo/src/demoTypedef.hpp`: `DEMO_WRAPPEDNATIVEPIMPL` and `DEMO_GMPPIMPL` macros.
+      26 -* Updated `test/test.sh`: all variable names and executable/output/ref file paths.
+      27 -* Updated `AGENTS.md`: new class and executable names throughout.
+      28 -* Updated `.gitignore.example` and copied it over `.gitignore`.
+      29 -* All four `./test/test.sh all` diffs pass.
+      21 +* Created `include/MPintWrappedNative.hpp`: inline header-only `class MPint` wrapping `signed long int` directly (no pimpl). All operators inline; copy/move/destructor defaulted.
+      22 +* Created `include/MPintGMP.hpp`: inline header-only `class MPint` wrapping `mpz_t` directly (no pimpl). All operators inline; mpz lifecycle managed in constructors/destructor/copy/
+         +move.
+      23 +* Both files were seeded from the corresponding pimpl `.cpp` files via `cp` + `git add`.
+      24 +* Added `DEMO_WRAPPEDNATIVE` and `DEMO_GMP` branches to `demo/src/demoTypedef.hpp`.
+      25 +* Added `TARGET_WRAPPEDNATIVE` and `TARGET_GMP` build rules to `Makefile` (header-only, no extra `.cpp`). Variant order: Native → GMPXX → WrappedNative → GMP → WrappedNativePimpl →
+         +GMPPimpl.
+      26 +* Updated `test/test.sh`: added both new variants to `doRegression()` and expanded `doProf()` to a 6-column table.
+      27 +* Generated `test/demoWrappedNative.output.ref` and `test/demoGMP.output.ref`; all six `./test/test.sh regr` diffs pass.
+      28
+      29  ## What I have done since our last conversation
+      32 -I've updated *transcript.txt* and *CLAUDE.md*, and changed the *all* argument of *test/test.sh* to *regr*.
+      33 -I've also updated the informal *test/prof_output.txt* to reflect the new variant names.
+      30
+      31  ## What I want Claude to do in the upcoming conversation
+      36 -Now, that the demo variant names *DEMO_WRAPPEDNATIVE*/*demoWrappedNative*, and *DEMO_GMP*/*demoGMP* are free again,
+      37 -I want to give them new meanings:
+      38 -Take *WrappedNativePimpl* and *GMPPimpl* as starting points, non-destructively, and
+      39 -implement the variants, as named above, without going the detour over a pimpl implementation. Of course, this implies
+      40 -to abandon the principle that we have a single *MPint.hpp* which is implementation indepent.
+      41 -I also want all operators/functions as *inline* as possible.
+
+● Bash(git -C /home/claudeuser/work/mpint add CLAUDE.md && git -C /home/claudeuser/work/mpint commit -m "updated CLAUDE.md")
+  ⎿  [master e5f8769] updated CLAUDE.md
+      1 file changed, 7 insertions(+), 17 deletions(-)
+
+● Done. Committed as e5f8769.
+
+✻ Sautéed for 1m 13s
+
+❯ /status
+  ⎿  Settings dialog dismissed
+
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ /exit
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+#############################################################################################################################################################################################################
+

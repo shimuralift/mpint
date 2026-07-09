@@ -15,6 +15,8 @@ test/demoNative.output
 test/demoGMPXX.output
 test/demoWrappedNativePimpl.output
 test/demoGMPPimpl.output
+test/demoWrappedNative.output
+test/demoGMP.output
 .cproject
 .project
 .settings/
