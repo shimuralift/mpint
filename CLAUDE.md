@@ -18,24 +18,14 @@ which implements an integer with arbitrary precision.
 
 
 ## What Claude has done in our last conversation
-* Renamed demo variant *GMPPimple* to *GMPPimpl* and *WrappedNativePimple* to *WrappedNativePimpl* throughout.
-* Renamed source files: `src/MPintWrappedNativePimple.cpp` → `src/MPintWrappedNativePimpl.cpp` and `src/MPintGMPPimple.cpp` → `src/MPintGMPPimpl.cpp` (via `git mv`).
-* Renamed test ref files: `test/demoWrappedNativePimple.output.ref` → `test/demoWrappedNativePimpl.output.ref` and `test/demoGMPPimple.output.ref` → `test/demoGMPPimpl.output.ref`.
-* Updated `Makefile`: target variables, build rules, `-DDEMO_WRAPPEDNATIVEPIMPL`/`-DDEMO_GMPPIMPL` flags, and source file references.
-* Updated `demo/src/demoTypedef.hpp`: `DEMO_WRAPPEDNATIVEPIMPL` and `DEMO_GMPPIMPL` macros.
-* Updated `test/test.sh`: all variable names and executable/output/ref file paths.
-* Updated `AGENTS.md`: new class and executable names throughout.
-* Updated `.gitignore.example` and copied it over `.gitignore`.
-* All four `./test/test.sh all` diffs pass.
+* Created `include/MPintWrappedNative.hpp`: inline header-only `class MPint` wrapping `signed long int` directly (no pimpl). All operators inline; copy/move/destructor defaulted.
+* Created `include/MPintGMP.hpp`: inline header-only `class MPint` wrapping `mpz_t` directly (no pimpl). All operators inline; mpz lifecycle managed in constructors/destructor/copy/move.
+* Both files were seeded from the corresponding pimpl `.cpp` files via `cp` + `git add`.
+* Added `DEMO_WRAPPEDNATIVE` and `DEMO_GMP` branches to `demo/src/demoTypedef.hpp`.
+* Added `TARGET_WRAPPEDNATIVE` and `TARGET_GMP` build rules to `Makefile` (header-only, no extra `.cpp`). Variant order: Native → GMPXX → WrappedNative → GMP → WrappedNativePimpl → GMPPimpl.
+* Updated `test/test.sh`: added both new variants to `doRegression()` and expanded `doProf()` to a 6-column table.
+* Generated `test/demoWrappedNative.output.ref` and `test/demoGMP.output.ref`; all six `./test/test.sh regr` diffs pass.
 
 ## What I have done since our last conversation
-I've updated *transcript.txt* and *CLAUDE.md*, and changed the *all* argument of *test/test.sh* to *regr*.  
-I've also updated the informal *test/prof_output.txt* to reflect the new variant names.
 
 ## What I want Claude to do in the upcoming conversation
-Now, that the demo variant names *DEMO_WRAPPEDNATIVE*/*demoWrappedNative*, and *DEMO_GMP*/*demoGMP* are free again,
-I want to give them new meanings:  
-Take *WrappedNativePimpl* and *GMPPimpl* as starting points, non-destructively, and 
-implement the variants, as named above, without going the detour over a pimpl implementation. Of course, this implies
-to abandon the principle that we have a single *MPint.hpp* which is implementation indepent.
-I also want all operators/functions as *inline* as possible.
