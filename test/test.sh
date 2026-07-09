@@ -60,7 +60,7 @@ doDiff () {
     return $?
 }
 
-doAll () {
+doRegression () {
     local retval=0
     local diffretval=0
 
@@ -186,10 +186,10 @@ printHelp () {
     local retval=0
 
     local helptext='synopsis:
-./test.sh  "all"|"prof"|"help" ["dry"]
+./test.sh  "regr"|"prof"|"help" ["dry"]
 
 mandatory 1st arg:
-    all           : runs the executables, compares their output
+    regr          : runs the executables, compares their output
                     (stdout and stderr combined) to a reference
     prof          : runs all demo* variants with -prof and shows
                     cycle counts side-by-side for easy comparison
@@ -221,8 +221,8 @@ main () {
     else
         if [ "${DRYPARAM}" == "" ] || [ "${DRYPARAM}" == "dry" ]; then
             case "${CMDLPARAM}" in
-                all)
-                    doAll
+                regr)
+                    doRegression
                     exitval=$?
                     ;;
                 prof)

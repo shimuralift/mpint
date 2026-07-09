@@ -29,5 +29,13 @@ which implements an integer with arbitrary precision.
 * All four `./test/test.sh all` diffs pass.
 
 ## What I have done since our last conversation
+I've updated *transcript.txt* and *CLAUDE.md*, and changed the *all* argument of *test/test.sh* to *regr*.  
+I've also updated the informal *test/prof_output.txt* to reflect the new variant names.
 
 ## What I want Claude to do in the upcoming conversation
+Now, that the demo variant names *DEMO_WRAPPEDNATIVE*/*demoWrappedNative*, and *DEMO_GMP*/*demoGMP* are free again,
+I want to give them new meanings:  
+Take *WrappedNativePimpl* and *GMPPimpl* as starting points, non-destructively, and 
+implement the variants, as named above, without going the detour over a pimpl implementation. Of course, this implies
+to abandon the principle that we have a single *MPint.hpp* which is implementation indepent.
+I also want all operators/functions as *inline* as possible.

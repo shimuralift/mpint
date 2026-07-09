@@ -71,7 +71,7 @@ We have this general directory structure:
     test
 
 Testing approaches:
-simple stdout/stderr based regression test, driven by *test/test.sh all*,
+simple stdout/stderr based regression test, driven by *test/test.sh regr*,
 see below.
 
 Profiling/Benchmarking:
@@ -84,7 +84,7 @@ make, with targets *all*(default) and *clean*.
 
 Test commands:  
 simple stdout/stderr based regression test:  
-*cd test; ./test.sh all*  
+*cd test; ./test.sh regr*  
 
 Profiling/Benchmarking:  
 *cd test; ./test.sh prof*

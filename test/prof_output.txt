@@ -1,24 +1,26 @@
 [claudeuser@gondwana:test]$ ./test.sh prof
-############################## START : ../demo/bin/demoNative -prof > /tmp/tmp.EtCITShduL 2>&1 ##########
-############################## EXIT  : ../demo/bin/demoNative -prof > /tmp/tmp.EtCITShduL 2>&1 : EXITCODE : 0 ##########
-############################## START : ../demo/bin/demoGMPXX -prof > /tmp/tmp.INmlPrUi32 2>&1 ##########
-############################## EXIT  : ../demo/bin/demoGMPXX -prof > /tmp/tmp.INmlPrUi32 2>&1 : EXITCODE : 0 ##########
-############################## START : ../demo/bin/demoWrappedNative -prof > /tmp/tmp.9aDsrzp5sr 2>&1 ##########
-############################## EXIT  : ../demo/bin/demoWrappedNative -prof > /tmp/tmp.9aDsrzp5sr 2>&1 : EXITCODE : 0 ##########
-############################## START : ../demo/bin/demoGMP -prof > /tmp/tmp.P3hf7y4KyS 2>&1 ##########
-############################## EXIT  : ../demo/bin/demoGMP -prof > /tmp/tmp.P3hf7y4KyS 2>&1 : EXITCODE : 0 ##########
+############################## START : ../demo/bin/demoNative -prof > /tmp/tmp.ABIi6zSXQV 2>&1 ##########
+############################## EXIT  : ../demo/bin/demoNative -prof > /tmp/tmp.ABIi6zSXQV 2>&1 : EXITCODE : 0 ##########
+############################## START : ../demo/bin/demoGMPXX -prof > /tmp/tmp.9WJm8FZMko 2>&1 ##########
+############################## EXIT  : ../demo/bin/demoGMPXX -prof > /tmp/tmp.9WJm8FZMko 2>&1 : EXITCODE : 0 ##########
+############################## START : ../demo/bin/demoWrappedNativePimpl -prof > /tmp/tmp.YJ107V6kgu 2>&1 ##########
+############################## EXIT  : ../demo/bin/demoWrappedNativePimpl -prof > /tmp/tmp.YJ107V6kgu 2>&1 : EXITCODE : 0 ##########
+############################## START : ../demo/bin/demoGMPPimpl -prof > /tmp/tmp.RDqmfRav5G 2>&1 ##########
+############################## EXIT  : ../demo/bin/demoGMPPimpl -prof > /tmp/tmp.RDqmfRav5G 2>&1 : EXITCODE : 0 ##########
 
 === profiling comparison (rdtsc cpu cycles, avg of 100000 runs) ===
 
-function                  demoNative             demoGMPXX     demoWrappedNative               demoGMP
---------------  --------------------  --------------------  --------------------  --------------------
-expr                           4 576                14 645                 6 031                11 529
-basicexpr                     51 839               136 498                57 328                81 378
-moreexpr                      18 724                36 867                21 809                31 924
-extraexpr                     24 167                55 962                38 519                76 946
-strconstr                     10 150                27 048                15 053                27 234
-floatconv                      7 468                 8 253                 7 673                25 904
-missingexpr                    6 425                10 630                 8 422                12 394
-injTest                        1 000                51 646                80 984                71 940
-detTest                      360 313               954 631               492 620               931 859
-reduTest                   1 286 382             2 232 178             3 147 329            10 006 316
+function                  demoNative             demoGMPXX      demoWrappedNativePimpl          demoGMPPimpl
+--------------  --------------------  --------------------  --------------------------  --------------------
+expr                           5 248                14 545                       5 968                10 706
+basicexpr                     52 838               136 144                      62 389                82 333
+moreexpr                      18 460                37 433                      22 583                32 284
+extraexpr                     26 105                58 473                      40 605                78 531
+strconstr                     10 375                27 175                      14 865                26 903
+floatconv                      7 538                 8 229                       7 730                25 871
+missingexpr                    6 588                10 527                       8 363                11 469
+injTest                        1 134                51 805                      84 135                71 834
+detTest                      362 497               957 054                     491 002               935 486
+reduTest                   1 300 116             2 251 832                   3 190 057             9 930 959
+[claudeuser@gondwana:test]$ echo $?
+0

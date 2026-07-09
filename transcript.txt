@@ -12117,3 +12117,973 @@ Sharing transcript…
 
 #############################################################################################################################################################################################################
 
+ ▐▛███▜▌   Claude Code v2.1.204
+▝▜█████▛▘  Sonnet 4.6 · Claude Pro
+  ▘▘ ▝▝    ~/work/mpint
+
+ ▎ Extended: Fable 5 is included in your weekly limit
+ ▎ Through July 12, you can use up to 50% of your weekly usage limit on Fable 5. If you hit your limit, you can continue on Fable 5 with usage credits. Fable 5 draws down usage faster than Opus 4.8.
+ ▎ Run /model and select Fable to use it. Learn more (https://support.claude.com/en/articles/15424964-claude-fable-5-promotional-access)
+
+✻ Conversation compacted (ctrl+o for history)
+
+
+❯ /compact
+  ⎿  Compacted (ctrl+o to see full summary)
+  ⎿  Read ../../.claude/projects/-home-claudeuser-work-mpint/memory/feedback_transcript_txt.md (15 lines)
+  ⎿  Read test/test.sh (249 lines)
+  ⎿  Read Makefile (62 lines)
+  ⎿  Referenced file demo/src/exprTest.cpp
+
+❯ hi
+
+● Hi! I can see from CLAUDE.md what's needed: rename variant GMP → GMPPimple and WrappedNative → WrappedNativePimple across Makefile, demoTypedef.hpp, and test.sh, plus update AGENTS.md. Let me read
+  the remaining files I need.
+
+  Read 2 files (ctrl+o to expand)
+
+● Now let me check if DEMO_WRAPPEDNATIVE or DEMO_GMP appear in any source files beyond demoTypedef.hpp.
+
+  Searched for 1 pattern, listed 1 directory (ctrl+o to expand)
+
+● Good — DEMO_WRAPPEDNATIVE/DEMO_GMP only appear in demoTypedef.hpp. Now I'll make all the changes, rename the ref files, and update AGENTS.md.
+
+● Update(demo/src/demoTypedef.hpp)
+  ⎿  Added 2 lines, removed 2 lines
+       7      #include <gmpxx.h>
+       8      typedef mpz_class MPint;
+       9      #define DEMO_ARBPREC
+      10 -#elif defined DEMO_WRAPPEDNATIVE
+      10 +#elif defined DEMO_WRAPPEDNATIVEPIMPLE
+      11      #include "MPint.hpp"
+      12 -#elif defined DEMO_GMP
+      12 +#elif defined DEMO_GMPPIMPLE
+      13      #include "MPint.hpp"
+      14      #define DEMO_ARBPREC
+      15  #else
+
+● Bash(mv /home/claudeuser/work/mpint/test/demoWrappedNative.output.ref /home/claudeuser/work/mpint/test/demoWrappedNativePimple.output.ref
+      mv /home/claudeuser/work/mp…)
+  ⎿  Done
+  ⎿  Found 5 new diagnostic issues in 1 file (ctrl+o to expand)
+
+● The diagnostics are just clang analyzing the header in isolation without defines — expected and harmless. Now updating Makefile and test.sh:
+
+● Update(Makefile)
+  ⎿  Added 8 lines, removed 8 lines
+      20
+      21  TARGET_NATIVE        := $(DEMO_BINDIR)/demoNative
+      22  TARGET_GMPXX         := $(DEMO_BINDIR)/demoGMPXX
+      23 -TARGET_WRAPPEDNATIVE := $(DEMO_BINDIR)/demoWrappedNative
+      24 -TARGET_GMP           := $(DEMO_BINDIR)/demoGMP
+      23 +TARGET_WRAPPEDNATIVEPIMPLE := $(DEMO_BINDIR)/demoWrappedNativePimple
+      24 +TARGET_GMPPIMPLE           := $(DEMO_BINDIR)/demoGMPPimple
+      25
+      26 -TARGETS := $(TARGET_NATIVE) $(TARGET_GMPXX) $(TARGET_WRAPPEDNATIVE) $(TARGET_GMP)
+      26 +TARGETS := $(TARGET_NATIVE) $(TARGET_GMPXX) $(TARGET_WRAPPEDNATIVEPIMPLE) $(TARGET_GMPPIMPLE)
+      27
+      28
+      29  TEST_DIR := test
+      30
+      31 -TESTOUTPUT_NATIVE        := $(TEST_DIR)/demoNative.output
+      32 -TESTOUTPUT_GMPXX         := $(TEST_DIR)/demoGMPXX.output
+      33 -TESTOUTPUT_WRAPPEDNATIVE := $(TEST_DIR)/demoWrappedNative.output
+      34 -TESTOUTPUT_GMP           := $(TEST_DIR)/demoGMP.output
+      31 +TESTOUTPUT_NATIVE             := $(TEST_DIR)/demoNative.output
+      32 +TESTOUTPUT_GMPXX              := $(TEST_DIR)/demoGMPXX.output
+      33 +TESTOUTPUT_WRAPPEDNATIVEPIMPLE := $(TEST_DIR)/demoWrappedNativePimple.output
+      34 +TESTOUTPUT_GMPPIMPLE          := $(TEST_DIR)/demoGMPPimple.output
+      35
+      36 -TESTOUTPUTS := $(TESTOUTPUT_NATIVE) $(TESTOUTPUT_GMPXX) $(TESTOUTPUT_WRAPPEDNATIVE) $(TESTOUTPUT_GMP)
+      36 +TESTOUTPUTS := $(TESTOUTPUT_NATIVE) $(TESTOUTPUT_GMPXX) $(TESTOUTPUT_WRAPPEDNATIVEPIMPLE) $(TESTOUTPUT_GMPPIMPLE)
+      37
+      38
+      39  CXX      := g++
+
+● Update(Makefile)
+  ⎿  Added 4 lines, removed 4 lines
+      54  $(TARGET_GMPXX): $(DEMO_SRCS) $(DEMO_HDRS)
+      55    $(CXX) $(CXXFLAGS) -DDEMO_GMPXX -I$(DEMO_INCLDIR) -o $@ $(DEMO_SRCS) -lgmp -lgmpxx
+      56
+      57 -$(TARGET_WRAPPEDNATIVE): $(DEMO_SRCS) $(DEMO_HDRS) $(WRAPPEDNATIVE_SRC) $(WRAPPEDNATIVE_HDR)
+      58 -  $(CXX) $(CXXFLAGS) -DDEMO_WRAPPEDNATIVE -I$(DEMO_INCLDIR) -I$(INCLDIR) -o $@ $(DEMO_SRCS) $(WRAPPEDNATIVE_SRC)
+      57 +$(TARGET_WRAPPEDNATIVEPIMPLE): $(DEMO_SRCS) $(DEMO_HDRS) $(WRAPPEDNATIVE_SRC) $(WRAPPEDNATIVE_HDR)
+      58 +  $(CXX) $(CXXFLAGS) -DDEMO_WRAPPEDNATIVEPIMPLE -I$(DEMO_INCLDIR) -I$(INCLDIR) -o $@ $(DEMO_SRCS) $(WRAPPEDNATIVE_SRC)
+      59
+      60 -$(TARGET_GMP): $(DEMO_SRCS) $(DEMO_HDRS) $(GMP_SRC) $(GMP_HDR)
+      61 -  $(CXX) $(CXXFLAGS) -DDEMO_GMP -I$(DEMO_INCLDIR) -I$(INCLDIR) -o $@ $(DEMO_SRCS)  $(GMP_SRC) -lgmp
+      60 +$(TARGET_GMPPIMPLE): $(DEMO_SRCS) $(DEMO_HDRS) $(GMP_SRC) $(GMP_HDR)
+      61 +  $(CXX) $(CXXFLAGS) -DDEMO_GMPPIMPLE -I$(DEMO_INCLDIR) -I$(INCLDIR) -o $@ $(DEMO_SRCS)  $(GMP_SRC) -lgmp
+
+● Now update test.sh:
+
+● Update(test/test.sh)
+  ⎿  Added 6 lines, removed 6 lines
+      10  EXECUTABLEGMPXX="../demo/bin/demoGMPXX"
+      11  OUTFILEGMPXX="demoGMPXX.output"
+      12
+      13 -EXECUTABLEWRAPPEDNATIVE="../demo/bin/demoWrappedNative"
+      14 -OUTFILEWRAPPEDNATIVE="demoWrappedNative.output"
+      13 +EXECUTABLEWRAPPEDNATIVEPIMPLE="../demo/bin/demoWrappedNativePimple"
+      14 +OUTFILEWRAPPEDNATIVEPIMPLE="demoWrappedNativePimple.output"
+      15
+      16 -EXECUTABLEGMP="../demo/bin/demoGMP"
+      17 -OUTFILEGMP="demoGMP.output"
+      16 +EXECUTABLEGMPPIMPLE="../demo/bin/demoGMPPimple"
+      17 +OUTFILEGMPPIMPLE="demoGMPPimple.output"
+      18
+      19  REFFILENATIVE="demoNative.output.ref"
+      20  REFFILEGMPXX="demoGMPXX.output.ref"
+      21 -REFFILEWRAPPEDNATIVE="demoWrappedNative.output.ref"
+      22 -REFFILEGMP="demoGMP.output.ref"
+      21 +REFFILEWRAPPEDNATIVEPIMPLE="demoWrappedNativePimple.output.ref"
+      22 +REFFILEGMPPIMPLE="demoGMPPimple.output.ref"
+      23
+      24  DIFFCMD="diff"
+      25  RMCMD="rm"
+
+● Now update doAll() and doProf() in test.sh:
+
+● Update(test/test.sh)
+  ⎿  Added 4 lines, removed 4 lines
+      77          return ${retval}
+      78      fi
+      79
+      80 -    runExecutable ${EXECUTABLEWRAPPEDNATIVE} ${OUTFILEWRAPPEDNATIVE}
+      80 +    runExecutable ${EXECUTABLEWRAPPEDNATIVEPIMPLE} ${OUTFILEWRAPPEDNATIVEPIMPLE}
+      81      retval=$?
+      82      if [ "${retval}" -ne 0 ]; then
+      83          return ${retval}
+      84      fi
+      85
+      86 -    runExecutable ${EXECUTABLEGMP} ${OUTFILEGMP}
+      86 +    runExecutable ${EXECUTABLEGMPPIMPLE} ${OUTFILEGMPPIMPLE}
+      87      retval=$?
+      88      if [ "${retval}" -ne 0 ]; then
+      89          return ${retval}
+     ...
+      102          retval=${diffretval}
+      103      fi
+      104
+      105 -    doDiff "${OUTFILEWRAPPEDNATIVE}" "${REFFILEWRAPPEDNATIVE}"
+      105 +    doDiff "${OUTFILEWRAPPEDNATIVEPIMPLE}" "${REFFILEWRAPPEDNATIVEPIMPLE}"
+      106      diffretval=$?
+      107      if [ "${diffretval}" -ne 0 ]; then
+      108          retval=${diffretval}
+      109      fi
+      110
+      111 -    doDiff "${OUTFILEGMP}" "${REFFILEGMP}"
+      111 +    doDiff "${OUTFILEGMPPIMPLE}" "${REFFILEGMPPIMPLE}"
+      112      diffretval=$?
+      113      if [ "${diffretval}" -ne 0 ]; then
+      114          retval=${diffretval}
+
+● Now update doProf():
+
+● Update(test/test.sh)
+  ⎿  Added 2 lines, removed 2 lines
+      131
+      132      runCmd "${EXECUTABLENATIVE} -prof > ${tmp1} 2>&1"
+      133      runCmd "${EXECUTABLEGMPXX} -prof > ${tmp2} 2>&1"
+      134 -    runCmd "${EXECUTABLEWRAPPEDNATIVE} -prof > ${tmp3} 2>&1"
+      135 -    runCmd "${EXECUTABLEGMP} -prof > ${tmp4} 2>&1"
+      134 +    runCmd "${EXECUTABLEWRAPPEDNATIVEPIMPLE} -prof > ${tmp3} 2>&1"
+      135 +    runCmd "${EXECUTABLEGMPPIMPLE} -prof > ${tmp4} 2>&1"
+      136
+      137      if [ "${DRYPARAM}" == "dry" ]; then
+      138          echo "${DRY_RUN_PREFIX}<post processing results and printing a summarizing table on stdout>"
+
+● Now update the awk column headers in doProf():
+
+● Update(test/test.sh)
+  ⎿  Added 2 lines, removed 2 lines
+      154      # Each data line has the form "  name: cycles cycles".
+      155      paste "${tdata1}" "${tdata2}" "${tdata3}" "${tdata4}" | awk -F'\t' '
+      156      BEGIN {
+      157 +        printf "%-14s  %20s  %20s  %26s  %20s\n",
+      158 +               "function", "demoNative", "demoGMPXX", "demoWrappedNativePimple", "demoGMPPimple"
+      159          printf "%-14s  %20s  %20s  %20s  %20s\n",
+      158 -               "function", "demoNative", "demoGMPXX", "demoWrappedNative", "demoGMP"
+      159 -        printf "%-14s  %20s  %20s  %20s  %20s\n",
+      160                 "--------------",
+      161                 "--------------------",
+      162                 "--------------------",
+
+● I need to also update the separator line and data row in doProf() to keep the format consistent:
+
+● Update(test/test.sh)
+  ⎿  Added 3 lines, removed 3 lines
+      156      BEGIN {
+      157          printf "%-14s  %20s  %20s  %26s  %20s\n",
+      158                 "function", "demoNative", "demoGMPXX", "demoWrappedNativePimple", "demoGMPPimple"
+      159 -        printf "%-14s  %20s  %20s  %20s  %20s\n",
+      159 +        printf "%-14s  %20s  %20s  %26s  %20s\n",
+      160                 "--------------",
+      161                 "--------------------",
+      162                 "--------------------",
+      163 -               "--------------------",
+      163 +               "--------------------------",
+      164                 "--------------------"
+      165      }
+      166      {
+     ...
+      174          gsub(/[[:space:]]*cycles[[:space:]]*$/, "", c3); gsub(/^[[:space:]]+/, "", c3)
+      175          split($4, e, ":"); c4 = e[2]
+      176          gsub(/[[:space:]]*cycles[[:space:]]*$/, "", c4); gsub(/^[[:space:]]+/, "", c4)
+      177 -        printf "%-14s  %20s  %20s  %20s  %20s\n", name, c1, c2, c3, c4
+      177 +        printf "%-14s  %20s  %20s  %26s  %20s\n", name, c1, c2, c3, c4
+      178      }
+      179      '
+      180
+
+● Now update AGENTS.md — the variant descriptions and executable names need updating, and GMPXX needs to be introduced:
+
+● Update(AGENTS.md)
+  ⎿  User rejected update to AGENTS.md
+
+✻ Cogitated for 2m 51s
+
+❯ also replace MPintWrappedNative with MPintWrappedNativePimple and MPintGMP with MPintGMPPimple.
+
+● Got it. Let me first find all occurrences of those class names across the codebase.
+
+  Searched for 1 pattern (ctrl+o to expand)
+
+● Let me also check the source files to see what class names are used internally:
+
+  Searched for 3 patterns, listed 2 directories (ctrl+o to expand)
+
+● The class names don't appear inside the source files — they're only referenced as filenames. So the rename means: rename the .cpp files, update the Makefile source file variables, and update
+  AGENTS.md. Let me do all three:
+
+● Bash(mv /home/claudeuser/work/mpint/src/MPintWrappedNative.cpp /home/claudeuser/work/mpint/src/MPintWrappedNativePimple.cpp
+      mv /home/claudeuser/work/mpint/src/MPintG…)
+  ⎿  Interrupted · What should Claude do instead?
+
+✻ Cooked for 1m 55s
+
+❯ use git mv instead of mv
+
+● Bash(git -C /home/claudeuser/work/mpint mv src/MPintWrappedNative.cpp src/MPintWrappedNativePimple.cpp
+      git -C /home/claudeuser/work/mpint mv src/MPintGMP.cpp src/MPi…)
+  ⎿  (No output)
+
+● Now update the Makefile source file references and the AGENTS.md in parallel:
+
+● Update(Makefile)
+  ⎿  Added 1 line, removed 1 line
+      1  SRCDIR  := src
+      2  INCLDIR := include
+      3
+      4 -WRAPPEDNATIVE_SRC := $(SRCDIR)/MPintWrappedNative.cpp
+      4 +WRAPPEDNATIVE_SRC := $(SRCDIR)/MPintWrappedNativePimple.cpp
+      5  WRAPPEDNATIVE_HDR := $(INCLDIR)/MPint.hpp
+      6
+      7  GMP_SRC           := $(SRCDIR)/MPintGMP.cpp
+
+● Update(Makefile)
+  ⎿  Added 1 line, removed 1 line
+       4  WRAPPEDNATIVE_SRC := $(SRCDIR)/MPintWrappedNativePimple.cpp
+       5  WRAPPEDNATIVE_HDR := $(INCLDIR)/MPint.hpp
+       6
+       7 -GMP_SRC           := $(SRCDIR)/MPintGMP.cpp
+       7 +GMP_SRC           := $(SRCDIR)/MPintGMPPimple.cpp
+       8  GMP_HDR           := $(INCLDIR)/MPint.hpp
+       9
+      10
+
+● Now update AGENTS.md with both the class renames and the GMPXX introduction:
+
+● Update(AGENTS.md)
+  ⎿  Added 11 lines, removed 8 lines
+      35  assisted, or develop their own implementation, using one existing implementation
+      36  as a starting point in which case the existing tests and profiling might be helpful.
+      37
+      38 -We have two implementations of *MPint*: *MPintWrappedNative* which
+      39 -is just the *MPint* operators wrapping the native *signed long int* type,
+      40 -and *MPintGMP* which wraps the C interface of the GNU Multiprecision
+      38 +We have two pimpl-style implementations of *MPint*: *MPintWrappedNativePimple*
+      39 +which is just the *MPint* operators wrapping the native *signed long int* type,
+      40 +and *MPintGMPPimple* which wraps the C interface of the GNU Multiprecision
+      41  library.
+      42  In subdirectory mpint/demo, there are several executable artifacts for
+      43 -demo/testing/profiling purposes: *demoWrappedNative* which drives the
+      44 -*MPintWrappedNative* operators, *demoGMP* for the *MPintGMP* wrapper around the
+      45 -GMP interface, and, for comparison, *demoNative*, which runs the demo on
+      46 -the native *signed long int* type without using *MPint* at all.
+      43 +demo/testing/profiling purposes:
+      44 +- *demoNative*: runs the demo on the native *signed long int* type without
+      45 +  using *MPint* at all (for baseline comparison).
+      46 +- *demoGMPXX*: uses *mpz_class* from the GMP C++ interface (*gmpxx.h*)
+      47 +  directly via a typedef, without going through *class MPint*.
+      48 +- *demoWrappedNativePimple*: drives the *MPintWrappedNativePimple* operators.
+      49 +- *demoGMPPimple*: drives the *MPintGMPPimple* wrapper around the GMP C interface.
+      50
+      51  In subdirectory *mpint/test* there is a bash script *test.sh* which
+      49 -runs all three demo variants and compares their outputs to respective
+      52 +runs all four demo variants and compares their outputs to respective
+      53  reference outputs. *test.sh* with option *prof* does some rdtsc based
+      54  profiling of the demo variants and shows a summary of results.
+      55
+
+● Also need to fix the "Known test-suite overflow exemptions" section in AGENTS.md which mentions the old names:
+
+● Update(AGENTS.md)
+  ⎿  User rejected update to AGENTS.md
+
+● Update(AGENTS.md)
+  ⎿  User rejected update to AGENTS.md
+
+✻ Crunched for 2m 0s
+
+❯ no
+
+● You're right — replace_all would have corrupted the names I already wrote correctly (e.g. demoWrappedNativePimple → demoWrappedNativePimplePimple). Let me read the current AGENTS.md to see exactly
+  what still needs fixing.
+
+  Read 1 file (ctrl+o to expand)
+
+● I'll update the overflow exemptions section with targeted replacements — one for each specific occurrence:
+
+● Update(AGENTS.md)
+  ⎿  Added 2 lines, removed 2 lines
+      90  *cd test; ./test.sh prof*
+      91
+      92
+      93 -## Known test-suite overflow exemptions (*demoNative* / *demoWrappedNative*)
+      93 +## Known test-suite overflow exemptions (*demoNative* / *demoWrappedNativePimple*)
+      94  Both native-backed demos compute on a 64-bit *signed long int* and so can
+      95 -silently overflow on inputs where *demoGMP* (arbitrary precision) stays exact.
+      95 +silently overflow on inputs where *demoGMPPimple* (arbitrary precision) stays exact.
+      96  All other lines of *test/test.sh*'s reference outputs (*expr*, *basicexpr*,
+      97  *moreexpr*, *extraexpr*, *strconstr*, *floatconv*, *missingexpr*, *detTest*, *reduTest*)
+      98  have been independently cross-checked against external oracles (a from-
+
+● Update(AGENTS.md)
+  ⎿  Added 2 lines, removed 2 lines
+      101  overflow-driven divergences are:
+      102
+      103  - *extraexpr()* repeated-squaring test ("23^19"): the true value is
+      104 -  74615470927590710561908487 (exact on *demoGMP*). *demoNative* and
+      105 -  *demoWrappedNative* both print -3983830012993820921, which is exactly the
+      104 +  74615470927590710561908487 (exact on *demoGMPPimple*). *demoNative* and
+      105 +  *demoWrappedNativePimple* both print -3983830012993820921, which is exactly the
+      106    64-bit signed two's-complement wraparound of the same repeated-squaring
+      107    algorithm (confirmed by independently simulating it with explicit int64
+      108    wraparound arithmetic). This is the only overflow in the entire
+
+● Update(AGENTS.md)
+  ⎿  Added 2 lines, removed 2 lines
+      113  - *detTest()* GaussInt column (known): computeDetGaussInt's fraction-free
+      114    Gaussian elimination keeps intermediate values that can exceed the final
+      115    determinant's magnitude. For the two dense (sparsity 0%) 4x4 cases (run 25
+      116 -  and run 26 of 32), *demoNative/demoWrappedNative*'s GaussInt overflows to
+      116 +  and run 26 of 32), *demoNative/demoWrappedNativePimple*'s GaussInt overflows to
+      117    402904 and -117875 respectively, while Dodgson and GaussFloat on the same
+      118    runs still report the correct determinants -43753032 and -18819899
+      119 -  (matching demoGMP). No other *detTest* case overflows.
+      119 +  (matching demoGMPPimple). No other *detTest* case overflows.
+      120
+      121  - *reduTest()* (potential, not fully isolated): starting at run 13 of 16
+      122    (the first dimension==5 case), demoNative/demoWrappedNative's generated
+
+● Update(AGENTS.md)
+  ⎿  Added 3 lines, removed 3 lines
+      119    (matching demoGMPPimple). No other *detTest* case overflows.
+      120
+      121  - *reduTest()* (potential, not fully isolated): starting at run 13 of 16
+      122 -  (the first dimension==5 case), demoNative/demoWrappedNative's generated
+      123 -  Gram matrices diverge completely from demoGMP's, and stay diverged for
+      124 -  all subsequent runs. Runs 1-12 (dimension <= 4) match demoGMP bit-for-bit.
+      122 +  (the first dimension==5 case), demoNative/demoWrappedNativePimple's generated
+      123 +  Gram matrices diverge completely from demoGMPPimple's, and stay diverged for
+      124 +  all subsequent runs. Runs 1-12 (dimension <= 4) match demoGMPPimple bit-for-bit.
+      125    isSingular() (called by PosDefState while constructing each candidate
+      126    lattice) calls the very same computeDetGaussInt() that's confirmed to
+      127    overflow on dense 4x4 input above; a wrong singular/non-singular verdict
+
+● Update(AGENTS.md)
+  ⎿  Added 1 line, removed 1 line
+      126    lattice) calls the very same computeDetGaussInt() that's confirmed to
+      127    overflow on dense 4x4 input above; a wrong singular/non-singular verdict
+      128    on a 5x5 candidate would consume a different number of drand48() draws
+      129 -  than demoGMP and fork the entire subsequent random sequence, which is
+      129 +  than demoGMPPimple and fork the entire subsequent random sequence, which is
+      130    consistent with what's observed. This is the likely root cause but has
+      131    not been confirmed by direct instrumentation of isSingular() itself.
+
+● Now let me verify everything looks clean and do a build check:
+
+  Searched for 1 pattern (ctrl+o to expand)
+
+● No old names remain. Let me do a full build to confirm everything compiles:
+
+● Bash(make clean && make 2>&1)
+  ⎿  rm -f demo/bin/demoNative demo/bin/demoGMPXX demo/bin/demoWrappedNativePimple demo/bin/demoGMPPimple test/demoNative.output test/demoGMPXX.output test/demoWrappedNativePimple.output test/d
+     emoGMPPimple.output
+     g++ -std=c++14 -Wall -Wextra -pedantic -Werror -O2 -flto=auto -DDEMO_NATIVE -Idemo/src -o demo/bin/demoNative demo/src/demo.cpp demo/src/exprTest.cpp demo/src/det.cpp demo/src/redu.cpp dem
+     … +7 lines (ctrl+o to expand)
+
+● Clean build. Now run the full test suite:
+
+● Bash(cd /home/claudeuser/work/mpint/test && ./test.sh all 2>&1 | tail -20)
+  ⎿  [979,2],[980,2],[981,2],[983,2],[984,2],[985,2],[986,2],[988,2],[989,4],[990,4],[991,2],[992,2],[994,2],[995,2],[996,2],[997,2],[999,2],[1000,2]]
+     run 16 of 16, dimension == 5, sparsity == 20%
+     [[296 0 -28 -112 -29]
+● Update(AGENTS.md)
+  ⎿  Added 3 lines, removed 3 lines
+      119    (matching demoGMPPimple). No other *detTest* case overflows.
+      120
+      121  - *reduTest()* (potential, not fully isolated): starting at run 13 of 16
+      122 -  (the first dimension==5 case), demoNative/demoWrappedNative's generated
+      123 -  Gram matrices diverge completely from demoGMP's, and stay diverged for
+      124 -  all subsequent runs. Runs 1-12 (dimension <= 4) match demoGMP bit-for-bit.
+      122 +  (the first dimension==5 case), demoNative/demoWrappedNativePimple's generated
+      123 +  Gram matrices diverge completely from demoGMPPimple's, and stay diverged for
+      124 +  all subsequent runs. Runs 1-12 (dimension <= 4) match demoGMPPimple bit-for-bit.
+      125    isSingular() (called by PosDefState while constructing each candidate
+      126    lattice) calls the very same computeDetGaussInt() that's confirmed to
+      127    overflow on dense 4x4 input above; a wrong singular/non-singular verdict
+
+● Update(AGENTS.md)
+  ⎿  Added 1 line, removed 1 line
+      126    lattice) calls the very same computeDetGaussInt() that's confirmed to
+      127    overflow on dense 4x4 input above; a wrong singular/non-singular verdict
+      128    on a 5x5 candidate would consume a different number of drand48() draws
+      129 -  than demoGMP and fork the entire subsequent random sequence, which is
+      129 +  than demoGMPPimple and fork the entire subsequent random sequence, which is
+      130    consistent with what's observed. This is the likely root cause but has
+      131    not been confirmed by direct instrumentation of isSingular() itself.
+
+● Now let me verify everything looks clean and do a build check:
+
+  Searched for 1 pattern (ctrl+o to expand)
+
+● No old names remain. Let me do a full build to confirm everything compiles:
+
+● Bash(make clean && make 2>&1)
+  ⎿  rm -f demo/bin/demoNative demo/bin/demoGMPXX demo/bin/demoWrappedNativePimple demo/bin/demoGMPPimple test/demoNative.output test/demoGMPXX.output test/demoWrappedNativePimple.output test/d
+     emoGMPPimple.output
+     g++ -std=c++14 -Wall -Wextra -pedantic -Werror -O2 -flto=auto -DDEMO_NATIVE -Idemo/src -o demo/bin/demoNative demo/src/demo.cpp demo/src/exprTest.cpp demo/src/det.cpp demo/src/redu.cpp dem
+     … +7 lines (ctrl+o to expand)
+
+● Clean build. Now run the full test suite:
+
+● Bash(cd /home/claudeuser/work/mpint/test && ./test.sh all 2>&1 | tail -20)
+  ⎿  [979,2],[980,2],[981,2],[983,2],[984,2],[985,2],[986,2],[988,2],[989,4],[990,4],[991,2],[992,2],[994,2],[995,2],[996,2],[997,2],[999,2],[1000,2]]
+     run 16 of 16, dimension == 5, sparsity == 20%
+     [[296 0 -28 -112 -29]
+     … +17 lines (ctrl+o to expand)
+
+● All four diffs pass. Here's a summary of everything that was done:
+
+  Renamed:
+  - src/MPintWrappedNative.cpp → src/MPintWrappedNativePimple.cpp (git mv)
+  - src/MPintGMP.cpp → src/MPintGMPPimple.cpp (git mv)
+  - test/demoWrappedNative.output.ref → test/demoWrappedNativePimple.output.ref
+  - test/demoGMP.output.ref → test/demoGMPPimple.output.ref
+
+  Updated: Makefile, demo/src/demoTypedef.hpp, test/test.sh, AGENTS.md — all references to the old variant and class names replaced with WrappedNativePimple/GMPPimple. AGENTS.md also now describes
+  the demoGMPXX variant and mentions four demo executables instead of three.
+
+✻ Crunched for 1m 16s
+
+❯ commit this
+
+● Bash(git -C /home/claudeuser/work/mpint status)
+  ⎿  On branch master
+     Changes to be committed:
+       (use "git restore --staged <file>..." to unstage)
+     … +19 lines (ctrl+o to expand)
+
+● Bash(git -C /home/claudeuser/work/mpint log --oneline -5)
+  ⎿  92c4c44 updated transcript.txt, CLAUDE.md, .gitignore.example, and test/prof_output.txt
+     9d53c45 updated CLAUDE.md
+     2d20bbe add demoGMPXX: mpz_class drop-in variant via typedef, no class MPint
+     … +2 lines (ctrl+o to expand)
+
+● Bash(git -C /home/claudeuser/work/mpint add AGENTS.md Makefile demo/src/demoTypedef.hpp test/test.sh test/demoGMPPimple.output.ref test/demoWrappedNativePimple.outpu…)
+  ⎿  rm 'test/demoGMP.output.ref'
+     rm 'test/demoWrappedNative.output.ref'
+
+● Bash(git -C /home/claudeuser/work/mpint status)
+  ⎿  On branch master
+     Changes to be committed:
+       (use "git restore --staged <file>..." to unstage)
+     … +13 lines (ctrl+o to expand)
+
+● Bash(git -C /home/claudeuser/work/mpint commit -m "$(cat <<'EOF'
+      rename variants WrappedNative→WrappedNativePimple and GMP→GMPPimple…)
+  ⎿  [master c6ee714] rename variants WrappedNative→WrappedNativePimple and GMP→GMPPimple
+      8 files changed, 54 insertions(+), 51 deletions(-)
+      rename src/{MPintGMP.cpp => MPintGMPPimple.cpp} (100%)
+     … +3 lines (ctrl+o to expand)
+
+● Done. Committed as c6ee714.
+
+✻ Cogitated for 24s
+
+❯ update CLAUDE.md
+
+  Read 1 file (ctrl+o to expand)
+
+● Update(CLAUDE.md)
+  ⎿  Added 8 lines, removed 11 lines
+      18
+      19
+      20  ## What Claude has done in our last conversation
+      21 -* Created `demo/bin/demoGMPXX`: a new demo variant using `mpz_class` from `gmpxx.h` directly (no `class MPint`) via `typedef mpz_class MPint` in `demo/src/demoTypedef.hpp`.
+      22 -* Inserted `DEMO_GMPXX` in the correct position (after `DEMO_NATIVE`) in `demoTypedef.hpp`, `Makefile`, and `test/test.sh`, giving the order: Native → GMPXX → WrappedNative → GMP th
+         -roughout.
+      23 -* Added templated conversion helpers (`mpint_to_d`, `mpint_to_f`, `mpint_to_ld`, `mpint_to_i`) to `demoTypedef.hpp` to abstract over `mpz_class`'s explicit `.get_d()`/`.get_si()` AP
+         -I and its expression-template arithmetic results.
+      24 -* Fixed all compile-time incompatibilities in `demo/src/exprTest.cpp`, `demo/src/redu.cpp`, and `demo/src/demoUtils.cpp`: shift-by-MPint (`<<=`/`>>=` require `mp_bitcnt_t`), implici
+         -t cast operators (`static_cast<long>` etc.), and ambiguous `long long` construction.
+      25 -* Fixed runtime incompatibilities in `exprTest.cpp`: guarded string-constructor calls that use `+` prefix (mpz_class rejects it), single-quote digit separators (mpz_class doesn't st
+         -rip them), and the float/double overflow-throw tests (mpz_class returns infinity instead). Also guarded `injTest()` for `"+0x0"` (throws for mpz_class) and `"0x"`/`"0b"` (accepted a
+         -s 0 by mpz_class, not rejected).
+      26 -* Updated `test/test.sh` `doProf()` to a 4-column table; added `demoGMPXX` to `doAll()`.
+      27 -* Generated `test/demoGMPXX.output.ref`; all four `./test/test.sh all` diffs pass.
+      21 +* Renamed demo variant *GMP* to *GMPPimple* and *WrappedNative* to *WrappedNativePimple* throughout.
+      22 +* Renamed source files: `src/MPintWrappedNative.cpp` → `src/MPintWrappedNativePimple.cpp` and `src/MPintGMP.cpp` → `src/MPintGMPPimple.cpp` (via `git mv`).
+      23 +* Renamed test ref files: `test/demoWrappedNative.output.ref` → `test/demoWrappedNativePimple.output.ref` and `test/demoGMP.output.ref` → `test/demoGMPPimple.output.ref`.
+      24 +* Updated `Makefile`: target variables, build rules, `-DDEMO_WRAPPEDNATIVEPIMPLE`/`-DDEMO_GMPPIMPLE` flags, and source file references.
+      25 +* Updated `demo/src/demoTypedef.hpp`: `DEMO_WRAPPEDNATIVEPIMPLE` and `DEMO_GMPPIMPLE` macros.
+      26 +* Updated `test/test.sh`: all variable names and executable/output/ref file paths; widened `doProf()` column for `demoWrappedNativePimple`.
+      27 +* Updated `AGENTS.md`: new class and executable names throughout, added description of `demoGMPXX` variant, updated variant count from three to four.
+      28 +* All four `./test/test.sh all` diffs pass.
+      29
+      30  ## What I have done since our last conversation
+      30 -I've updated *transcript.txt*, *CLAUDE.md*, *.gitignore.example*, and *test/prof_output.txt*.
+      31
+      32  ## What I want Claude to do in the upcoming conversation
+      33 -Rename demo variant *GMP* to *GMPPimple*, and *WrappedNative* to *WrappedNativePimple*.
+      34 -Do that in *Makefile*, *demo/src/demoTypedef.hpp*, and *test/test.sh*. Also update
+      35 -*AGENTS.md* with respect to this name change and to the introduction of variant *GMPXX*.
+
+● Bash(git -C /home/claudeuser/work/mpint add CLAUDE.md && git -C /home/claudeuser/work/mpint commit -m "updated CLAUDE.md")
+  ⎿  [master 1aed6ba] updated CLAUDE.md
+      1 file changed, 8 insertions(+), 11 deletions(-)
+
+● Done. CLAUDE.md committed separately as 1aed6ba.
+
+✻ Brewed for 40s
+
+❯ /status
+  ⎿  Settings dialog dismissed
+
+❯ /exit
+  ⎿  See ya!
+
+❯ hi
+
+● Hi! CLAUDE.md is clear: drop the trailing "e" everywhere — GMPPimple → GMPPimpl, WrappedNativePimple → WrappedNativePimpl. Let me find all occurrences first.
+
+  Searched for 1 pattern (ctrl+o to expand)
+
+● Good — every "Pimple" → "Pimpl" and "PIMPLE" → "PIMPL". Let me read the files I need to edit before making changes.
+
+  Read 2 files (ctrl+o to expand)
+
+● Now apply all replacements in parallel across the four files, and rename the source and ref files:
+
+● Update(Makefile)
+  ⎿  Added 6 lines, removed 6 lines
+       1  SRCDIR  := src
+       2  INCLDIR := include
+       3
+       4 -WRAPPEDNATIVE_SRC := $(SRCDIR)/MPintWrappedNativePimple.cpp
+       4 +WRAPPEDNATIVE_SRC := $(SRCDIR)/MPintWrappedNativePimpl.cpp
+       5  WRAPPEDNATIVE_HDR := $(INCLDIR)/MPint.hpp
+       6
+       7 -GMP_SRC           := $(SRCDIR)/MPintGMPPimple.cpp
+       7 +GMP_SRC           := $(SRCDIR)/MPintGMPPimpl.cpp
+       8  GMP_HDR           := $(INCLDIR)/MPint.hpp
+       9
+      10
+     ...
+      20
+      21  TARGET_NATIVE        := $(DEMO_BINDIR)/demoNative
+      22  TARGET_GMPXX         := $(DEMO_BINDIR)/demoGMPXX
+      23 -TARGET_WRAPPEDNATIVEPIMPLE := $(DEMO_BINDIR)/demoWrappedNativePimple
+      24 -TARGET_GMPPIMPLE           := $(DEMO_BINDIR)/demoGMPPimple
+      23 +TARGET_WRAPPEDNATIVEPIMPLE := $(DEMO_BINDIR)/demoWrappedNativePimpl
+      24 +TARGET_GMPPIMPLE           := $(DEMO_BINDIR)/demoGMPPimpl
+      25
+      26  TARGETS := $(TARGET_NATIVE) $(TARGET_GMPXX) $(TARGET_WRAPPEDNATIVEPIMPLE) $(TARGET_GMPPIMPLE)
+      27
+     ...
+      30
+      31  TESTOUTPUT_NATIVE             := $(TEST_DIR)/demoNative.output
+      32  TESTOUTPUT_GMPXX              := $(TEST_DIR)/demoGMPXX.output
+      33 -TESTOUTPUT_WRAPPEDNATIVEPIMPLE := $(TEST_DIR)/demoWrappedNativePimple.output
+      34 -TESTOUTPUT_GMPPIMPLE          := $(TEST_DIR)/demoGMPPimple.output
+      33 +TESTOUTPUT_WRAPPEDNATIVEPIMPLE := $(TEST_DIR)/demoWrappedNativePimpl.output
+      34 +TESTOUTPUT_GMPPIMPLE          := $(TEST_DIR)/demoGMPPimpl.output
+      35
+      36  TESTOUTPUTS := $(TESTOUTPUT_NATIVE) $(TESTOUTPUT_GMPXX) $(TESTOUTPUT_WRAPPEDNATIVEPIMPLE) $(TESTOUTPUT_GMPPIMPLE)
+      37
+
+● Update(demo/src/demoTypedef.hpp)
+  ⎿  Added 2 lines, removed 2 lines
+       7      #include <gmpxx.h>
+       8      typedef mpz_class MPint;
+       9      #define DEMO_ARBPREC
+      10 -#elif defined DEMO_WRAPPEDNATIVEPIMPLE
+      10 +#elif defined DEMO_WRAPPEDNATIVEPIMPL
+      11      #include "MPint.hpp"
+      12 -#elif defined DEMO_GMPPIMPLE
+      12 +#elif defined DEMO_GMPPIMPL
+      13      #include "MPint.hpp"
+      14      #define DEMO_ARBPREC
+      15  #else
+
+● Bash(git -C /home/claudeuser/work/mpint mv src/MPintWrappedNativePimple.cpp src/MPintWrappedNativePimpl.cpp
+      git -C /home/claudeuser/work/mpint mv src/MPintGMPPimple.…)
+  ⎿  (No output)
+  ⎿  Found 5 new diagnostic issues in 1 file (ctrl+o to expand)
+
+● Diagnostics are spurious (clang parsing the header without any -D define). Now update Makefile PIMPLE→PIMPL and test.sh and AGENTS.md:
+
+● Update(Makefile)
+  ⎿  Added 10 lines, removed 10 lines
+      20
+      21  TARGET_NATIVE        := $(DEMO_BINDIR)/demoNative
+      22  TARGET_GMPXX         := $(DEMO_BINDIR)/demoGMPXX
+      23 -TARGET_WRAPPEDNATIVEPIMPLE := $(DEMO_BINDIR)/demoWrappedNativePimpl
+      24 -TARGET_GMPPIMPLE           := $(DEMO_BINDIR)/demoGMPPimpl
+      23 +TARGET_WRAPPEDNATIVEPIMPL := $(DEMO_BINDIR)/demoWrappedNativePimpl
+      24 +TARGET_GMPPIMPL           := $(DEMO_BINDIR)/demoGMPPimpl
+      25
+      26 -TARGETS := $(TARGET_NATIVE) $(TARGET_GMPXX) $(TARGET_WRAPPEDNATIVEPIMPLE) $(TARGET_GMPPIMPLE)
+      26 +TARGETS := $(TARGET_NATIVE) $(TARGET_GMPXX) $(TARGET_WRAPPEDNATIVEPIMPL) $(TARGET_GMPPIMPL)
+      27
+      28
+      29  TEST_DIR := test
+      30
+      31  TESTOUTPUT_NATIVE             := $(TEST_DIR)/demoNative.output
+      32  TESTOUTPUT_GMPXX              := $(TEST_DIR)/demoGMPXX.output
+      33 -TESTOUTPUT_WRAPPEDNATIVEPIMPLE := $(TEST_DIR)/demoWrappedNativePimpl.output
+      34 -TESTOUTPUT_GMPPIMPLE          := $(TEST_DIR)/demoGMPPimpl.output
+      33 +TESTOUTPUT_WRAPPEDNATIVEPIMPL := $(TEST_DIR)/demoWrappedNativePimpl.output
+      34 +TESTOUTPUT_GMPPIMPL          := $(TEST_DIR)/demoGMPPimpl.output
+      35
+      36 -TESTOUTPUTS := $(TESTOUTPUT_NATIVE) $(TESTOUTPUT_GMPXX) $(TESTOUTPUT_WRAPPEDNATIVEPIMPLE) $(TESTOUTPUT_GMPPIMPLE)
+      36 +TESTOUTPUTS := $(TESTOUTPUT_NATIVE) $(TESTOUTPUT_GMPXX) $(TESTOUTPUT_WRAPPEDNATIVEPIMPL) $(TESTOUTPUT_GMPPIMPL)
+      37
+      38
+      39  CXX      := g++
+     ...
+      54  $(TARGET_GMPXX): $(DEMO_SRCS) $(DEMO_HDRS)
+      55    $(CXX) $(CXXFLAGS) -DDEMO_GMPXX -I$(DEMO_INCLDIR) -o $@ $(DEMO_SRCS) -lgmp -lgmpxx
+      56
+      57 -$(TARGET_WRAPPEDNATIVEPIMPLE): $(DEMO_SRCS) $(DEMO_HDRS) $(WRAPPEDNATIVE_SRC) $(WRAPPEDNATIVE_HDR)
+      58 -  $(CXX) $(CXXFLAGS) -DDEMO_WRAPPEDNATIVEPIMPLE -I$(DEMO_INCLDIR) -I$(INCLDIR) -o $@ $(DEMO_SRCS) $(WRAPPEDNATIVE_SRC)
+      57 +$(TARGET_WRAPPEDNATIVEPIMPL): $(DEMO_SRCS) $(DEMO_HDRS) $(WRAPPEDNATIVE_SRC) $(WRAPPEDNATIVE_HDR)
+      58 +  $(CXX) $(CXXFLAGS) -DDEMO_WRAPPEDNATIVEPIMPL -I$(DEMO_INCLDIR) -I$(INCLDIR) -o $@ $(DEMO_SRCS) $(WRAPPEDNATIVE_SRC)
+      59
+      60 -$(TARGET_GMPPIMPLE): $(DEMO_SRCS) $(DEMO_HDRS) $(GMP_SRC) $(GMP_HDR)
+      61 -  $(CXX) $(CXXFLAGS) -DDEMO_GMPPIMPLE -I$(DEMO_INCLDIR) -I$(INCLDIR) -o $@ $(DEMO_SRCS)  $(GMP_SRC) -lgmp
+      60 +$(TARGET_GMPPIMPL): $(DEMO_SRCS) $(DEMO_HDRS) $(GMP_SRC) $(GMP_HDR)
+      61 +  $(CXX) $(CXXFLAGS) -DDEMO_GMPPIMPL -I$(DEMO_INCLDIR) -I$(INCLDIR) -o $@ $(DEMO_SRCS)  $(GMP_SRC) -lgmp
+
+  Read 2 files (ctrl+o to expand)
+
+● Now apply the replacements to test.sh and AGENTS.md in parallel:
+
+● Update(test/test.sh)
+  ⎿  Added 7 lines, removed 7 lines
+      10  EXECUTABLEGMPXX="../demo/bin/demoGMPXX"
+      11  OUTFILEGMPXX="demoGMPXX.output"
+      12
+      13 -EXECUTABLEWRAPPEDNATIVEPIMPLE="../demo/bin/demoWrappedNativePimple"
+      14 -OUTFILEWRAPPEDNATIVEPIMPLE="demoWrappedNativePimple.output"
+      13 +EXECUTABLEWRAPPEDNATIVEPIMPLE="../demo/bin/demoWrappedNativePimpl"
+      14 +OUTFILEWRAPPEDNATIVEPIMPLE="demoWrappedNativePimpl.output"
+      15
+      16 -EXECUTABLEGMPPIMPLE="../demo/bin/demoGMPPimple"
+      17 -OUTFILEGMPPIMPLE="demoGMPPimple.output"
+      16 +EXECUTABLEGMPPIMPLE="../demo/bin/demoGMPPimpl"
+      17 +OUTFILEGMPPIMPLE="demoGMPPimpl.output"
+      18
+      19  REFFILENATIVE="demoNative.output.ref"
+      20  REFFILEGMPXX="demoGMPXX.output.ref"
+      21 -REFFILEWRAPPEDNATIVEPIMPLE="demoWrappedNativePimple.output.ref"
+      22 -REFFILEGMPPIMPLE="demoGMPPimple.output.ref"
+      21 +REFFILEWRAPPEDNATIVEPIMPLE="demoWrappedNativePimpl.output.ref"
+      22 +REFFILEGMPPIMPLE="demoGMPPimpl.output.ref"
+      23
+      24  DIFFCMD="diff"
+      25  RMCMD="rm"
+     ...
+      155      paste "${tdata1}" "${tdata2}" "${tdata3}" "${tdata4}" | awk -F'\t' '
+      156      BEGIN {
+      157          printf "%-14s  %20s  %20s  %26s  %20s\n",
+      158 -               "function", "demoNative", "demoGMPXX", "demoWrappedNativePimple", "demoGMPPimple"
+      158 +               "function", "demoNative", "demoGMPXX", "demoWrappedNativePimpl", "demoGMPPimpl"
+      159          printf "%-14s  %20s  %20s  %26s  %20s\n",
+      160                 "--------------",
+      161                 "--------------------",
+
+● Update(AGENTS.md)
+  ⎿  Added 14 lines, removed 14 lines
+      35  assisted, or develop their own implementation, using one existing implementation
+      36  as a starting point in which case the existing tests and profiling might be helpful.
+      37
+      38 -We have two pimpl-style implementations of *MPint*: *MPintWrappedNativePimple*
+      38 +We have two pimpl-style implementations of *MPint*: *MPintWrappedNativePimpl*
+      39  which is just the *MPint* operators wrapping the native *signed long int* type,
+      40 -and *MPintGMPPimple* which wraps the C interface of the GNU Multiprecision
+      40 +and *MPintGMPPimpl* which wraps the C interface of the GNU Multiprecision
+      41  library.
+      42  In subdirectory mpint/demo, there are several executable artifacts for
+      43  demo/testing/profiling purposes:
+     ...
+      45    using *MPint* at all (for baseline comparison).
+      46  - *demoGMPXX*: uses *mpz_class* from the GMP C++ interface (*gmpxx.h*)
+      47    directly via a typedef, without going through *class MPint*.
+      48 -- *demoWrappedNativePimple*: drives the *MPintWrappedNativePimple* operators.
+      49 -- *demoGMPPimple*: drives the *MPintGMPPimple* wrapper around the GMP C interface.
+      48 +- *demoWrappedNativePimpl*: drives the *MPintWrappedNativePimpl* operators.
+      49 +- *demoGMPPimpl*: drives the *MPintGMPPimpl* wrapper around the GMP C interface.
+      50
+      51  In subdirectory *mpint/test* there is a bash script *test.sh* which
+      52  runs all four demo variants and compares their outputs to respective
+     ...
+      90  *cd test; ./test.sh prof*
+      91
+      92
+      93 -## Known test-suite overflow exemptions (*demoNative* / *demoWrappedNativePimple*)
+      93 +## Known test-suite overflow exemptions (*demoNative* / *demoWrappedNativePimpl*)
+      94  Both native-backed demos compute on a 64-bit *signed long int* and so can
+      95 -silently overflow on inputs where *demoGMPPimple* (arbitrary precision) stays exact.
+      95 +silently overflow on inputs where *demoGMPPimpl* (arbitrary precision) stays exact.
+      96  All other lines of *test/test.sh*'s reference outputs (*expr*, *basicexpr*,
+      97  *moreexpr*, *extraexpr*, *strconstr*, *floatconv*, *missingexpr*, *detTest*, *reduTest*)
+      98  have been independently cross-checked against external oracles (a from-
+     ...
+      101  overflow-driven divergences are:
+      102
+      103  - *extraexpr()* repeated-squaring test ("23^19"): the true value is
+      104 -  74615470927590710561908487 (exact on *demoGMPPimple*). *demoNative* and
+      105 -  *demoWrappedNativePimple* both print -3983830012993820921, which is exactly the
+      104 +  74615470927590710561908487 (exact on *demoGMPPimpl*). *demoNative* and
+      105 +  *demoWrappedNativePimpl* both print -3983830012993820921, which is exactly the
+      106    64-bit signed two's-complement wraparound of the same repeated-squaring
+      107    algorithm (confirmed by independently simulating it with explicit int64
+      108    wraparound arithmetic). This is the only overflow in the entire
+     ...
+      113  - *detTest()* GaussInt column (known): computeDetGaussInt's fraction-free
+      114    Gaussian elimination keeps intermediate values that can exceed the final
+      115    determinant's magnitude. For the two dense (sparsity 0%) 4x4 cases (run 25
+      116 -  and run 26 of 32), *demoNative/demoWrappedNativePimple*'s GaussInt overflows to
+      116 +  and run 26 of 32), *demoNative/demoWrappedNativePimpl*'s GaussInt overflows to
+      117    402904 and -117875 respectively, while Dodgson and GaussFloat on the same
+      118    runs still report the correct determinants -43753032 and -18819899
+      119 -  (matching demoGMPPimple). No other *detTest* case overflows.
+      119 +  (matching demoGMPPimpl). No other *detTest* case overflows.
+      120
+      121  - *reduTest()* (potential, not fully isolated): starting at run 13 of 16
+      122 -  (the first dimension==5 case), demoNative/demoWrappedNativePimple's generated
+      123 -  Gram matrices diverge completely from demoGMPPimple's, and stay diverged for
+      124 -  all subsequent runs. Runs 1-12 (dimension <= 4) match demoGMPPimple bit-for-bit.
+      122 +  (the first dimension==5 case), demoNative/demoWrappedNativePimpl's generated
+      123 +  Gram matrices diverge completely from demoGMPPimpl's, and stay diverged for
+      124 +  all subsequent runs. Runs 1-12 (dimension <= 4) match demoGMPPimpl bit-for-bit.
+      125    isSingular() (called by PosDefState while constructing each candidate
+      126    lattice) calls the very same computeDetGaussInt() that's confirmed to
+      127    overflow on dense 4x4 input above; a wrong singular/non-singular verdict
+      128    on a 5x5 candidate would consume a different number of drand48() draws
+      129 -  than demoGMPPimple and fork the entire subsequent random sequence, which is
+      129 +  than demoGMPPimpl and fork the entire subsequent random sequence, which is
+      130    consistent with what's observed. This is the likely root cause but has
+      131    not been confirmed by direct instrumentation of isSingular() itself.
+
+● Now update PIMPLE→PIMPL in test.sh too:
+
+● Update(test/test.sh)
+  ⎿  Added 12 lines, removed 12 lines
+      10  EXECUTABLEGMPXX="../demo/bin/demoGMPXX"
+      11  OUTFILEGMPXX="demoGMPXX.output"
+      12
+      13 -EXECUTABLEWRAPPEDNATIVEPIMPLE="../demo/bin/demoWrappedNativePimpl"
+      14 -OUTFILEWRAPPEDNATIVEPIMPLE="demoWrappedNativePimpl.output"
+      13 +EXECUTABLEWRAPPEDNATIVEPIMPL="../demo/bin/demoWrappedNativePimpl"
+      14 +OUTFILEWRAPPEDNATIVEPIMPL="demoWrappedNativePimpl.output"
+      15
+      16 -EXECUTABLEGMPPIMPLE="../demo/bin/demoGMPPimpl"
+      17 -OUTFILEGMPPIMPLE="demoGMPPimpl.output"
+      16 +EXECUTABLEGMPPIMPL="../demo/bin/demoGMPPimpl"
+      17 +OUTFILEGMPPIMPL="demoGMPPimpl.output"
+      18
+      19  REFFILENATIVE="demoNative.output.ref"
+      20  REFFILEGMPXX="demoGMPXX.output.ref"
+      21 -REFFILEWRAPPEDNATIVEPIMPLE="demoWrappedNativePimpl.output.ref"
+      22 -REFFILEGMPPIMPLE="demoGMPPimpl.output.ref"
+      21 +REFFILEWRAPPEDNATIVEPIMPL="demoWrappedNativePimpl.output.ref"
+      22 +REFFILEGMPPIMPL="demoGMPPimpl.output.ref"
+      23
+      24  DIFFCMD="diff"
+      25  RMCMD="rm"
+     ...
+      77          return ${retval}
+      78      fi
+      79
+      80 -    runExecutable ${EXECUTABLEWRAPPEDNATIVEPIMPLE} ${OUTFILEWRAPPEDNATIVEPIMPLE}
+      80 +    runExecutable ${EXECUTABLEWRAPPEDNATIVEPIMPL} ${OUTFILEWRAPPEDNATIVEPIMPL}
+      81      retval=$?
+      82      if [ "${retval}" -ne 0 ]; then
+      83          return ${retval}
+      84      fi
+      85
+      86 -    runExecutable ${EXECUTABLEGMPPIMPLE} ${OUTFILEGMPPIMPLE}
+      86 +    runExecutable ${EXECUTABLEGMPPIMPL} ${OUTFILEGMPPIMPL}
+      87      retval=$?
+      88      if [ "${retval}" -ne 0 ]; then
+      89          return ${retval}
+     ...
+      102          retval=${diffretval}
+      103      fi
+      104
+      105 -    doDiff "${OUTFILEWRAPPEDNATIVEPIMPLE}" "${REFFILEWRAPPEDNATIVEPIMPLE}"
+      105 +    doDiff "${OUTFILEWRAPPEDNATIVEPIMPL}" "${REFFILEWRAPPEDNATIVEPIMPL}"
+      106      diffretval=$?
+      107      if [ "${diffretval}" -ne 0 ]; then
+      108          retval=${diffretval}
+      109      fi
+      110
+      111 -    doDiff "${OUTFILEGMPPIMPLE}" "${REFFILEGMPPIMPLE}"
+      111 +    doDiff "${OUTFILEGMPPIMPL}" "${REFFILEGMPPIMPL}"
+      112      diffretval=$?
+      113      if [ "${diffretval}" -ne 0 ]; then
+      114          retval=${diffretval}
+     ...
+      131
+      132      runCmd "${EXECUTABLENATIVE} -prof > ${tmp1} 2>&1"
+      133      runCmd "${EXECUTABLEGMPXX} -prof > ${tmp2} 2>&1"
+      134 -    runCmd "${EXECUTABLEWRAPPEDNATIVEPIMPLE} -prof > ${tmp3} 2>&1"
+      135 -    runCmd "${EXECUTABLEGMPPIMPLE} -prof > ${tmp4} 2>&1"
+      134 +    runCmd "${EXECUTABLEWRAPPEDNATIVEPIMPL} -prof > ${tmp3} 2>&1"
+      135 +    runCmd "${EXECUTABLEGMPPIMPL} -prof > ${tmp4} 2>&1"
+      136
+      137      if [ "${DRYPARAM}" == "dry" ]; then
+      138          echo "${DRY_RUN_PREFIX}<post processing results and printing a summarizing table on stdout>"
+
+● Now verify no "Pimple"/"PIMPLE" remain, build, and test:
+
+  Searched for 1 pattern (ctrl+o to expand)
+
+● Bash(make clean && make 2>&1)
+  ⎿  rm -f demo/bin/demoNative demo/bin/demoGMPXX demo/bin/demoWrappedNativePimpl demo/bin/demoGMPPimpl test/demoNative.output test/demoGMPXX.output test/demoWrappedNativePimpl.output test/demo
+     GMPPimpl.output
+     g++ -std=c++14 -Wall -Wextra -pedantic -Werror -O2 -flto=auto -DDEMO_NATIVE -Idemo/src -o demo/bin/demoNative demo/src/demo.cpp demo/src/exprTest.cpp demo/src/det.cpp demo/src/redu.cpp dem
+     … +7 lines (ctrl+o to expand)
+  ⎿  (timeout 2m)
+
+● Bash(cd /home/claudeuser/work/mpint/test && ./test.sh all 2>&1 | tail -10)
+  ⎿  [966,2],[972,4],[976,2],[978,2],[990,2]]
+     ############################## EXIT  : cat demoGMPPimpl.output : EXITCODE : 0 ##########
+     ############################## START : diff demoNative.output demoNative.output.ref ##########
+     … +7 lines (ctrl+o to expand)
+
+● All four diffs pass. Everything is renamed — WrappedNativePimpl, GMPPimpl, DEMO_WRAPPEDNATIVEPIMPL, DEMO_GMPPIMPL — throughout Makefile, demoTypedef.hpp, test.sh, AGENTS.md, source files, and ref
+  files.
+
+✻ Worked for 1m 54s
+
+❯ please also process .gitignore.example (in the repo) and then copy it over .gitignore (not in the repo)
+
+  Read 1 file (ctrl+o to expand)
+
+● Two lines still have the pre-Pimpl names. I'll update both, then copy:
+
+● Update(~/work/mpint/.gitignore.example)
+  ⎿  Added 2 lines, removed 2 lines
+      13  test/core
+      14  test/demoNative.output
+      15  test/demoGMPXX.output
+      16 -test/demoWrappedNative.output
+      17 -test/demoGMP.output
+      16 +test/demoWrappedNativePimpl.output
+      17 +test/demoGMPPimpl.output
+      18  .cproject
+      19  .project
+      20  .settings/
+
+● Bash(cp /home/claudeuser/work/mpint/.gitignore.example /home/claudeuser/work/mpint/.gitignore)
+  ⎿  Done
+
+● Done. .gitignore.example now has demoWrappedNativePimpl.output and demoGMPPimpl.output, and .gitignore is updated to match.
+
+✻ Crunched for 22s
+
+❯ commit this
+
+● Bash(git -C /home/claudeuser/work/mpint status && git -C /home/claudeuser/work/mpint log --oneline -3)
+  ⎿  On branch master
+     Changes to be committed:
+       (use "git restore --staged <file>..." to unstage)
+     … +22 lines (ctrl+o to expand)
+
+● Bash(git -C /home/claudeuser/work/mpint add .gitignore.example AGENTS.md Makefile demo/src/demoTypedef.hpp test/test.sh)
+  ⎿  (No output)
+
+● Bash(git -C /home/claudeuser/work/mpint commit -m "$(cat <<'EOF'
+      rename variants WrappedNativePimple→WrappedNativePimpl and GMPPimple→GMPPimpl…)
+  ⎿  [master 46115d9] rename variants WrappedNativePimple→WrappedNativePimpl and GMPPimple→GMPPimpl
+      9 files changed, 43 insertions(+), 43 deletions(-)
+      rename src/{MPintGMPPimple.cpp => MPintGMPPimpl.cpp} (100%)
+     … +3 lines (ctrl+o to expand)
+
+● Done. Committed as 46115d9.
+
+✻ Worked for 21s
+
+❯ update CLAUDE.md
+
+  Read 1 file (ctrl+o to expand)
+
+● Update(~/work/mpint/CLAUDE.md)
+  ⎿  Added 8 lines, removed 11 lines
+      18
+      19
+      20  ## What Claude has done in our last conversation
+      21 -* Renamed demo variant *GMP* to *GMPPimple* and *WrappedNative* to *WrappedNativePimple* throughout.
+      22 -* Renamed source files: `src/MPintWrappedNative.cpp` → `src/MPintWrappedNativePimple.cpp` and `src/MPintGMP.cpp` → `src/MPintGMPPimple.cpp` (via `git mv`).
+      23 -* Renamed test ref files: `test/demoWrappedNative.output.ref` → `test/demoWrappedNativePimple.output.ref` and `test/demoGMP.output.ref` → `test/demoGMPPimple.output.ref`.
+      24 -* Updated `Makefile`: target variables, build rules, `-DDEMO_WRAPPEDNATIVEPIMPLE`/`-DDEMO_GMPPIMPLE` flags, and source file references.
+      25 -* Updated `demo/src/demoTypedef.hpp`: `DEMO_WRAPPEDNATIVEPIMPLE` and `DEMO_GMPPIMPLE` macros.
+      26 -* Updated `test/test.sh`: all variable names and executable/output/ref file paths; widened `doProf()` column for `demoWrappedNativePimple`.
+      27 -* Updated `AGENTS.md`: new class and executable names throughout, added description of `demoGMPXX` variant, updated variant count from three to four.
+      21 +* Renamed demo variant *GMPPimple* to *GMPPimpl* and *WrappedNativePimple* to *WrappedNativePimpl* throughout.
+      22 +* Renamed source files: `src/MPintWrappedNativePimple.cpp` → `src/MPintWrappedNativePimpl.cpp` and `src/MPintGMPPimple.cpp` → `src/MPintGMPPimpl.cpp` (via `git mv`).
+      23 +* Renamed test ref files: `test/demoWrappedNativePimple.output.ref` → `test/demoWrappedNativePimpl.output.ref` and `test/demoGMPPimple.output.ref` → `test/demoGMPPimpl.output.ref`.
+      24 +* Updated `Makefile`: target variables, build rules, `-DDEMO_WRAPPEDNATIVEPIMPL`/`-DDEMO_GMPPIMPL` flags, and source file references.
+      25 +* Updated `demo/src/demoTypedef.hpp`: `DEMO_WRAPPEDNATIVEPIMPL` and `DEMO_GMPPIMPL` macros.
+      26 +* Updated `test/test.sh`: all variable names and executable/output/ref file paths.
+      27 +* Updated `AGENTS.md`: new class and executable names throughout.
+      28 +* Updated `.gitignore.example` and copied it over `.gitignore`.
+      29  * All four `./test/test.sh all` diffs pass.
+      30
+      31  ## What I have done since our last conversation
+      31 -Nothing
+      32
+      33  ## What I want Claude to do in the upcoming conversation
+      34 -In our last conversation, I gave you instructions to change certain *MPint* variant names from "Hmhmhm" to "HmhmhmPimple".
+      35 -Oops, my bad. Typical human mistake, you and your other instances might be familiar with that. Of course, i didn't mean
+      36 -pimple but pimpl. Go through the last iteration again, and remove the "e" (or "E") from the names.
+
+● Bash(git -C /home/claudeuser/work/mpint add CLAUDE.md && git -C /home/claudeuser/work/mpint commit -m "updated CLAUDE.md")
+  ⎿  [master 919f537] updated CLAUDE.md
+      1 file changed, 8 insertions(+), 11 deletions(-)
+
+● Done. CLAUDE.md committed as 919f537.
+
+✻ Sautéed for 39s
+
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ /exit
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+#############################################################################################################################################################################################################
+
