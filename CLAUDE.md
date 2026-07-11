@@ -18,24 +18,14 @@ which implements an integer with arbitrary precision.
 
 
 ## What Claude has done in our last conversation
-Purely analytical session — no code changes. Explained why the six demo output files differ after `test.sh regr`:
-
-**demoGMP vs demoGMPPimpl vs demoGMPXX:**
-* **Unsigned long constructor semantics:** `MPintGMPPimpl.cpp` line 69 casts `unsigned long` to `signed long` before storage (`mpz_init_set_si`), so `(unsigned long)(-23)` → -23. `MPintGMP.hpp` calls `mpz_init_set_ui` directly → 18446744073709551593. `mpz_class` (GMPXX) likewise stores the full unsigned value. This cascades into `detTest`/`reduTest`: GMP/GMPXX build matrices with huge positive entries → empty theta series.
-* **String constructor features:** `MPintGMP.hpp` and `MPintGMPPimpl.cpp` share a custom `set_mpint_str` supporting `'` digit separators, `+` prefix for non-decimal bases, and float/double overflow detection. `mpz_class` lacks these; demo guards them with `#ifndef DEMO_GMPXX` and `#if defined(DEMO_ARBPREC) && !defined(DEMO_GMPXX)`.
-
-**demoNative vs demoWrappedNative:**
-* `DEMO_NATIVE` is defined only for Native (bare `signed long int` typedef), causing two blocks to be skipped: `injTest()` `#ifndef DEMO_NATIVE` (string ctor validity tests + value-preserving `operator>>` test) and `missingexpr()` `#if !defined(DEMO_NATIVE) && !defined(DEMO_GMPXX)` (`+` prefix non-decimal strings).
-* `demoWrappedNative` does not define `DEMO_ARBPREC`, so float/double overflow tests do not run there either.
+Fixed Cause A: removed `static_cast<signed long int>(v)` from all four unsigned constructors in `src/MPintGMPPimpl.cpp`; they now route through `MPintImpl(unsigned long int v)` → `mpz_init_set_ui`, giving true unsigned semantics matching `MPintGMP.hpp`.
+Changed `basicexpr()` in `demo/src/exprTest.cpp` lines 75, 76, 80 to use positive literals (`22`, `23`, `41`) instead of negative-value casts.
+Updated all six `.output.ref` files; all six `test.sh regr` diffs pass.
+After the fix `demoGMP` and `demoGMPPimpl` outputs are byte-for-byte identical; remaining GMP/GMPXX differences are solely Cause B (string parser features).
+Oracle verification confirmed: `~23 = -24`, `22*6 = 132`, `23*6 = 138`, `41%6 = 5`, `132^11 = 143`, `23^11 = 28`.
 
 ## What I have done since our last conversation
 updated transcript.txt, CLAUDE.md.
 
 ## What I want Claude to do in the upcoming conversation
-For *demoGMP* / *demoGMPPimpl* / *demoGMPXX*, cause A:
-remove the *static_cast<signed long int>(v)* in  *demoGMPPimpl*'s *MPint(unsigned long int v)* ctor.
-Do the same for all *MPint(unsigned whatever int v)* ctors in *demoGMPPimpl*.
-Then remove the casts in test function basicexpr() in lines 75, 76, 80, and change to positive values, e.g. 
-replace *const unsigned long  int  c_u_l_i = static_cast<unsigned long>(-23);* with
-*const unsigned long  int  c_u_l_i = 23;*.
-verify the changed test results where these settings are involved using an independent oracle.
+
