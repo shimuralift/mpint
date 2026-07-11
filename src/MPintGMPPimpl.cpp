@@ -66,10 +66,10 @@ MPint::MPint(signed long int   v) : pImpl(new MPintImpl(v)) {}
 MPint::MPint(signed int        v) : pImpl(new MPintImpl(static_cast<signed long int>(v))) {}
 MPint::MPint(signed short      v) : pImpl(new MPintImpl(static_cast<signed long int>(v))) {}
 MPint::MPint(signed char       v) : pImpl(new MPintImpl(static_cast<signed long int>(v))) {}
-MPint::MPint(unsigned long int v) : pImpl(new MPintImpl(static_cast<signed long int>(v))) {}
-MPint::MPint(unsigned int      v) : pImpl(new MPintImpl(static_cast<signed long int>(v))) {}
-MPint::MPint(unsigned short    v) : pImpl(new MPintImpl(static_cast<signed long int>(v))) {}
-MPint::MPint(unsigned char     v) : pImpl(new MPintImpl(static_cast<signed long int>(v))) {}
+MPint::MPint(unsigned long int v) : pImpl(new MPintImpl(v)) {}
+MPint::MPint(unsigned int      v) : pImpl(new MPintImpl(static_cast<unsigned long int>(v))) {}
+MPint::MPint(unsigned short    v) : pImpl(new MPintImpl(static_cast<unsigned long int>(v))) {}
+MPint::MPint(unsigned char     v) : pImpl(new MPintImpl(static_cast<unsigned long int>(v))) {}
 MPint::MPint(long long         v) : pImpl(new MPintImpl(static_cast<signed long int>(v))) {}
 
 MPint::MPint(const char*        s) : pImpl(new MPintImpl()) { mpz_set_mpint_str(pImpl->mVal, s); }

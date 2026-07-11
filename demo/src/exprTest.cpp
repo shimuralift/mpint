@@ -72,12 +72,12 @@ int basicexpr() {
   const          short int  c___s_i = -12;
   const          long  int  c___l_i = 13;
   const unsigned       int  c_u___i = 21;
-  const unsigned short int  c_u_s_i = static_cast<unsigned short>(-22);
-  const unsigned long  int  c_u_l_i = static_cast<unsigned long>(-23);
+  const unsigned short int  c_u_s_i = 22;
+  const unsigned long  int  c_u_l_i = 23;
                        int nc_____i = 31;
                  short int nc___s_i = 32;
                  long  int nc___l_i = -33;
-        unsigned       int nc_u___i = static_cast<unsigned int>(-41);
+        unsigned       int nc_u___i = 41;
         unsigned short int nc_u_s_i = 42;
         unsigned long  int nc_u_l_i = 43;
 

@@ -28,35 +28,35 @@ MPint: my elementary operator expressions
     -() const :: 1::-1
 2nc +() const :: 0::0
 2nc -() const :: 1::-1
-!() const :: 65514::0
-~() const :: -23::22
+!() const :: 22::0
+~() const :: 23::-24
 ++()      :: -11::-10::-10
 ++(int)   :: -12::-12::-11
 --()      :: 13::12::12
 --(int)   :: 21::21::20
 
-=(MPint&, MPint) :: -23 = -733 :: -733 :: -733
+=(MPint&, MPint) :: 23 = -733 :: -733 :: -733
 
  +=(MPint&)  :: -10 +=  6 :: -4 :: -4
   +(MPint&)  :: -12  +  6 :: -6 :: -12
  -=(MPint&)  :: 12 -=  6 :: 6 :: 6
   -(MPint&)  :: 21  -  6 :: 15 :: 21
- *=(MPint&)  :: 65514 *=  6 :: 393084 :: 393084
-  *(MPint&)  :: -23  *  6 :: -138 :: -23
+ *=(MPint&)  :: 22 *=  6 :: 132 :: 132
+  *(MPint&)  :: 23  *  6 :: 138 :: 23
  /=(MPint&)  :: 31 /=  6 :: 5 :: 5
   /(MPint&)  :: 32  /  6 :: 5 :: 32
  %=(MPint&)  :: -33 %=  6 :: -3 :: -3
-  %(MPint&)  :: 4294967255  %  6 :: 5 :: 4294967255
+  %(MPint&)  :: 41  %  6 :: 5 :: 41
  &=(MPint&)  :: 42 &=  11 :: 10 :: 10
   &(MPint&)  :: 43  &  11 :: 11 :: 43
  |=(MPint&)  :: 6 |=  11 :: 15 :: 15
   |(MPint&)  :: 21  |  11 :: 31 :: 21
- ^=(MPint&)  :: 393084 ^=  11 :: 393079 :: 393079
-  ^(MPint&)  :: -23  ^  11 :: -30 :: -23
+ ^=(MPint&)  :: 132 ^=  11 :: 143 :: 143
+  ^(MPint&)  :: 23  ^  11 :: 28 :: 23
 <<=(MPint&)  :: 5 <<= 11 :: 10240 :: 10240
  <<(MPint&)  :: 32 <<  11 :: 65536 :: 32
 >>=(MPint&)  :: -3 >>= 11 :: -1 :: -1
- >>(MPint&)  :: 4294967255 >>  11 :: 2097151 :: 4294967255
+ >>(MPint&)  :: 41 >>  11 :: 0 :: 41
 
 ==(MPint&, MPint&   )  :: -1 == 11 :: 0
 ==(MPint&, int      )  :: -1 == -11 :: 0
@@ -65,13 +65,13 @@ MPint: my elementary operator expressions
 ==(int,       MPint&)  :: -11 == -1 :: 0
 ==(short int, MPint&)  :: -12 == -1 :: 0
 ==(long int,  MPint&)  :: 13 == -1 :: 0
-!=(MPint&, MPint&   )  :: 4294967255 != 11 :: 1
-!=(MPint&, int      )  :: 4294967255 != -11 :: 1
-!=(MPint&, short int)  :: 4294967255 != -12 :: 1
-!=(MPint&, long int )  :: 4294967255 != 13 :: 1
-!=(int,       MPint&)  :: -11 != 4294967255 :: 1
-!=(short int, MPint&)  :: -12 != 4294967255 :: 1
-!=(long int,  MPint&)  :: 13 != 4294967255 :: 1
+!=(MPint&, MPint&   )  :: 41 != 11 :: 1
+!=(MPint&, int      )  :: 41 != -11 :: 1
+!=(MPint&, short int)  :: 41 != -12 :: 1
+!=(MPint&, long int )  :: 41 != 13 :: 1
+!=(int,       MPint&)  :: -11 != 41 :: 1
+!=(short int, MPint&)  :: -12 != 41 :: 1
+!=(long int,  MPint&)  :: 13 != 41 :: 1
  <(MPint&, MPint&   )  :: -1 <  0 :: 1
  <(MPint&, int      )  :: -1 <  -11 :: 0
  <(MPint&, short int)  :: -1 <  -12 :: 0
@@ -79,13 +79,13 @@ MPint: my elementary operator expressions
  <(int,       MPint&)  :: -11 <  -1 :: 1
  <(short int, MPint&)  :: -12 <  -1 :: 1
  <(long int,  MPint&)  :: 13 <  -1 :: 0
- >(MPint&, MPint&   )  :: 4294967255 >  0 :: 1
- >(MPint&, int      )  :: 4294967255 >  -11 :: 1
- >(MPint&, short int)  :: 4294967255 >  -12 :: 1
- >(MPint&, long int )  :: 4294967255 >  13 :: 1
- >(int,       MPint&)  :: -11 >  4294967255 :: 0
- >(short int, MPint&)  :: -12 >  4294967255 :: 0
- >(long int,  MPint&)  :: 13 >  4294967255 :: 0
+ >(MPint&, MPint&   )  :: 41 >  0 :: 1
+ >(MPint&, int      )  :: 41 >  -11 :: 1
+ >(MPint&, short int)  :: 41 >  -12 :: 1
+ >(MPint&, long int )  :: 41 >  13 :: 1
+ >(int,       MPint&)  :: -11 >  41 :: 0
+ >(short int, MPint&)  :: -12 >  41 :: 0
+ >(long int,  MPint&)  :: 13 >  41 :: 0
 <=(MPint&, MPint&   )  :: 11 <= -1 :: 0
 <=(MPint&, int      )  :: 11 <= -11 :: 0
 <=(MPint&, short int)  :: 11 <= -12 :: 0
@@ -93,7 +93,7 @@ MPint: my elementary operator expressions
 <=(int,       MPint&)  :: -11 <= 11 :: 1
 <=(short int, MPint&)  :: -12 <= 11 :: 1
 <=(long int,  MPint&)  :: 13 <= 11 :: 0
->=(MPint&, MPint&   )  :: 11 >= 4294967255 :: 0
+>=(MPint&, MPint&   )  :: 11 >= 41 :: 0
 >=(MPint&, int      )  :: 11 >= -11 :: 1
 >=(MPint&, short int)  :: 11 >= -12 :: 1
 >=(MPint&, long int )  :: 11 >= 13 :: 0
