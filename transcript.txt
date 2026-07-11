@@ -15008,3 +15008,173 @@ Sharing transcript…
 
 #############################################################################################################################################################################################################
 
+[claudeuser@gondwana:mpint]$ claude --continue
+ ▐▛███▜▌   Claude Code v2.1.205
+▝▜█████▛▘  Sonnet 4.6 · Claude Pro
+  ▘▘ ▝▝    ~/work/mpint
+
+ ▎ Extended: Fable 5 is included in your weekly limit
+ ▎ Through July 12, you can use up to 50% of your weekly usage limit on Fable 5. If you hit your limit, you can continue on Fable 5 with usage credits. Fable 5 draws down usage faster than Opus 4.8. Run
+ ▎ /model and select Fable to use it. Learn more (https://support.claude.com/en/articles/15424964-claude-fable-5-promotional-access)
+
+✻ Conversation compacted (ctrl+o for history)
+
+
+❯ /compact
+  ⎿  Compacted (ctrl+o to see full summary)
+  ⎿  Read .gitignore.example (23 lines)
+  ⎿  Read test/test.sh (282 lines)
+  ⎿  Read Makefile (72 lines)
+  ⎿  Read demo/src/demoTypedef.hpp (38 lines)
+  ⎿  Read include/MPintGMP.hpp (164 lines)
+
+❯ hi
+
+● Let me run the regression to generate the output files, then diff the relevant pairs.
+
+● Bash(make all 2>&1 | tail -5)
+  ⎿  make: Nothing to be done for 'all'.
+
+● Bash(cd test && ./test.sh regr > /dev/null 2>&1; echo "exit: $?")
+  ⎿  exit: 0
+
+● Bash(cd test && diff demoGMP.output demoGMPPimpl.output)
+ ▐▛███▜▌   Claude Code v2.1.205
+▝▜█████▛▘  Sonnet 4.6 · Claude Pro
+  ▘▘ ▝▝    ~/work/mpint
+
+ ▎ Extended: Fable 5 is included in your weekly limit
+ ▎ Through July 12, you can use up to 50% of your weekly usage limit on Fable 5. If you hit your limit, you can continue on Fable 5 with usage credits. Fable 5 draws down usage faster than Opus 4.8. Run
+ ▎ /model and select Fable to use it. Learn more (https://support.claude.com/en/articles/15424964-claude-fable-5-promotional-access)
+
+✻ Conversation compacted (ctrl+o for history)
+ ▐▛███▜▌   Claude Code v2.1.205
+▝▜█████▛▘  Sonnet 4.6 · Claude Pro
+  ▘▘ ▝▝    ~/work/mpint
+
+ ▎ Extended: Fable 5 is included in your weekly limit
+ ▎ Through July 12, you can use up to 50% of your weekly usage limit on Fable 5. If you hit your limit, you can continue on Fable 5 with usage credits. Fable 5 draws down usage faster than Opus 4.8. Run
+ ▎ /model and select Fable to use it. Learn more (https://support.claude.com/en/articles/15424964-claude-fable-5-promotional-access)
+
+✻ Conversation compacted (ctrl+o for history)
+
+
+❯ /compact
+  ⎿  Compacted (ctrl+o to see full summary)
+  ⎿  Referenced file demo/src/exprTest.cpp
+  ⎿  Read demo/src/demo.cpp (109 lines)
+
+❯ hi
+
+● Reading CLAUDE.md to check for new requirements.
+
+  Read 1 file (ctrl+o to expand)
+
+● The CLAUDE.md still shows the same question from last session, which was fully answered in that session. Since the context was compacted, here's a concise summary of what was found:
+
+  ---
+  Why demoGMP / demoGMPPimpl / demoGMPXX differ
+
+  Two independent causes:
+
+  Cause A — unsigned long int constructor semantics
+
+  The key difference is in how MPint(unsigned long int v) handles values like static_cast<unsigned long>(-23) = 18446744073709551593:
+
+  ┌──────────────┬───────────────────────────────────────────────────┬──────────────────────┐
+  │   Variant    │                    Constructor                    │        Result        │
+  ├──────────────┼───────────────────────────────────────────────────┼──────────────────────┤
+  │ demoGMPPimpl │ static_cast<signed long int>(v) → mpz_init_set_si │ -23                  │
+  ├──────────────┼───────────────────────────────────────────────────┼──────────────────────┤
+  │ demoGMP      │ mpz_init_set_ui(mVal, v)                          │ 18446744073709551593 │
+  ├──────────────┼───────────────────────────────────────────────────┼──────────────────────┤
+  │ demoGMPXX    │ mpz_class from unsigned                           │ 18446744073709551593 │
+  └──────────────┴───────────────────────────────────────────────────┴──────────────────────┘
+
+  src/MPintGMPPimpl.cpp line 69 explicitly casts to signed before storing, giving sign-extension semantics matching signed long int. The inline include/MPintGMP.hpp passes the unsigned value directly to
+  mpz_init_set_ui, preserving the full unsigned 64-bit value. This cascades into detTest/reduTest: GMP/GMPXX build matrices with huge positive entries → wrong Gram matrices → empty theta series.
+
+  Cause B — String constructor feature differences
+
+  MPintGMP.hpp and MPintGMPPimpl.cpp both have a custom set_mpint_str supporting ' digit separators, + prefix for non-decimal bases, and float/double overflow detection. mpz_class (GMPXX) supports none of
+  these. The demo guards these tests with #ifndef DEMO_GMPXX and #if defined(DEMO_ARBPREC) && !defined(DEMO_GMPXX).
+
+  ---
+  Why demoNative / demoWrappedNative differ
+
+  demoNative is typedef signed long int MPint — no class, so DEMO_NATIVE is defined and two conditional blocks are skipped:
+
+  1. injTest() #ifndef DEMO_NATIVE — valid/invalid string constructor tests + "value unchanged ok" for operator>>. Native has no string constructor or value-preserving stream input.
+  2. missingexpr() #if !defined(DEMO_NATIVE) && !defined(DEMO_GMPXX) — + prefix non-decimal string tests ("+0b101", "+0xff", etc.).
+
+  demoWrappedNative is class MPint wrapping signed long int but without DEMO_ARBPREC, so it runs both of those blocks but not the float/double overflow tests.
+
+✻ Worked for 24s
+
+❯ update CLAUDE.md with what you did last session
+
+● Update(CLAUDE.md)
+  ⎿  Added 9 lines, removed 7 lines
+      18
+      19
+      20  ## What Claude has done in our last conversation
+      21 -* Created `include/MPintWrappedNative.hpp`: inline header-only `class MPint` wrapping `signed long int` directly (no pimpl). All operators inline; copy/move/destructor defaulted.
+      22 -* Created `include/MPintGMP.hpp`: inline header-only `class MPint` wrapping `mpz_t` directly (no pimpl). All operators inline; mpz lifecycle managed in constructors/destructor/copy/move.
+      23 -* Both files were seeded from the corresponding pimpl `.cpp` files via `cp` + `git add`.
+      24 -* Added `DEMO_WRAPPEDNATIVE` and `DEMO_GMP` branches to `demo/src/demoTypedef.hpp`.
+      25 -* Added `TARGET_WRAPPEDNATIVE` and `TARGET_GMP` build rules to `Makefile` (header-only, no extra `.cpp`). Variant order: Native → GMPXX → WrappedNative → GMP → WrappedNativePimpl → GMPPimp
+         -l.
+      26 -* Updated `test/test.sh`: added both new variants to `doRegression()` and expanded `doProf()` to a 6-column table.
+      27 -* Generated `test/demoWrappedNative.output.ref` and `test/demoGMP.output.ref`; all six `./test/test.sh regr` diffs pass.
+      21 +Purely analytical session — no code changes. Explained why the six demo output files differ after `test.sh regr`:
+      22
+      23 +**demoGMP vs demoGMPPimpl vs demoGMPXX:**
+      24 +* **Unsigned long constructor semantics:** `MPintGMPPimpl.cpp` line 69 casts `unsigned long` to `signed long` before storage (`mpz_init_set_si`), so `(unsigned long)(-23)` → -23. `MPintGMP
+         +.hpp` calls `mpz_init_set_ui` directly → 18446744073709551593. `mpz_class` (GMPXX) likewise stores the full unsigned value. This cascades into `detTest`/`reduTest`: GMP/GMPXX build matrice
+         +s with huge positive entries → empty theta series.
+      25 +* **String constructor features:** `MPintGMP.hpp` and `MPintGMPPimpl.cpp` share a custom `set_mpint_str` supporting `'` digit separators, `+` prefix for non-decimal bases, and float/double
+         + overflow detection. `mpz_class` lacks these; demo guards them with `#ifndef DEMO_GMPXX` and `#if defined(DEMO_ARBPREC) && !defined(DEMO_GMPXX)`.
+      26 +
+      27 +**demoNative vs demoWrappedNative:**
+      28 +* `DEMO_NATIVE` is defined only for Native (bare `signed long int` typedef), causing two blocks to be skipped: `injTest()` `#ifndef DEMO_NATIVE` (string ctor validity tests + value-preserv
+         +ing `operator>>` test) and `missingexpr()` `#if !defined(DEMO_NATIVE) && !defined(DEMO_GMPXX)` (`+` prefix non-decimal strings).
+      29 +* `demoWrappedNative` does not define `DEMO_ARBPREC`, so float/double overflow tests do not run there either.
+      30 +
+      31  ## What I have done since our last conversation
+      32  updated transcript.txt, CLAUDE.md, .gitignore.example, and test/prof_output.txt
+      33
+
+● Update(CLAUDE.md)
+  ⎿  Added 1 line, removed 2 lines
+      32  updated transcript.txt, CLAUDE.md, .gitignore.example, and test/prof_output.txt
+      33
+      34  ## What I want Claude to do in the upcoming conversation
+      35 -In directory test, after *test.sh regr*, why are *demoGMP.output*, *demoGMPPimpl.output*, and *demoGMPXX.output* different from each other?
+      36 -Why does *demoNative.output* differ from *demoWrappedNative.output*?
+      35 +
+
+● CLAUDE.md updated. The "What Claude has done" section now summarizes the analytical findings, and the question section has been cleared.
+
+✻ Crunched for 28s
+
+❯ commit this
+
+● Bash(git status && git diff)
+  ⎿  On branch master
+     Changes not staged for commit:
+       (use "git add <file>..." to update what will be committed)
+     … +36 lines (ctrl+o to expand)
+
+● Bash(git add CLAUDE.md && git commit -m "$(cat <<'EOF'
+      updated CLAUDE.md…)
+  ⎿  [master 2499664] updated CLAUDE.md
+      1 file changed, 10 insertions(+), 9 deletions(-)
+
+● Done.
+
+✻ Churned for 9s
+
+※ recap: We explained why the six demo variant outputs differ after test.sh regr — purely analytical, no code changed. CLAUDE.md was updated and committed. No pending tasks. (disable recaps in /config)
+
+#############################################################################################################################################################################################################
+

@@ -29,7 +29,13 @@ Purely analytical session — no code changes. Explained why the six demo output
 * `demoWrappedNative` does not define `DEMO_ARBPREC`, so float/double overflow tests do not run there either.
 
 ## What I have done since our last conversation
-updated transcript.txt, CLAUDE.md, .gitignore.example, and test/prof_output.txt
+updated transcript.txt, CLAUDE.md.
 
 ## What I want Claude to do in the upcoming conversation
-
+For *demoGMP* / *demoGMPPimpl* / *demoGMPXX*, cause A:
+remove the *static_cast<signed long int>(v)* in  *demoGMPPimpl*'s *MPint(unsigned long int v)* ctor.
+Do the same for all *MPint(unsigned whatever int v)* ctors in *demoGMPPimpl*.
+Then remove the casts in test function basicexpr() in lines 75, 76, 80, and change to positive values, e.g. 
+replace *const unsigned long  int  c_u_l_i = static_cast<unsigned long>(-23);* with
+*const unsigned long  int  c_u_l_i = 23;*.
+verify the changed test results where these settings are involved using an independent oracle.
