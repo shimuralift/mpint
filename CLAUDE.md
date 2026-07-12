@@ -18,11 +18,11 @@ which implements an integer with arbitrary precision.
 
 
 ## What Claude has done in our last conversation
-Fixed Cause A: removed `static_cast<signed long int>(v)` from all four unsigned constructors in `src/MPintGMPPimpl.cpp`; they now route through `MPintImpl(unsigned long int v)` → `mpz_init_set_ui`, giving true unsigned semantics matching `MPintGMP.hpp`.
-Changed `basicexpr()` in `demo/src/exprTest.cpp` lines 75, 76, 80 to use positive literals (`22`, `23`, `41`) instead of negative-value casts.
-Updated all six `.output.ref` files; all six `test.sh regr` diffs pass.
-After the fix `demoGMP` and `demoGMPPimpl` outputs are byte-for-byte identical; remaining GMP/GMPXX differences are solely Cause B (string parser features).
-Oracle verification confirmed: `~23 = -24`, `22*6 = 132`, `23*6 = 138`, `41%6 = 5`, `132^11 = 143`, `23^11 = 28`.
+Added `#include <cmath>` to `demo/src/exprTest.cpp`.
+Filled in the two commented-out assert stubs in `floatconv()` (lines 845/846 and 855/856) for the `DEMO_GMPXX` branch:
+`mpz_class` has no `float`/`double` conversion operator, so the conversion goes through `get_d()` (returns `double`).
+Assert condition is `std::isinf(f) && f > 0.0f` / `std::isinf(d) && d > 0.0` — confirms specifically positive infinity.
+All six `test.sh regr` diffs pass.
 
 ## What I have done since our last conversation
 Modified some tests in *demo/src/exprTest.cpp* and improved test output, so that diffs
@@ -30,6 +30,5 @@ of *demoGMP* and *demoGMPXX* output are more informative.
 Updated transcript.txt, CLAUDE.md.
 
 ## What I want Claude to do in the upcoming conversation
-Look at lines 845/846 and 855/856 in *demo/src/exprTest.cpp*.
-How can "GMPXX returns +inf instead of throwing" be assert()ed here?
+
 
