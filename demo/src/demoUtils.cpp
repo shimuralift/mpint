@@ -43,7 +43,8 @@ SQState::SQState(const unsigned int dim,
 			unsigned long int randnumLow = mrand48();
 			unsigned long int randnum = (randnumHigh | randnumLow);
 			int sgn = (mrand48() < 0) ? -1 : 1;
-			entry = sgn * (randnum % entryMagnitude);
+			entry = randnum % entryMagnitude;
+			if (sgn < 0) entry = -entry;
 		}
 		pImpl->mFlatMatrix[flatidx] = entry;
 	}
@@ -78,7 +79,8 @@ PosDefState::PosDefState(const unsigned int dim,
 				unsigned long int randnumLow = mrand48();
 				unsigned long int randnum = (randnumHigh | randnumLow);
 				int sgn = (mrand48() < 0) ? -1 : 1;
-				entry = sgn * (randnum % entryMagnitude);
+				entry = randnum % entryMagnitude;
+				if (sgn < 0) entry = -entry;
 			}
 			Lflat[flatidx] = entry;
 		}
