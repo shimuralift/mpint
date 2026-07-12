@@ -560,8 +560,10 @@ int injTest() {
   {
     MPint z0("0");    assert(z0 == MPint(0)); std::cout << "MPint(\"0\")    = " << z0 << std::endl;
     MPint z1("-0");   assert(z1 == MPint(0)); std::cout << "MPint(\"-0\")   = " << z1 << std::endl;
-#ifndef DEMO_GMPXX
-    // mpz_class does not accept '+' prefix in strings
+#ifdef DEMO_GMPXX
+    std::cout << "GMPXX does not accept '+' prefix in strings, so this test is modified to not use '+', and passes trivially." << std::endl;
+    MPint z2("0x0"); assert(z2 == MPint(0)); std::cout << "MPint(\"0x0\") = " << z2 << std::endl;
+#else
     MPint z2("+0x0"); assert(z2 == MPint(0)); std::cout << "MPint(\"+0x0\") = " << z2 << std::endl;
 #endif
   }
@@ -575,8 +577,10 @@ int injTest() {
     assert(strThrows(""));      std::cout << "MPint(\"\") threw ok"       << std::endl;
     assert(strThrows("-"));     std::cout << "MPint(\"-\") threw ok"      << std::endl;
     assert(strThrows("+"));     std::cout << "MPint(\"+\") threw ok"      << std::endl;
-#ifndef DEMO_GMPXX
-    // mpz_class silently accepts "0x" and "0b" as 0 instead of throwing
+#ifdef DEMO_GMPXX
+    strThrows("0x");    std::cout << "MPint(\"0x\") silently accepted as 0 by GMPXX, not throwing (and this passes this test)"     << std::endl;
+    strThrows("0b");    std::cout << "MPint(\"0b\") silently accepted as 0 by GMPXX, not throwing (and this passes this test)"     << std::endl;
+#else
     assert(strThrows("0x"));    std::cout << "MPint(\"0x\") threw ok"     << std::endl;
     assert(strThrows("0b"));    std::cout << "MPint(\"0b\") threw ok"     << std::endl;
 #endif
@@ -773,8 +777,16 @@ int strconstr() {
   std::cout << "\"-0x10\" + \"0b10000\" = " << (MPint("-0x10") + MPint("0b10000")) << std::endl; // 0
 
   std::cout << std::endl << "--- string constructor: large values fitting in long int ---" << std::endl;
-#ifndef DEMO_GMPXX
+#ifdef DEMO_GMPXX
   // mpz_class does not strip digit-group separators (single quotes) from strings
+  MPint big1("1000000000000000000");   // 10^18
+  MPint big2("999999999999999999");     // 10^18 - 1
+  assert(big1 == MPint(1000000000000000000L));
+  assert(big2 + MPint(1) == big1);
+  std::cout << "GMPXX does not strip digit-group separators (single quotes) from strings, so this test is modified to not use them, and passes trivially." << std::endl;
+  std::cout << "\"1000000000000000000\" = " << big1 << std::endl;  // 1000000000000000000
+  std::cout << "\"999999999999999999\" + 1 = " << (big2 + MPint(1)) << std::endl;  // 1000000000000000000
+#else
   MPint big1("1'000'000'000'000'000'000");   // 10^18
   MPint big2("999'999'999'999'999'999");     // 10^18 - 1
   assert(big1 == MPint(1000000000000000000L));
@@ -823,29 +835,49 @@ int floatconv() {
   std::cout << "double(1000000000)  = " << d3 << std::endl;
   std::cout << "double(-999999999)  = " << d4 << std::endl;
 
-#if defined(DEMO_ARBPREC) && !defined(DEMO_GMPXX)
-  // Overflow detection: arbitrary precision backends throw on out-of-range float/double cast.
-  // mpz_class (DEMO_GMPXX) returns +inf instead of throwing — test not applicable.
+#if defined(DEMO_ARBPREC)
+    #if defined(DEMO_GMPXX)
+      // Overflow detection: arbitrary precision backends should throw on out-of-range float/double cast.
+      // mpz_class (DEMO_GMPXX) returns +inf instead of throwing.
 
-  // Value exceeding FLT_MAX (~3.4e38)
-  MPint big_f("400000000000000000000000000000000000000");  // ~4e38
-  bool caught = false;
-  try { float f = static_cast<float>(big_f); (void)f; }
-  catch (const std::overflow_error&) { caught = true; }
-  assert(caught);
-  std::cout << "float overflow detected ok" << std::endl;
+      // Value exceeding FLT_MAX (~3.4e38)
+      MPint big_f("400000000000000000000000000000000000000");  // ~4e38
+      //float f = static_cast<float>(big_f);
+      //assert(/* whaat? */);
+      std::cout << "on float overflow, GMPXX returns +inf instead of throwing (ok)." << std::endl;
 
-  // Value exceeding DBL_MAX (~1.8e308)
-  MPint big_d("1"
-    "000000000000000000000000000000000000000000000000000000000000000000000000000000"
-    "000000000000000000000000000000000000000000000000000000000000000000000000000000"
-    "000000000000000000000000000000000000000000000000000000000000000000000000000000"
-    "000000000000000000000000000000000000000000000000000000000000000000000000000000");  // 10^312
-  caught = false;
-  try { double d = static_cast<double>(big_d); (void)d; }
-  catch (const std::overflow_error&) { caught = true; }
-  assert(caught);
-  std::cout << "double overflow detected ok" << std::endl;
+      // Value exceeding DBL_MAX (~1.8e308)
+      MPint big_d("1"
+        "000000000000000000000000000000000000000000000000000000000000000000000000000000"
+        "000000000000000000000000000000000000000000000000000000000000000000000000000000"
+        "000000000000000000000000000000000000000000000000000000000000000000000000000000"
+        "000000000000000000000000000000000000000000000000000000000000000000000000000000");  // 10^312
+      //double d = static_cast<double>(big_d);
+      //assert(/* whaat? */);
+      std::cout << "on double overflow, GMPXX returns +inf instead of throwing (ok)." << std::endl;
+    #else
+      // Overflow detection: arbitrary precision backends should throw on out-of-range float/double cast.
+
+      // Value exceeding FLT_MAX (~3.4e38)
+      MPint big_f("400000000000000000000000000000000000000");  // ~4e38
+      bool caught = false;
+      try { float f = static_cast<float>(big_f); (void)f; }
+      catch (const std::overflow_error&) { caught = true; }
+      assert(caught);
+      std::cout << "float overflow detected ok" << std::endl;
+
+      // Value exceeding DBL_MAX (~1.8e308)
+      MPint big_d("1"
+        "000000000000000000000000000000000000000000000000000000000000000000000000000000"
+        "000000000000000000000000000000000000000000000000000000000000000000000000000000"
+        "000000000000000000000000000000000000000000000000000000000000000000000000000000"
+        "000000000000000000000000000000000000000000000000000000000000000000000000000000");  // 10^312
+      caught = false;
+      try { double d = static_cast<double>(big_d); (void)d; }
+      catch (const std::overflow_error&) { caught = true; }
+      assert(caught);
+      std::cout << "double overflow detected ok" << std::endl;
+    #endif
 #endif
 
   return 0;
@@ -914,20 +946,35 @@ int missingexpr() {
     assert(b == MPint(8));
   }
 
-#if !defined(DEMO_NATIVE) && !defined(DEMO_GMPXX)
-  // mpz_class does not accept '+' prefix in strings; skip this block for DEMO_GMPXX
-  std::cout << std::endl << "--- string constructor: + prefix (non-decimal) ---" << std::endl;
-  {
-    MPint ph("+0x1F");   // hex: +31
-    MPint po("+017");    // octal: +15
-    MPint pb("+0b11");   // binary: +3
-    assert(ph == MPint(31));
-    assert(po == MPint(15));
-    assert(pb == MPint(3));
-    std::cout << "\"+0x1F\" = " << ph << std::endl;  // 31
-    std::cout << "\"+017\"  = " << po << std::endl;  // 15
-    std::cout << "\"+0b11\" = " << pb << std::endl;  // 3
-  }
+#if !defined(DEMO_NATIVE)
+    #if defined(DEMO_GMPXX)
+  std::cout << std::endl << "--- string constructor (non-decimal): ---" << std::endl;
+  std::cout << "GMPXX does not accept '+' prefix in non-decimal strings, so this test is modified to not use '+', and passes trivially." << std::endl;
+      {
+        MPint ph("0x1F");   // hex: 31
+        MPint po("017");    // octal: 15
+        MPint pb("0b11");   // binary: 3
+        assert(ph == MPint(31));
+        assert(po == MPint(15));
+        assert(pb == MPint(3));
+        std::cout << "\"0x1F\" = " << ph << std::endl;  // 31
+        std::cout << "\"017\"  = " << po << std::endl;  // 15
+        std::cout << "\"0b11\" = " << pb << std::endl;  // 3
+      }
+    #else
+      std::cout << std::endl << "--- string constructor: + prefix (non-decimal) ---" << std::endl;
+      {
+        MPint ph("+0x1F");   // hex: +31
+        MPint po("+017");    // octal: +15
+        MPint pb("+0b11");   // binary: +3
+        assert(ph == MPint(31));
+        assert(po == MPint(15));
+        assert(pb == MPint(3));
+        std::cout << "\"+0x1F\" = " << ph << std::endl;  // 31
+        std::cout << "\"+017\"  = " << po << std::endl;  // 15
+        std::cout << "\"+0b11\" = " << pb << std::endl;  // 3
+      }
+    #endif
 #endif
 
   return 0;

@@ -25,7 +25,11 @@ After the fix `demoGMP` and `demoGMPPimpl` outputs are byte-for-byte identical; 
 Oracle verification confirmed: `~23 = -24`, `22*6 = 132`, `23*6 = 138`, `41%6 = 5`, `132^11 = 143`, `23^11 = 28`.
 
 ## What I have done since our last conversation
-updated transcript.txt, CLAUDE.md.
+Modified some tests in *demo/src/exprTest.cpp* and improved test output, so that diffs
+of *demoGMP* and *demoGMPXX* output are more informative.
+Updated transcript.txt, CLAUDE.md.
 
 ## What I want Claude to do in the upcoming conversation
+Look at lines 845/846 and 855/856 in *demo/src/exprTest.cpp*.
+How can "GMPXX returns +inf instead of throwing" be assert()ed here?
 
