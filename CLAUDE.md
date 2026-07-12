@@ -18,15 +18,27 @@ which implements an integer with arbitrary precision.
 
 
 ## What Claude has done in our last conversation
-Added `#include <cmath>` to `demo/src/exprTest.cpp`.
-Filled in the two commented-out assert stubs in `floatconv()` (lines 845/846 and 855/856) for the `DEMO_GMPXX` branch:
-`mpz_class` has no `float`/`double` conversion operator, so the conversion goes through `get_d()` (returns `double`).
-Assert condition is `std::isinf(f) && f > 0.0f` / `std::isinf(d) && d > 0.0` — confirms specifically positive infinity.
-All six `test.sh regr` diffs pass.
+Fixed signed/unsigned bug in `demo/src/demoUtils.cpp` (both `SQState` and `PosDefState` constructors):
+`sgn * (randnum % entryMagnitude)` promoted `int sgn` to `unsigned long int`, so -1 became 2^64-1 and the product was 2^64-v instead of -v.
+Fix: assign `randnum % entryMagnitude` to `MPint` first, then `if (sgn < 0) entry = -entry`.
+This bug was previously masked by the old `MPintGMPPimpl` unsigned ctor (which cast unsigned long back to signed long, accidentally restoring the sign).
+Updated all six `.output.ref` files; all six `test.sh regr` diffs pass.
+
+Then verified all results across all six demo variants using PARI/gp (det/theta) and Python (exprTest) as oracles.
+A Python parser (`gen_verify.py` in scratchpad) extracts matrices/dets/theta series and emits PARI/gp; a second script (`check_expr.py`) verifies arithmetic using Python's arbitrary-precision integers with C truncated-division semantics.
+
+**exprTest oracle (Python):**
+- demoGMP, demoGMPPimpl, demoGMPXX: all checks passed.
+- demoWrappedNative, demoWrappedNativePimpl, demoNative: one expected fail — `23^19` overflows `signed long int` (labeled as such in test output).
+- All other arithmetic (unary/binary ops, shifts, comparisons, compound assignments, negative truncated div/mod) passes in every variant.
+
+**det/theta oracle (PARI/gp):**
+- All 32 Dodgson determinants correct in all six variants (PARI/gp `matdet`).
+- All 16 theta series correct in all six variants (PARI/gp `qfminim`), 13–234 norms per run.
+- Known limitation (not a new bug): GaussInt overflows `signed long int` intermediate products for two non-singular 4×4 det runs, giving wrong GaussInt output in demoNative/WrappedNative/WrappedNativePimpl. Side-effect: `isSingular()` uses GaussInt internally; overflow changes `PosDefState` retry-loop random state for dim≥4, so dim=5 theta matrices differ between GMP and native variants — but each variant's theta series is oracle-verified correct for its own matrices.
 
 ## What I have done since our last conversation
 Updated transcript.txt, CLAUDE.md.
 
 ## What I want Claude to do in the upcoming conversation
-In all the multi precision demo output, I still see those matrices with ridiculously big entries in the det and redu examples.
-I suspect this is a bug in *demo/src/demoUtils*, related to signed/unsigned issues. Please investigate.
+
