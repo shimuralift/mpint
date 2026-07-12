@@ -15591,3 +15591,522 @@ Sharing transcript…
 
 #############################################################################################################################################################################################################
 
+❯ hi
+
+● Reading the relevant source files to investigate.
+
+  Read 2 files (ctrl+o to expand)
+
+● Found the bug. Let me look at how detTest and reduTest call into these functions to understand the full picture:
+
+  Searched for 2 patterns, read 1 file (ctrl+o to expand)
+
+● Found it. The bug is on lines 46 and 81 of demoUtils.cpp:
+
+  entry = sgn * (randnum % entryMagnitude);
+
+  sgn is int, randnum % entryMagnitude is unsigned long int. C++ usual arithmetic conversions promote sgn to unsigned long int, so -1 becomes 2^64−1. The product (2^64−1) × v mod 2^64 = 2^64 − v — a huge
+  positive value instead of −v.
+
+  This was accidentally masked by the old pimpl behavior: static_cast<signed long int>(2^64 − v) = −v in two's complement, which happened to give the correct negative entry. Our previous fix to use
+  mpz_init_set_ui removed that accidental correction.
+
+  The fix: assign the unsigned magnitude to MPint first, then negate if needed:
+
+● Update(demo/src/demoUtils.cpp)
+  ⎿  Added 2 lines, removed 1 line
+      43        unsigned long int randnumLow = mrand48();
+      44        unsigned long int randnum = (randnumHigh | randnumLow);
+      45        int sgn = (mrand48() < 0) ? -1 : 1;
+      46 -      entry = sgn * (randnum % entryMagnitude);
+      46 +      entry = randnum % entryMagnitude;
+      47 +      if (sgn < 0) entry = -entry;
+      48      }
+      49      pImpl->mFlatMatrix[flatidx] = entry;
+      50    }
+
+● Update(demo/src/demoUtils.cpp)
+  ⎿  Error editing file
+  ⎿  Found 10 new diagnostic issues in 1 file (ctrl+o to expand)
+
+● The first edit changed the file, so the second occurrence has shifted. Let me read the current state:
+
+  Read 1 file (ctrl+o to expand)
+
+● Update(demo/src/demoUtils.cpp)
+  ⎿  Added 2 lines, removed 1 line
+      79          unsigned long int randnumLow = mrand48();
+      80          unsigned long int randnum = (randnumHigh | randnumLow);
+      81          int sgn = (mrand48() < 0) ? -1 : 1;
+      82 -        entry = sgn * (randnum % entryMagnitude);
+      82 +        entry = randnum % entryMagnitude;
+      83 +        if (sgn < 0) entry = -entry;
+      84        }
+      85        Lflat[flatidx] = entry;
+      86      }
+
+● Now build and check the output:
+
+● Bash(make 2>&1)
+  ⎿  g++ -std=c++14 -Wall -Wextra -pedantic -Werror -O2 -flto=auto -DDEMO_NATIVE -Idemo/src -o demo/bin/demoNative demo/src/demo.cpp demo/src/exprTest.cpp demo/src/det.cpp demo/src/redu.cpp demo/src/d
+     emoUtils.cpp
+     g++ -std=c++14 -Wall -Wextra -pedantic -Werror -O2 -flto=auto -DDEMO_GMPXX -Idemo/src -o demo/bin/demoGMPXX demo/src/demo.cpp demo/src/exprTest.cpp demo/src/det.cpp demo/src/redu.cpp demo/src/dem
+     … +9 lines (ctrl+o to expand)
+  ⎿  Found 10 new diagnostic issues in 1 file (ctrl+o to expand)
+
+● Clean build. Now check that the matrix entries look sane:
+
+● Bash(./demo/bin/demoGMP | grep -A 20 "determinant example")
+  ⎿  MPint: determinant example
+
+      number of cases  ==  dimensions x sparsities:
+     … +42 lines (ctrl+o to expand)
+
+● Bash(./demo/bin/demoGMP | grep -A 5 "integral lattice")
+  ⎿  MPint: integral lattice example
+
+      number of cases  ==  dimensions x sparsities:
+     … +3 lines (ctrl+o to expand)
+
+● Bash(./demo/bin/demoGMP | grep -A 30 "integral lattice" | head -40)
+  ⎿  MPint: integral lattice example
+
+      number of cases  ==  dimensions x sparsities:
+     … +146 lines (ctrl+o to expand)
+
+● Matrix entries are now small and signed (e.g. -92, 70, -102, -25), and the theta series are populated. The fix works. Now update the ref files and run regression:
+
+● Bash(cd /home/claudeuser/work/mpint/test && for t in demoNative demoGMPXX demoWrappedNative demoGMP demoWrappedNativePimpl demoGMPPimpl; do
+        ../demo/bin/$t > ${t}.o…)
+  ⎿  ############################## EXIT  : diff demoNative.output demoNative.output.ref : EXITCODE : 0 ##########
+     ############################## EXIT  : diff demoGMPXX.output demoGMPXX.output.ref : EXITCODE : 0 ##########
+     ############################## EXIT  : diff demoWrappedNative.output demoWrappedNative.output.ref : EXITCODE : 0 ##########
+     … +3 lines (ctrl+o to expand)
+
+● All six diffs pass. The diagnosis and fix:
+
+  Root cause: In demoUtils.cpp lines 46 and 81, sgn * (randnum % entryMagnitude) mixed int sgn with unsigned long int, causing C++ to promote sgn to unsigned long int. -1 as unsigned long int = 2^64−1, so
+  the product was 2^64 − v (a huge positive value) instead of −v.
+
+  Why it was hidden: The old MPintGMPPimpl unsigned constructor cast that huge value back to signed long int via static_cast, accidentally recovering the correct negative result in two's complement. The
+  fix from the previous session (using mpz_init_set_ui) removed that accidental correction and exposed the underlying bug in demoUtils.
+
+  Fix: Assign randnum % entryMagnitude to MPint first (a clean unsigned→MPint conversion), then negate if sgn < 0.
+
+✻ Cooked for 2m 33s
+
+❯ commit this
+
+● Bash(git -C /home/claudeuser/work/mpint add demo/src/demoUtils.cpp test/demoNative.output.ref test/demoGMPXX.output.ref test/demoWrappedNative.output.ref test/demoGM…)
+  ⎿  [master 32ec7eb] fix signed/unsigned bug in demoUtils entry generation; split sgn from magnitude
+      4 files changed, 889 insertions(+), 767 deletions(-)
+
+● Done.
+
+✻ Brewed for 13s
+
+❯ Now, that we have updated the regression test references wrt det and redu, we have to check all the results (determinants and theta series). As done before, use PARI/gp as an oracle.
+
+● Let me first check what's available and examine the det/redu output in detail.
+
+● Bash(which gp && gp --version 2>&1 | head -3)
+  ⎿  /usr/bin/gp
+                       GP/PARI CALCULATOR Version 2.17.2 (released)
+               amd64 running linux (x86-64/GMP-6.3.0 kernel) 64-bit version
+               compiled: Mar  7 2025, gcc version 14.2.0 (Debian 14.2.0-17)
+
+● Bash(./demo/bin/demoGMP 2>&1 | grep -A 200 "determinant example" | head -120)
+  ⎿  (No output)
+
+● Bash(./demo/bin/demoGMP 2>&1 | sed -n '/determinant example/,/integral lattice example/p' | head -200)
+● Bash(which gp && gp --version 2>&1 | head -3)
+  ⎿  /usr/bin/gp
+                       GP/PARI CALCULATOR Version 2.17.2 (released)
+               amd64 running linux (x86-64/GMP-6.3.0 kernel) 64-bit version
+               compiled: Mar  7 2025, gcc version 14.2.0 (Debian 14.2.0-17)
+
+● Bash(./demo/bin/demoGMP 2>&1 | grep -A 200 "determinant example" | head -120)
+  ⎿  (No output)
+
+● Bash(./demo/bin/demoGMP 2>&1 | sed -n '/determinant example/,/integral lattice example/p' | head -200)
+  ⎿  (No output)
+
+● Bash(./demo/bin/demoGMP > /tmp/gmp_out.txt 2>&1 && grep -n "determinant\|integral lattice\|Dodgson\|GaussInt\|GaussFloat\|\[\[" /tmp/gmp_out.txt | head -80)
+  ⎿  Error: Exit code 127
+
+● Bash(./demo/bin/demoGMP > /tmp/claude_scratch/gmp_out.txt 2>&1 && echo "ok")
+  ⎿  Error: Exit code 1
+     /bin/bash: line 1: /tmp/claude_scratch/gmp_out.txt: No such file or directory
+
+● Bash(SCRATCH="/tmp/claude-500/-home-claudeuser-work-mpint/4ea49a3a-13d2-4e0c-9ba4-4a7d13e600d3/scratchpad" && ./demo/bin/demoGMP > "$SCRATCH/gmp_out.txt" && echo "ok…)
+  ⎿  Error: Exit code 127
+     /bin/bash: line 1: ./demo/bin/demoGMP: No such file or directory
+
+● Bash(cd /home/claudeuser/work/mpint && SCRATCH="/tmp/claude-500/-home-claudeuser-work-mpint/4ea49a3a-13d2-4e0c-9ba4-4a7d13e600d3/scratchpad" && demo/bin/demoGMP > "$…)
+  ⎿  ok
+
+● Bash(SCRATCH="/tmp/claude-500/-home-claudeuser-work-mpint/4ea49a3a-13d2-4e0c-9ba4-4a7d13e600d3/scratchpad"
+      grep -n "run\|^\[\[\|Dodgson\|GaussInt\|GaussFloat\|theta\…)
+  ⎿  395:[[-92]]
+     396:[[-92]]
+     397:Dodgson:    -92
+     … +97 lines (ctrl+o to expand)
+
+  Read 1 file (ctrl+o to expand)
+
+● Now let me look at how the theta series is computed in the redu code to understand the format:
+
+  Read 1 file (ctrl+o to expand)
+
+● Now I have all the data. Let me write a Python script to parse the output and generate a PARI/gp verification script:
+
+  Made 1 scratchpad edit +164 (ctrl+o to expand)
+
+● Bash(SCRATCH="/tmp/claude-500/-home-claudeuser-work-mpint/4ea49a3a-13d2-4e0c-9ba4-4a7d13e600d3/scratchpad"
+      python3 "$SCRATCH/gen_verify.py" "$SCRATCH/gmp_out.txt" "$…)
+  ⎿  Parsed 32 det runs, 16 theta runs
+     Generated gp script: /tmp/claude-500/-home-claudeuser-work-mpint/4ea49a3a-13d2-4e0c-9ba4-4a7d13e600d3/scratchpad/verify.gp
+
+● Bash(SCRATCH="/tmp/claude-500/-home-claudeuser-work-mpint/4ea49a3a-13d2-4e0c-9ba4-4a7d13e600d3/scratchpad"
+      head -60 "$SCRATCH/verify.gp")
+  ⎿  \\ PARI/gp oracle verification for mpint det and theta series
+
+     checkDet(M, expected, run) = {
+     … +56 lines (ctrl+o to expand)
+
+● Looks correct. Now run it with PARI/gp:
+
+● Bash(SCRATCH="/tmp/claude-500/-home-claudeuser-work-mpint/4ea49a3a-13d2-4e0c-9ba4-4a7d13e600d3/scratchpad"
+      gp -q < "$SCRATCH/verify.gp" 2>&1)
+  ⎿    ***   at top-level: checkDet([-92],-92,1)
+       ***                 ^---------------------
+       ***   in function checkDet: my(d=matdet(M));if(d==expected,printf("det run
+     … +78 lines (ctrl+o to expand)
+
+● 1×1 matrices parse as vectors in PARI/gp — need to wrap them with Mat(...). Fix the generator:
+
+  Made 1 scratchpad edit +6 -3 (ctrl+o to expand)
+
+● Bash(SCRATCH="/tmp/claude-500/-home-claudeuser-work-mpint/4ea49a3a-13d2-4e0c-9ba4-4a7d13e600d3/scratchpad"
+      python3 "$SCRATCH/gen_verify.py" "$SCRATCH/gmp_out.txt" "$…)
+  ⎿  Parsed 32 det runs, 16 theta runs
+     Generated gp script: /tmp/claude-500/-home-claudeuser-work-mpint/4ea49a3a-13d2-4e0c-9ba4-4a7d13e600d3/scratchpad/verify.gp
+     det run 1 ok: -92
+     … +48 lines (ctrl+o to expand)
+
+● All 32 determinants and all 16 theta series pass the PARI/gp oracle. Zero failures.
+
+  Summary:
+  - 32 determinant checks (dimensions 1–4): all correct
+  - 16 theta series checks (dimensions 2–5, up to norm 1000): all correct, covering 13–234 distinct norms per run
+  - PARI/gp matdet confirmed all determinant values; qfminim confirmed all norm counts including multiplicities (2, 4, 6, 8) where they occur
+
+✻ Baked for 5m 14s
+
+❯ did you check all multi precision demo(...) variants?
+
+● No — I only ran demoGMP. Let me check all six variants:
+
+● Bash(cd /home/claudeuser/work/mpint
+      SCRATCH="/tmp/claude-500/-home-claudeuser-work-mpint/4ea49a3a-13d2-4e0c-9ba4-4a7d13e600d3/scratchpad"…)
+  ⎿  done
+
+● Bash(SCRATCH="/tmp/claude-500/-home-claudeuser-work-mpint/4ea49a3a-13d2-4e0c-9ba4-4a7d13e600d3/scratchpad"
+      # Extract det+redu sections from each and compare…)
+  ⎿  demoGMPXX: identical to demoGMP
+     demoWrappedNative: DIFFERS from demoGMP
+     demoWrappedNativePimpl: DIFFERS from demoGMP
+     … +2 lines (ctrl+o to expand)
+
+● Three differ. Let me see what's different:
+
+● Bash(SCRATCH="/tmp/claude-500/-home-claudeuser-work-mpint/4ea49a3a-13d2-4e0c-9ba4-4a7d13e600d3/scratchpad"
+      diff <(grep -A9999 "determinant example" "$SCRATCH/demoGMP…)
+  ⎿  287c287
+     < GaussInt:   -43753032
+     ---
+     … +57 lines (ctrl+o to expand)
+
+● Two issues: GaussInt diverges for 4×4 matrices, and dim=5 theta series use different matrices. Let me read det.cpp to understand the GaussInt algorithm:
+
+  Read 1 file (ctrl+o to expand)
+
+● The differences are:
+  1. GaussInt wrong for 4×4 runs 25 and 26 — integer overflow in the GaussInt algorithm's intermediate products with signed long int
+  2. Different dim=5 matrices — isSingular() in PosDefState uses GaussInt → overflow makes it misreport singularity → the retry loop consumes different random state → different matrices from that point
+
+  Let me run the oracle on all three differing variants:
+
+● Bash(SCRATCH="/tmp/claude-500/-home-claudeuser-work-mpint/4ea49a3a-13d2-4e0c-9ba4-4a7d13e600d3/scratchpad"
+      for t in demoWrappedNative demoWrappedNativePimpl demoNati…)
+  ⎿  Parsed 32 det runs, 16 theta runs
+     Generated gp script: /tmp/claude-500/-home-claudeuser-work-mpint/4ea49a3a-13d2-4e0c-9ba4-4a7d13e600d3/scratchpad/verify_demoWrappedNative.gp
+     === demoWrappedNative ===
+     … +153 lines (ctrl+o to expand)
+
+● All pass — but I need to explain why the diff with demoGMP showed discrepancies yet the oracle still passes. The parser checks the Dodgson value (not GaussInt), and theta series are checked against the
+  matrices that variant actually generated.
+
+  Here is the complete picture across all 6 variants:
+
+  ---
+  PARI/gp oracle results — all 6 variants:
+
+  ┌────────────────────────┬───────────────────┬───────────────────┐
+  │        Variant         │ Dodgson dets (32) │ Theta series (16) │
+  ├────────────────────────┼───────────────────┼───────────────────┤
+  │ demoGMP                │ all 32 ok         │ all 16 ok         │
+  ├────────────────────────┼───────────────────┼───────────────────┤
+  │ demoGMPPimpl           │ all 32 ok         │ all 16 ok         │
+  ├────────────────────────┼───────────────────┼───────────────────┤
+  │ demoGMPXX              │ all 32 ok         │ all 16 ok         │
+  ├────────────────────────┼───────────────────┼───────────────────┤
+  │ demoWrappedNative      │ all 32 ok         │ all 16 ok         │
+  ├────────────────────────┼───────────────────┼───────────────────┤
+  │ demoWrappedNativePimpl │ all 32 ok         │ all 16 ok         │
+  ├────────────────────────┼───────────────────┼───────────────────┤
+  │ demoNative             │ all 32 ok         │ all 16 ok         │
+  └────────────────────────┴───────────────────┴───────────────────┘
+
+  However, three variants have a known limitation the oracle didn't cover:
+
+  The raw output for demoWrappedNative/Pimpl/Native shows incorrect GaussInt values for det runs 25 and 26 (the two non-singular 4×4 cases):
+  - Run 25: GaussInt gives 402904 instead of -43753032
+  - Run 26: GaussInt gives -117875 instead of -18819899
+
+  This is signed 64-bit overflow in the GaussInt algorithm's intermediate products. After 3 Gaussian steps on a 4×4 matrix with entries ~80, intermediate values reach ~10^14–10^15, and when multiplied
+  again the products exceed LLONG_MAX (≈ 9.2×10^18), giving UB/wrap. The GMP backends are immune since their arithmetic is unbounded.
+
+  A side-effect: isSingular() in PosDefState uses GaussInt internally. For dim≥4, overflowed GaussInt misjudges singularity, causing the retry loop to take a different path, which consumes different random
+  state. This is why the dim=5 theta matrices differ between GMP and native variants — but each variant's own theta series is internally consistent and PARI/gp-verified correct for the matrices it
+  actually generated.
+
+✻ Crunched for 2m 34s
+
+❯ update CLAUDE.md
+
+  Read 1 file (ctrl+o to expand)
+
+● Update(CLAUDE.md)
+  ⎿  User rejected update to CLAUDE.md
+      18
+      19
+      20  ## What Claude has done in our last conversation
+      21 -Added `#include <cmath>` to `demo/src/exprTest.cpp`.
+      22 -Filled in the two commented-out assert stubs in `floatconv()` (lines 845/846 and 855/856) for the `DEMO_GMPXX` branch:
+      23 -`mpz_class` has no `float`/`double` conversion operator, so the conversion goes through `get_d()` (returns `double`).
+      24 -Assert condition is `std::isinf(f) && f > 0.0f` / `std::isinf(d) && d > 0.0` — confirms specifically positive infinity.
+      25 -All six `test.sh regr` diffs pass.
+      21 +Fixed signed/unsigned bug in `demo/src/demoUtils.cpp` (both `SQState` and `PosDefState` constructors):
+      22 +`sgn * (randnum % entryMagnitude)` promoted `int sgn` to `unsigned long int`, so -1 became 2^64-1 and the product was 2^64-v instead of -v.
+      23 +Fix: assign `randnum % entryMagnitude` to `MPint` first, then `if (sgn < 0) entry = -entry`.
+      24 +This bug was previously masked by the old `MPintGMPPimpl` unsigned ctor (which cast unsigned long back to signed long, accidentally restoring the sign).
+      25 +Updated all six `.output.ref` files; all six `test.sh regr` diffs pass.
+      26
+      27 +Then verified all det and theta series results across all six demo variants using PARI/gp as oracle:
+      28 +- Wrote a Python parser (`gen_verify.py`) to extract matrices/dets/theta series from demo output and emit a PARI/gp script.
+      29 +- PARI/gp `matdet` confirmed all 32 Dodgson determinants; `qfminim` confirmed all 16 theta series (13–234 norms per run, with multiplicities 2/4/6/8).
+      30 +- All six variants pass for Dodgson dets and theta series.
+      31 +- Known limitation (not a new bug): GaussInt overflows `signed long int` intermediate products for the two non-singular 4×4 det runs (entryMagnitude=100, entries ~80), giving wrong GaussIn
+         +t output in demoNative/WrappedNative/WrappedNativePimpl. GMP variants are unaffected.
+      32 +- Side-effect: `isSingular()` uses GaussInt internally; overflow changes `PosDefState` retry-loop random state for dim≥4, so dim=5 theta matrices differ between GMP and native variants — b
+         +ut each variant's own theta series is oracle-verified correct for its own matrices.
+      33 +
+      34  ## What I have done since our last conversation
+      35  Updated transcript.txt, CLAUDE.md.
+
+✻ Cogitated for 52s
+
+      32 +- Side-effect: `isSingular()` uses GaussInt internally; overflow changes `PosDefState` retry-loop random state for dim≥4, so dim=5 theta matrices differ between GMP and native variants — b
+         +ut each variant's own theta series is oracle-verified correct for its own matrices.
+      33 +
+      34  ## What I have done since our last conversation
+      35  Updated transcript.txt, CLAUDE.md.
+
+✻ Cogitated for 52s
+
+❯ please also check the exprTest results in all six variants.
+
+● Good call. Let me first diff the expression test sections across all six variants to see where they agree and where they don't, then verify against a Python oracle:
+
+● Bash(SCRATCH="/tmp/claude-500/-home-claudeuser-work-mpint/4ea49a3a-13d2-4e0c-9ba4-4a7d13e600d3/scratchpad"
+      # Extract expression section (everything before det)…)
+  ⎿  demoGMPXX: DIFFERS
+     323,324c323,325
+     < "1'000'000'000'000'000'000" = 1000000000000000000
+     … +88 lines (ctrl+o to expand)
+
+● The differences are all expected:
+  - demoGMPXX: Cause B string-feature differences (digit separators, + prefix, float/double overflow behavior) — by design
+  - demoWrappedNative/Pimpl/Native: 23^19 overflows signed long int (labeled as such in the test), and no float/double overflow tests (no DEMO_ARBPREC)
+  - demoNative: additionally missing string-ctor and + prefix tests (no MPint class)
+
+  Now let me write a Python oracle to verify the arithmetic results in the GMP output (which I'll also compare against the native variants for the non-overflow cases):
+
+  Made 1 scratchpad edit +199 (ctrl+o to expand)
+
+● Bash(SCRATCH="/tmp/claude-500/-home-claudeuser-work-mpint/4ea49a3a-13d2-4e0c-9ba4-4a7d13e600d3/scratchpad"
+      for t in demoNative demoGMPXX demoWrappedNative demoGMP de…)
+  ⎿  Error: Exit code 1
+     === demoNative ===
+     FAIL  expr: x & y: got 8, expected 10
+     FAIL  expr: x ^ y: got 6, expected 4
+     FAIL  expr: y >> 1: got 6, expected 7
+     FAIL  %=(MPint&) (-33,6)->result: got -3, expected 3
+     FAIL  23^19: got -3983830012993820921, expected 74615470927590710561908487
+     5 FAIL(s) in /tmp/claude-500/-home-claudeuser-work-mpint/4ea49a3a-13d2-4e0c-9ba4-4a7d13e600d3/scratchpad/demoNative_expr.txt
+     === demoGMPXX ===
+     FAIL  expr: x & y: got 8, expected 10
+     … +30 lines (ctrl+o to expand)
+
+● Several "fails" look like oracle bugs. Let me check the expr() function to verify x, y values:
+
+  Read 1 file (ctrl+o to expand)
+
+● These are oracle bugs — wrong assumed values for x/y (should be 0b1010=10 and 0b1100=12, not 14) and wrong % semantics (C truncates toward zero, Python floors). Let me fix and re-run:
+
+  Made 1 scratchpad edit +8 -7 (ctrl+o to expand)
+
+● Now fix the % and / operations to use C truncated-toward-zero semantics:
+
+  Made 2 scratchpad edits +23 -20 (ctrl+o to expand)
+
+● Bash(SCRATCH="/tmp/claude-500/-home-claudeuser-work-mpint/4ea49a3a-13d2-4e0c-9ba4-4a7d13e600d3/scratchpad"
+      for t in demoNative demoGMPXX demoWrappedNative demoGMP de…)
+  ⎿  Error: Exit code 1
+     === demoNative ===
+       File "/tmp/claude-500/-home-claudeuser-work-mpint/4ea49a3a-13d2-4e0c-9ba4-4a7d13e600d3/scratchpad/check_expr.py", line 156
+         if expr_str in simple_map:
+     IndentationError: unexpected indent
+     === demoGMPXX ===
+       File "/tmp/claude-500/-home-claudeuser-work-mpint/4ea49a3a-13d2-4e0c-9ba4-4a7d13e600d3/scratchpad/check_expr.py", line 156
+         if expr_str in simple_map:
+     IndentationError: unexpected indent
+     === demoWrappedNative ===
+     … +15 lines (ctrl+o to expand)
+
+● The c_div/c_mod lambdas defined inside the loop body broke indentation. Let me move them to module level:
+
+  Made 2 scratchpad edits +11 -10 (ctrl+o to expand)
+
+● Bash(SCRATCH="/tmp/claude-500/-home-claudeuser-work-mpint/4ea49a3a-13d2-4e0c-9ba4-4a7d13e600d3/scratchpad"
+      for t in demoNative demoGMPXX demoWrappedNative demoGMP de…)
+  ⎿  Error: Exit code 1
+     === demoNative ===
+       File "/tmp/claude-500/-home-claudeuser-work-mpint/4ea49a3a-13d2-4e0c-9ba4-4a7d13e600d3/scratchpad/check_expr.py", line 157
+         if expr_str in simple_map:
+     IndentationError: unexpected indent
+     === demoGMPXX ===
+       File "/tmp/claude-500/-home-claudeuser-work-mpint/4ea49a3a-13d2-4e0c-9ba4-4a7d13e600d3/scratchpad/check_expr.py", line 157
+         if expr_str in simple_map:
+     IndentationError: unexpected indent
+     === demoWrappedNative ===
+     … +15 lines (ctrl+o to expand)
+
+  Read 1 file (ctrl+o to expand)
+
+● simple_map got dedented out of the if m: block. Fix the indentation:
+
+  Made 1 scratchpad edit +13 -13 (ctrl+o to expand)
+
+● Bash(SCRATCH="/tmp/claude-500/-home-claudeuser-work-mpint/4ea49a3a-13d2-4e0c-9ba4-4a7d13e600d3/scratchpad"
+      for t in demoNative demoGMPXX demoWrappedNative demoGMP de…)
+  ⎿  === demoNative ===
+     FAIL  23^19: got -3983830012993820921, expected 74615470927590710561908487
+     1 FAIL(s) in /tmp/claude-500/-home-claudeuser-work-mpint/4ea49a3a-13d2-4e0c-9ba4-4a7d13e600d3/scratchpad/demoNative_expr.txt
+     … +12 lines (ctrl+o to expand)
+
+● Clean results. Here is the complete picture across all six variants:
+
+  Expression test oracle results:
+
+  ┌────────────────────────┬───────────────────────────┐
+  │        Variant         │       Python oracle       │
+  ├────────────────────────┼───────────────────────────┤
+  │ demoGMP                │ all checks passed         │
+  ├────────────────────────┼───────────────────────────┤
+  │ demoGMPPimpl           │ all checks passed         │
+  ├────────────────────────┼───────────────────────────┤
+  │ demoGMPXX              │ all checks passed         │
+  ├────────────────────────┼───────────────────────────┤
+  │ demoWrappedNative      │ 23^19 overflow (expected) │
+  ├────────────────────────┼───────────────────────────┤
+  │ demoWrappedNativePimpl │ 23^19 overflow (expected) │
+  ├────────────────────────┼───────────────────────────┤
+  │ demoNative             │ 23^19 overflow (expected) │
+  └────────────────────────┴───────────────────────────┘
+
+  The sole "failure" in the three native variants is 23^19 = -3983830012993820921 instead of 74615470927590710561908487 — which is signed long int wrap-around overflow, explicitly labeled as such in the
+  test output with (overflow on native int based MPint implementations). All other arithmetic (unary ops, binary ops, shifts, comparisons, compound assignments including negative-number truncated
+  division/remainder) passes in every variant.
+
+✻ Sautéed for 4m 20s
+
+※ recap: Verifying all six demo variants' arithmetic against Python and PARI/gp oracles. Next: update CLAUDE.md with the full session summary. (disable recaps in /config)
+
+❯ update CLAUDE.md
+
+● Update(CLAUDE.md)
+  ⎿  Added 18 lines, removed 5 lines
+      18
+      19
+      20  ## What Claude has done in our last conversation
+      21 -Added `#include <cmath>` to `demo/src/exprTest.cpp`.
+      22 -Filled in the two commented-out assert stubs in `floatconv()` (lines 845/846 and 855/856) for the `DEMO_GMPXX` branch:
+      23 -`mpz_class` has no `float`/`double` conversion operator, so the conversion goes through `get_d()` (returns `double`).
+      24 -Assert condition is `std::isinf(f) && f > 0.0f` / `std::isinf(d) && d > 0.0` — confirms specifically positive infinity.
+      25 -All six `test.sh regr` diffs pass.
+      21 +Fixed signed/unsigned bug in `demo/src/demoUtils.cpp` (both `SQState` and `PosDefState` constructors):
+      22 +`sgn * (randnum % entryMagnitude)` promoted `int sgn` to `unsigned long int`, so -1 became 2^64-1 and the product was 2^64-v instead of -v.
+      23 +Fix: assign `randnum % entryMagnitude` to `MPint` first, then `if (sgn < 0) entry = -entry`.
+      24 +This bug was previously masked by the old `MPintGMPPimpl` unsigned ctor (which cast unsigned long back to signed long, accidentally restoring the sign).
+      25 +Updated all six `.output.ref` files; all six `test.sh regr` diffs pass.
+      26
+      27 +Then verified all results across all six demo variants using PARI/gp (det/theta) and Python (exprTest) as oracles.
+      28 +A Python parser (`gen_verify.py` in scratchpad) extracts matrices/dets/theta series and emits PARI/gp; a second script (`check_expr.py`) verifies arithmetic using Python's arbitrary-precis
+         +ion integers with C truncated-division semantics.
+      29 +
+      30 +**exprTest oracle (Python):**
+      31 +- demoGMP, demoGMPPimpl, demoGMPXX: all checks passed.
+      32 +- demoWrappedNative, demoWrappedNativePimpl, demoNative: one expected fail — `23^19` overflows `signed long int` (labeled as such in test output).
+      33 +- All other arithmetic (unary/binary ops, shifts, comparisons, compound assignments, negative truncated div/mod) passes in every variant.
+      34 +
+      35 +**det/theta oracle (PARI/gp):**
+      36 +- All 32 Dodgson determinants correct in all six variants (PARI/gp `matdet`).
+      37 +- All 16 theta series correct in all six variants (PARI/gp `qfminim`), 13–234 norms per run.
+      38 +- Known limitation (not a new bug): GaussInt overflows `signed long int` intermediate products for two non-singular 4×4 det runs, giving wrong GaussInt output in demoNative/WrappedNative/W
+         +rappedNativePimpl. Side-effect: `isSingular()` uses GaussInt internally; overflow changes `PosDefState` retry-loop random state for dim≥4, so dim=5 theta matrices differ between GMP and na
+         +tive variants — but each variant's theta series is oracle-verified correct for its own matrices.
+      39 +
+      40  ## What I have done since our last conversation
+      41  Updated transcript.txt, CLAUDE.md.
+      42
+
+● Update(CLAUDE.md)
+  ⎿  Added 1 line, removed 2 lines
+      41  Updated transcript.txt, CLAUDE.md.
+      42
+      43  ## What I want Claude to do in the upcoming conversation
+      44 -In all the multi precision demo output, I still see those matrices with ridiculously big entries in the det and redu examples.
+      45 -I suspect this is a bug in *demo/src/demoUtils*, related to signed/unsigned issues. Please investigate.
+      44 +
+
+● Done.
+
+✻ Baked for 39s
+
+❯ commit this
+
+● Bash(git -C /home/claudeuser/work/mpint add CLAUDE.md && git -C /home/claudeuser/work/mpint commit -m "updated CLAUDE.md")
+  ⎿  [master b40f3ad] updated CLAUDE.md
+      1 file changed, 19 insertions(+), 7 deletions(-)
+
+● Done.
+
+✻ Cooked for 11s
+
+─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ /exit
+
+#############################################################################################################################################################################################################
+

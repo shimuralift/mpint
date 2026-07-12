@@ -38,7 +38,9 @@ A Python parser (`gen_verify.py` in scratchpad) extracts matrices/dets/theta ser
 - Known limitation (not a new bug): GaussInt overflows `signed long int` intermediate products for two non-singular 4×4 det runs, giving wrong GaussInt output in demoNative/WrappedNative/WrappedNativePimpl. Side-effect: `isSingular()` uses GaussInt internally; overflow changes `PosDefState` retry-loop random state for dim≥4, so dim=5 theta matrices differ between GMP and native variants — but each variant's theta series is oracle-verified correct for its own matrices.
 
 ## What I have done since our last conversation
-Updated transcript.txt, CLAUDE.md.
+I've looked at profiling results, saved the output in *test/test.sh prof* and updated transcript.txt, CLAUDE.md.
 
 ## What I want Claude to do in the upcoming conversation
-
+*test/prof_output.txt* contains, informally, the recent output of *test/test.sh prof*.
+It is consistent with profiling results comitted with commit 61632b95e87, except the times in redu
+for demoGMPXX and demoGMP, which have increased significantly. How is that?
