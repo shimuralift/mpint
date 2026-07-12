@@ -1,4 +1,5 @@
 #include <cassert>
+#include <cmath>
 #include <iostream>
 #include <sstream>
 #include <stdexcept>
@@ -842,8 +843,8 @@ int floatconv() {
 
       // Value exceeding FLT_MAX (~3.4e38)
       MPint big_f("400000000000000000000000000000000000000");  // ~4e38
-      //float f = static_cast<float>(big_f);
-      //assert(/* whaat? */);
+      float f = static_cast<float>(big_f.get_d());
+      assert(std::isinf(f) && f > 0.0f);
       std::cout << "on float overflow, GMPXX returns +inf instead of throwing (ok)." << std::endl;
 
       // Value exceeding DBL_MAX (~1.8e308)
@@ -852,8 +853,8 @@ int floatconv() {
         "000000000000000000000000000000000000000000000000000000000000000000000000000000"
         "000000000000000000000000000000000000000000000000000000000000000000000000000000"
         "000000000000000000000000000000000000000000000000000000000000000000000000000000");  // 10^312
-      //double d = static_cast<double>(big_d);
-      //assert(/* whaat? */);
+      double d = big_d.get_d();
+      assert(std::isinf(d) && d > 0.0);
       std::cout << "on double overflow, GMPXX returns +inf instead of throwing (ok)." << std::endl;
     #else
       // Overflow detection: arbitrary precision backends should throw on out-of-range float/double cast.
