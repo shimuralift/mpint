@@ -25,10 +25,8 @@ Assert condition is `std::isinf(f) && f > 0.0f` / `std::isinf(d) && d > 0.0` —
 All six `test.sh regr` diffs pass.
 
 ## What I have done since our last conversation
-Modified some tests in *demo/src/exprTest.cpp* and improved test output, so that diffs
-of *demoGMP* and *demoGMPXX* output are more informative.
 Updated transcript.txt, CLAUDE.md.
 
 ## What I want Claude to do in the upcoming conversation
-
-
+In all the multi precision demo output, I still see those matrices with ridiculously big entries in the det and redu examples.
+I suspect this is a bug in *demo/src/demoUtils*, related to signed/unsigned issues. Please investigate.

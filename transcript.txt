@@ -15408,3 +15408,186 @@ Sharing transcript…
 
 #############################################################################################################################################################################################################
 
+❯ hi
+
+● Reading the relevant lines in exprTest.cpp.
+
+  Read 1 file (ctrl+o to expand)
+
+● The answer is straightforward: uncomment the two lines and use std::isinf(f) && f > 0.0f (and the double equivalent) as the assert condition.
+
+  // lines 845/846:
+  float f = static_cast<float>(big_f);
+  assert(std::isinf(f) && f > 0.0f);
+
+  // lines 855/856:
+  double d = static_cast<double>(big_d);
+  assert(std::isinf(d) && d > 0.0);
+
+  std::isinf is true for both ±∞, so the > 0 guard distinguishes +inf from -inf, matching the comment. std::isinf comes from <cmath>, which is already pulled in transitively through the GMP headers. Let me
+  verify the includes and then apply the change:
+
+  Read 1 file (ctrl+o to expand)
+
+● <cmath> isn't directly included. I'll add it and then uncomment/fill in the two asserts:
+
+● Update(demo/src/exprTest.cpp)
+  ⎿  Added 1 line
+      1  #include <cassert>
+      2 +#include <cmath>
+      3  #include <iostream>
+      4  #include <sstream>
+      5  #include <stdexcept>
+
+● Update(demo/src/exprTest.cpp)
+  ⎿  Added 2 lines, removed 2 lines
+      843
+      844        // Value exceeding FLT_MAX (~3.4e38)
+      845        MPint big_f("400000000000000000000000000000000000000");  // ~4e38
+      846 -      //float f = static_cast<float>(big_f);
+      847 -      //assert(/* whaat? */);
+      846 +      float f = static_cast<float>(big_f);
+      847 +      assert(std::isinf(f) && f > 0.0f);
+      848        std::cout << "on float overflow, GMPXX returns +inf instead of throwing (ok)." << std::endl;
+      849
+      850        // Value exceeding DBL_MAX (~1.8e308)
+
+● Update(demo/src/exprTest.cpp)
+  ⎿  Added 2 lines, removed 2 lines
+      853          "000000000000000000000000000000000000000000000000000000000000000000000000000000"
+      854          "000000000000000000000000000000000000000000000000000000000000000000000000000000"
+      855          "000000000000000000000000000000000000000000000000000000000000000000000000000000");  // 10^312
+      856 -      //double d = static_cast<double>(big_d);
+      857 -      //assert(/* whaat? */);
+      856 +      double d = static_cast<double>(big_d);
+      857 +      assert(std::isinf(d) && d > 0.0);
+      858        std::cout << "on double overflow, GMPXX returns +inf instead of throwing (ok)." << std::endl;
+      859      #else
+      860        // Overflow detection: arbitrary precision backends should throw on out-of-range float/double cast.
+
+● Now build and run to confirm the asserts pass:
+
+● Bash(make 2>&1 && ./demo/bin/demoGMPXX | grep -A1 "float overflow\|double overflow")
+  ⎿  Error: Exit code 2
+     g++ -std=c++14 -Wall -Wextra -pedantic -Werror -O2 -flto=auto -DDEMO_NATIVE -Idemo/src -o demo/bin/demoNative demo/src/demo.cpp demo/src/exprTest.cpp demo/src/det.cpp demo/src/redu.cpp
+     demo/src/demoUtils.cpp
+     g++ -std=c++14 -Wall -Wextra -pedantic -Werror -O2 -flto=auto -DDEMO_GMPXX -Idemo/src -o demo/bin/demoGMPXX demo/src/demo.cpp demo/src/exprTest.cpp demo/src/det.cpp demo/src/redu.cpp
+     demo/src/demoUtils.cpp -lgmp -lgmpxx
+     demo/src/exprTest.cpp: In function ‘int floatconv()’:
+     demo/src/exprTest.cpp:846:17: error: invalid ‘static_cast’ from type ‘MPint’ {aka ‘mpz_class’} to type ‘float’
+       846 |       float f = static_cast<float>(big_f);
+           |                 ^~~~~~~~~~~~~~~~~~~~~~~~~
+     demo/src/exprTest.cpp:856:18: error: invalid ‘static_cast’ from type ‘MPint’ {aka ‘mpz_class’} to type ‘double’
+       856 |       double d = static_cast<double>(big_d);
+           |                  ^~~~~~~~~~~~~~~~~~~~~~~~~~
+     … +1 line (ctrl+o to expand)
+  ⎿  Found 10 new diagnostic issues in 1 file (ctrl+o to expand)
+
+● mpz_class has no float/double conversion operator — it exposes get_d() returning double. The casts need to go through that:
+
+● Update(demo/src/exprTest.cpp)
+  ⎿  Added 1 line, removed 1 line
+      843
+      844        // Value exceeding FLT_MAX (~3.4e38)
+      845        MPint big_f("400000000000000000000000000000000000000");  // ~4e38
+      846 -      float f = static_cast<float>(big_f);
+      846 +      float f = static_cast<float>(big_f.get_d());
+      847        assert(std::isinf(f) && f > 0.0f);
+      848        std::cout << "on float overflow, GMPXX returns +inf instead of throwing (ok)." << std::endl;
+      849
+
+● Update(demo/src/exprTest.cpp)
+  ⎿  Added 1 line, removed 1 line
+      853          "000000000000000000000000000000000000000000000000000000000000000000000000000000"
+      854          "000000000000000000000000000000000000000000000000000000000000000000000000000000"
+      855          "000000000000000000000000000000000000000000000000000000000000000000000000000000");  // 10^312
+      856 -      double d = static_cast<double>(big_d);
+      856 +      double d = big_d.get_d();
+      857        assert(std::isinf(d) && d > 0.0);
+      858        std::cout << "on double overflow, GMPXX returns +inf instead of throwing (ok)." << std::endl;
+      859      #else
+
+● Bash(make 2>&1 && ./demo/bin/demoGMPXX | grep -A1 "float overflow\|double overflow")
+  ⎿  g++ -std=c++14 -Wall -Wextra -pedantic -Werror -O2 -flto=auto -DDEMO_NATIVE -Idemo/src -o demo/bin/demoNative demo/src/demo.cpp demo/src/exprTest.cpp demo/src/det.cpp demo/src/redu.cpp demo/src/d
+     emoUtils.cpp
+     g++ -std=c++14 -Wall -Wextra -pedantic -Werror -O2 -flto=auto -DDEMO_GMPXX -Idemo/src -o demo/bin/demoGMPXX demo/src/demo.cpp demo/src/exprTest.cpp demo/src/det.cpp demo/src/redu.cpp demo/src/dem
+     … +11 lines (ctrl+o to expand)
+  ⎿  Found 10 new diagnostic issues in 1 file (ctrl+o to expand)
+
+● Clean build, both asserts pass. Now update the ref files and run regression:
+
+● Bash(cd /home/claudeuser/work/mpint/test && for t in demoNative demoGMPXX demoWrappedNative demoGMP demoWrappedNativePimpl demoGMPPimpl; do
+        ../demo/bin/$t > ${t}.o…)
+  ⎿  ############################## EXIT  : ../demo/bin/demoNative > demoNative.output 2>&1 : EXITCODE : 0 ##########
+     ############################## EXIT  : cat demoNative.output : EXITCODE : 0 ##########
+     ############################## EXIT  : ../demo/bin/demoGMPXX > demoGMPXX.output 2>&1 : EXITCODE : 0 ##########
+     … +15 lines (ctrl+o to expand)
+
+● All six diffs exit 0.
+
+  To summarise: mpz_class has no float/double conversion operator, so the conversion goes through get_d() (which returns double). The asserts use std::isinf(f) && f > 0.0f / std::isinf(d) && d > 0.0 to
+  confirm the result is specifically positive infinity, matching the comment. <cmath> was added to exprTest.cpp to make std::isinf available explicitly.
+
+✻ Sautéed for 1m 51s
+
+❯ commit this
+
+● Bash(git -C /home/claudeuser/work/mpint add demo/src/exprTest.cpp test/demoNative.output.ref test/demoGMPXX.output.ref test/demoWrappedNative.output.ref test/demoGMP…)
+  ⎿  [master f960c3b] assert GMPXX float/double overflow yields +inf via get_d(); add <cmath> to exprTest.cpp
+      1 file changed, 5 insertions(+), 4 deletions(-)
+
+● Done. Only exprTest.cpp changed (the ref files were already up to date since the output text itself didn't change — the asserts pass silently).
+
+✻ Sautéed for 17s
+
+❯ update CLAUDE.md
+
+● Update(~/work/mpint/CLAUDE.md)
+  ⎿  Added 5 lines, removed 5 lines
+      18
+      19
+      20  ## What Claude has done in our last conversation
+      21 -Fixed Cause A: removed `static_cast<signed long int>(v)` from all four unsigned constructors in `src/MPintGMPPimpl.cpp`; they now route through `MPintImpl(unsigned long int v)` → `mpz_init
+         -_set_ui`, giving true unsigned semantics matching `MPintGMP.hpp`.
+      22 -Changed `basicexpr()` in `demo/src/exprTest.cpp` lines 75, 76, 80 to use positive literals (`22`, `23`, `41`) instead of negative-value casts.
+      23 -Updated all six `.output.ref` files; all six `test.sh regr` diffs pass.
+      24 -After the fix `demoGMP` and `demoGMPPimpl` outputs are byte-for-byte identical; remaining GMP/GMPXX differences are solely Cause B (string parser features).
+      25 -Oracle verification confirmed: `~23 = -24`, `22*6 = 132`, `23*6 = 138`, `41%6 = 5`, `132^11 = 143`, `23^11 = 28`.
+      21 +Added `#include <cmath>` to `demo/src/exprTest.cpp`.
+      22 +Filled in the two commented-out assert stubs in `floatconv()` (lines 845/846 and 855/856) for the `DEMO_GMPXX` branch:
+      23 +`mpz_class` has no `float`/`double` conversion operator, so the conversion goes through `get_d()` (returns `double`).
+      24 +Assert condition is `std::isinf(f) && f > 0.0f` / `std::isinf(d) && d > 0.0` — confirms specifically positive infinity.
+      25 +All six `test.sh regr` diffs pass.
+      26
+      27  ## What I have done since our last conversation
+      28  Modified some tests in *demo/src/exprTest.cpp* and improved test output, so that diffs
+
+● Update(~/work/mpint/CLAUDE.md)
+  ⎿  Added 1 line, removed 2 lines
+      30  Updated transcript.txt, CLAUDE.md.
+      31
+      32  ## What I want Claude to do in the upcoming conversation
+      33 -Look at lines 845/846 and 855/856 in *demo/src/exprTest.cpp*.
+      34 -How can "GMPXX returns +inf instead of throwing" be assert()ed here?
+      33
+      34 +
+
+● Done.
+
+✻ Cooked for 24s
+
+❯ commit this
+
+● Bash(git -C /home/claudeuser/work/mpint add CLAUDE.md && git -C /home/claudeuser/work/mpint commit -m "updated CLAUDE.md")
+  ⎿  [master e65a4ea] updated CLAUDE.md
+      1 file changed, 6 insertions(+), 7 deletions(-)
+
+● Done.
+
+✻ Cogitated for 8s
+
+─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ /exit
+
+#############################################################################################################################################################################################################
+
