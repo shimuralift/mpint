@@ -18,29 +18,29 @@ which implements an integer with arbitrary precision.
 
 
 ## What Claude has done in our last conversation
-Fixed signed/unsigned bug in `demo/src/demoUtils.cpp` (both `SQState` and `PosDefState` constructors):
-`sgn * (randnum % entryMagnitude)` promoted `int sgn` to `unsigned long int`, so -1 became 2^64-1 and the product was 2^64-v instead of -v.
-Fix: assign `randnum % entryMagnitude` to `MPint` first, then `if (sgn < 0) entry = -entry`.
-This bug was previously masked by the old `MPintGMPPimpl` unsigned ctor (which cast unsigned long back to signed long, accidentally restoring the sign).
-Updated all six `.output.ref` files; all six `test.sh regr` diffs pass.
+Analysed the `reduTest` profiling regression for `demoGMP` and `demoGMPXX`.
 
-Then verified all results across all six demo variants using PARI/gp (det/theta) and Python (exprTest) as oracles.
-A Python parser (`gen_verify.py` in scratchpad) extracts matrices/dets/theta series and emits PARI/gp; a second script (`check_expr.py`) verifies arithmetic using Python's arbitrary-precision integers with C truncated-division semantics.
+**Observation:** `reduTest` cycles increased significantly after commit `32ec7eb`:
+- demoGMPXX: 2,224,750 → 7,041,859 (+216%)
+- demoGMP: 3,194,445 → 6,536,646 (+105%)
+- All other variants: essentially unchanged.
 
-**exprTest oracle (Python):**
-- demoGMP, demoGMPPimpl, demoGMPXX: all checks passed.
-- demoWrappedNative, demoWrappedNativePimpl, demoNative: one expected fail — `23^19` overflows `signed long int` (labeled as such in test output).
-- All other arithmetic (unary/binary ops, shifts, comparisons, compound assignments, negative truncated div/mod) passes in every variant.
+**Root cause:** The signed/unsigned bug fix changed entry generation in `PosDefState`.
+Before the fix, inline-GMP variants (`mpz_init_set_ui`) stored `2^64 − v` (a huge positive) instead of `−v`.
+The resulting Gram matrix `L * L^T` had entries on the order of `2^130`, so the minimum lattice vector
+norm was astronomically larger than the `shortvecs` bound of 1000. `shortvecs` found no vectors and
+returned immediately — giving falsely fast `reduTest` times.
 
-**det/theta oracle (PARI/gp):**
-- All 32 Dodgson determinants correct in all six variants (PARI/gp `matdet`).
-- All 16 theta series correct in all six variants (PARI/gp `qfminim`), 13–234 norms per run.
-- Known limitation (not a new bug): GaussInt overflows `signed long int` intermediate products for two non-singular 4×4 det runs, giving wrong GaussInt output in demoNative/WrappedNative/WrappedNativePimpl. Side-effect: `isSingular()` uses GaussInt internally; overflow changes `PosDefState` retry-loop random state for dim≥4, so dim=5 theta matrices differ between GMP and native variants — but each variant's theta series is oracle-verified correct for its own matrices.
+After the fix, entries are correctly small and signed. The Gram matrices are legitimate positive-definite
+matrices; `shortvecs` enumerates hundreds of real short vectors per run (as oracle-verified: 13–234 norms
+per theta series). This is the correct, intended computation — the increased times reflect real work.
+
+The native/wrapped-native variants were unaffected: their `signed long int` storage had been wrapping
+`2^64 − v` back to `−v` in two's complement all along, accidentally producing correct small entries
+even before the fix.
 
 ## What I have done since our last conversation
-I've looked at profiling results, saved the output in *test/test.sh prof* and updated transcript.txt, CLAUDE.md.
+Analysed profiling results in *test/prof_output.txt*, updated transcript.txt, CLAUDE.md.
 
 ## What I want Claude to do in the upcoming conversation
-*test/prof_output.txt* contains, informally, the recent output of *test/test.sh prof*.
-It is consistent with profiling results comitted with commit 61632b95e87, except the times in redu
-for demoGMPXX and demoGMP, which have increased significantly. How is that?
+(to be filled in by user)
