@@ -40,7 +40,7 @@ The native/wrapped-native variants were unaffected: their `signed long int` stor
 even before the fix.
 
 ## What I have done since our last conversation
-Analysed profiling results in *test/prof_output.txt*, updated transcript.txt, CLAUDE.md.
+I've renamed *include/MPint.hpp* to *MPintPimpl.hpp*, updated transcript.txt, CLAUDE.md.
 
 ## What I want Claude to do in the upcoming conversation
 (to be filled in by user)

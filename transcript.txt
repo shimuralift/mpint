@@ -16110,3 +16110,52 @@ Sharing transcript…
 
 #############################################################################################################################################################################################################
 
+ hi
+
+● Reading the profiling output and checking what changed since the reference commit.
+
+  Read 1 file (ctrl+o to expand)
+
+● Bash(git -C /home/claudeuser/work/mpint log --oneline 61632b95e87..HEAD)
+  ⎿  d5b0c82 updated transcript.txt, CLAUDE.md, and test/prof_output.txt
+     b40f3ad updated CLAUDE.md
+     32ec7eb fix signed/unsigned bug in demoUtils entry generation; split sgn from magnitude
+     … +9 lines (ctrl+o to expand)
+
+● Let me look at what the profiling numbers were at the reference commit:
+
+● Bash(git -C /home/claudeuser/work/mpint show 61632b95e87:test/prof_output.txt 2>/dev/null || git -C /home/claudeuser/work/mpint log --oneline | grep -i prof | head -…)
+  ⎿  [claudeuser@gondwana:test]$ ./test.sh prof
+     ############################## START : ../demo/bin/demoNative -prof > /tmp/tmp.G8uqczZUx5 2>&1 ##########
+     ############################## EXIT  : ../demo/bin/demoNative -prof > /tmp/tmp.G8uqczZUx5 2>&1 : EXITCODE : 0 ##########
+     … +27 lines (ctrl+o to expand)
+
+● Now I can explain it. Let me put the two tables side by side:
+
+  Old (commit 61632b95e87):
+  reduTest:  Native=1,280,497  GMPXX=2,224,750  WrappedNative=1,333,123  GMP=3,194,445  ...
+
+  New (current):
+  reduTest:  Native=1,283,214  GMPXX=7,041,859  WrappedNative=1,328,584  GMP=6,536,646  ...
+
+  The increase is entirely caused by commit 32ec7eb — the demoUtils signed/unsigned fix.
+
+  Before the fix, demoGMP and demoGMPXX stored 2^64 − v instead of −v in the L matrix. The Gram matrix L * L^T therefore had entries on the order of 3·dim · (2^64)^2 ≈ 2^130. With those astronomical Gram
+  entries, the minimum lattice vector norm was far larger than the shortvecs bound of len = entryMagnitude³ = 1000. So shortvecs immediately found zero short vectors and returned — giving falsely fast
+  reduTest times.
+
+  After the fix, demoGMP and demoGMPXX generate the same small, properly signed entries as the native variants. The Gram matrices are now legitimately small and positive-definite. Short vectors with norm ≤
+  1000 are plentiful, so shortvecs enumerates many of them — which is the correct, intended behavior.
+
+  The native variants (demoNative, demoWrappedNative) are unchanged because their signed long int arithmetic had been accidentally producing the correct small entries all along (the old signed-cast wrap
+  happened to restore the sign).
+
+  In short: the reduTest speedup at the old commit was illusory — the GMP variants were running on wrong matrices. The current (higher) times reflect the actual cost of correct short-vector enumeration.
+
+✻ Baked for 1m 14s
+
+※ recap: Investigating why demoGMP and demoGMPXX reduTest times increased after the demoUtils fix. The increase is expected: the fix corrected wrong matrix entries, so short-vector enumeration now does
+  real work. No action needed. (disable recaps in /config)
+
+#############################################################################################################################################################################################################
+

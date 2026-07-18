@@ -9,13 +9,13 @@
     #define DEMO_ARBPREC
 #elif defined DEMO_WRAPPEDNATIVE
     #include "MPintWrappedNative.hpp"
+#elif defined DEMO_WRAPPEDNATIVEPIMPL
+    #include "MPintPimpl.hpp"
 #elif defined DEMO_GMP
     #include "MPintGMP.hpp"
     #define DEMO_ARBPREC
-#elif defined DEMO_WRAPPEDNATIVEPIMPL
-    #include "MPint.hpp"
 #elif defined DEMO_GMPPIMPL
-    #include "MPint.hpp"
+    #include "MPintPimpl.hpp"
     #define DEMO_ARBPREC
 #else
     #error No MPint implementation selected, cf demoTypedef.hpp and Makefile.

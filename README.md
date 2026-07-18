@@ -23,14 +23,15 @@ in directories *src* and *include*. These demo executables are used for regressi
 and profiling, driven by *test/test.sh*.
 
 A human (or artificial) consumer is meant to either pick one of the existing *MPint*
-implementations, source and header, and start their own project with them, possibly code agent
+implementations, source and/or header, and start their own project with them, possibly code agent
 assisted, or develop their own implementation, using one existing implementation
 as a starting point in which case the existing tests and profiling might be helpful.
 
 ## Motivation of Project
 mpint is the author's first attempt to
 use an LLM based code agent for a programming task other than "agent, go
-and write me a web application!".  
+and write me a web application!".
+
 The idea to use C++ operator overloading to migrate legacy C code
 from native integers to multiprecision arithmetic dates back to the
 1990ies, but I've seen only some minimal implementations back then,

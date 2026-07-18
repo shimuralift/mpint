@@ -38,15 +38,24 @@ as a starting point in which case the existing tests and profiling might be help
 We have two pimpl-style implementations of *MPint*: *MPintWrappedNativePimpl*
 which is just the *MPint* operators wrapping the native *signed long int* type,
 and *MPintGMPPimpl* which wraps the C interface of the GNU Multiprecision
-library.
+library. These implementations come with a rather generic common header file
+*include/MPintPimpl.hpp* to be included with whatever source is to be refurbished.
+The advantage of it is that implementation details of *class MPint* are not exposed via the
+header files, but that comes with a performance penalty, of course.
+
+There are also two non-pimpl implementations, header file only: *MPintWrappedNative*
+and *MPintGMP* which are faster, but with less clean interfaces.
+
 In subdirectory mpint/demo, there are several executable artifacts for
 demo/testing/profiling purposes:
 - *demoNative*: runs the demo on the native *signed long int* type without
   using *MPint* at all (for baseline comparison).
 - *demoGMPXX*: uses *mpz_class* from the GMP C++ interface (*gmpxx.h*)
   directly via a typedef, without going through *class MPint*.
+- *demoWrappedNative*: drives the *MPintWrappedNative* operators.
 - *demoWrappedNativePimpl*: drives the *MPintWrappedNativePimpl* operators.
 - *demoGMPPimpl*: drives the *MPintGMPPimpl* wrapper around the GMP C interface.
+- *demoGMP*: drives the *MPintGMP* wrapper around the GMP C interface.
 
 In subdirectory *mpint/test* there is a bash script *test.sh* which
 runs all four demo variants and compares their outputs to respective

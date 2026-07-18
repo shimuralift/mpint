@@ -1,4 +1,4 @@
-#include "MPint.hpp"
+#include "MPintPimpl.hpp"
 
 #include <cmath>
 #include <cstdlib>
