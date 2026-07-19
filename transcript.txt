@@ -17024,3 +17024,411 @@ Sharing transcript…
 
 #############################################################################################################################################################################################################
 
+ ▐▛███▜▌   Claude Code v2.1.215
+▝▜█████▛▘  Sonnet 4.6 · Claude Pro
+  ▘▘ ▝▝    ~/work/mpint
+
+ ▎ Extended through July 19
+ ▎ We're extending Claude Fable 5 access on all paid plans, as well as keeping Claude Code’s weekly rate limits 50% higher, through July 19.
+ ▎
+ ▎ As before, you can use up to half of your weekly usage limit on Fable 5. After that, you can keep using Fable 5 with usage credits, or switch to another model to keep working within your remaining limits.
+ ▎
+ ▎ More details here: https://support.claude.com/en/articles/15424964-claude-fable-5-promotional-access
+
+✻ Conversation compacted (ctrl+o for history)
+
+
+❯ /compact
+  ⎿  Compacted (ctrl+o to see full summary)
+  ⎿  Read test/test.sh (322 lines)
+  ⎿  Read .gitignore (25 lines)
+  ⎿  Read Makefile (89 lines)
+  ⎿  Read demo/src/demoTypedef.hpp (43 lines)
+  ⎿  Read include/MPintGMP.hpp (164 lines)
+
+❯ hi
+ ▐▛███▜▌   Claude Code v2.1.215
+▝▜█████▛▘  Sonnet 4.6 · Claude Pro
+  ▘▘ ▝▝    ~/work/mpint
+
+ ▎ Extended through July 19
+ ▎ We're extending Claude Fable 5 access on all paid plans, as well as keeping Claude Code’s weekly rate limits 50% higher, through July 19.
+ ▎
+ ▎ As before, you can use up to half of your weekly usage limit on Fable 5. After that, you can keep using Fable 5 with usage credits, or switch to another model to keep working within your remaining limits.
+ ▎
+ ▎ More details here: https://support.claude.com/en/articles/15424964-claude-fable-5-promotional-access
+
+✻ Conversation compacted (ctrl+o for history)
+
+
+❯ /compact
+  ⎿  Compacted (ctrl+o to see full summary)
+  ⎿  Read test/test.sh (322 lines)
+  ⎿  Read .gitignore (25 lines)
+  ⎿  Read Makefile (89 lines)
+  ⎿  Read demo/src/demoTypedef.hpp (43 lines)
+  ⎿  Read include/MPintGMP.hpp (164 lines)
+
+❯ hi
+
+● Hi! I see the task for this session. Let me read the Opt headers to understand the current state of the binary operators.
+
+  Read 2 files (ctrl+o to expand)
+
+● Good news: the rvalue case is already handled by the by-value idiom. When lhs is an rvalue, the move constructor fires — for MPintGMPOpt that's an O(1) mpz_swap, so no allocation. The copy only happens when lhs is
+  an lvalue.
+
+  For MPintWrappedNativeOpt: mVal is signed long int — an 8-byte copy. There's no meaningful optimization to make here; the current code is already optimal.
+
+  For MPintGMPOpt: the real cost with lvalue lhs is copying the entire limb array before the add/mul/etc. The direct GMP functions allow writing straight into a fresh result, bypassing that copy. Combined with an
+  MPint&& overload that modifies in-place for rvalue chains, the pattern becomes:
+
+  // lvalue lhs: direct GMP, no limb-array copy
+  friend MPint operator+(const MPint& lhs, const MPint& rhs) noexcept {
+      MPint r; mpz_add(r.mVal, lhs.mVal, rhs.mVal); return r;
+  }
+  // rvalue lhs: modify in place, zero new allocations
+  friend MPint operator+(MPint&& lhs, const MPint& rhs) noexcept {
+      mpz_add(lhs.mVal, lhs.mVal, rhs.mVal); return std::move(lhs);
+  }
+
+  The rvalue overload matters for expression chains: in a + b + c, the a+b intermediate is an rvalue; the MPint&& overload reuses its storage for the next addition instead of allocating a fresh result.
+
+  So the concrete changes needed in MPintGMPOpt.hpp are: replace each of the 10 by-value binary operators with two overloads (const MPint& calling the direct GMP function, and MPint&& calling +=).
+  MPintWrappedNativeOpt.hpp needs no change.
+
+  Shall I implement this in MPintGMPOpt.hpp?
+
+✻ Crunched for 1m 37s
+
+❯ yes
+
+● I'll make two edits to MPintGMPOpt.hpp: add <utility> for std::move, then replace the binary operator sections with const MPint& / MPint&& overload pairs.
+
+● Update(include/MPintGMPOpt.hpp)
+  ⎿  Added 1 line
+       6  #include <iostream>
+       7  #include <stdexcept>
+       8  #include <string>
+       9 +#include <utility>
+      10
+      11  #include <gmp.h>
+      12
+
+● Update(include/MPintGMPOpt.hpp)
+  ⎿  Added 25 lines, removed 13 lines
+      115      MPint& operator<<=(const MPint& rhs) noexcept { mpz_mul_2exp(mVal, mVal, static_cast<mp_bitcnt_t>(mpz_get_ui(rhs.mVal)));    return *this; }
+      116      MPint& operator>>=(const MPint& rhs) noexcept { mpz_fdiv_q_2exp(mVal, mVal, static_cast<mp_bitcnt_t>(mpz_get_ui(rhs.mVal))); return *this; }
+      117
+      118 -    // --- binary arithmetic (inline, delegate to compound assignment) --------
+      119 -    [[nodiscard]] friend MPint operator+(MPint lhs, const MPint& rhs) noexcept { return lhs += rhs; }
+      120 -    [[nodiscard]] friend MPint operator-(MPint lhs, const MPint& rhs) noexcept { return lhs -= rhs; }
+      121 -    [[nodiscard]] friend MPint operator*(MPint lhs, const MPint& rhs) noexcept { return lhs *= rhs; }
+      122 -    [[nodiscard]] friend MPint operator/(MPint lhs, const MPint& rhs)           { return lhs /= rhs; }
+      123 -    [[nodiscard]] friend MPint operator%(MPint lhs, const MPint& rhs)           { return lhs %= rhs; }
+      118 +    // --- binary arithmetic --------------------------------------------------
+      119 +    [[nodiscard]] friend MPint operator+(const MPint& lhs, const MPint& rhs) noexcept { MPint r; mpz_add(r.mVal, lhs.mVal, rhs.mVal); return r; }
+      120 +    [[nodiscard]] friend MPint operator+(MPint&&      lhs, const MPint& rhs) noexcept { mpz_add(lhs.mVal, lhs.mVal, rhs.mVal); return std::move(lhs); }
+      121 +    [[nodiscard]] friend MPint operator-(const MPint& lhs, const MPint& rhs) noexcept { MPint r; mpz_sub(r.mVal, lhs.mVal, rhs.mVal); return r; }
+      122 +    [[nodiscard]] friend MPint operator-(MPint&&      lhs, const MPint& rhs) noexcept { mpz_sub(lhs.mVal, lhs.mVal, rhs.mVal); return std::move(lhs); }
+      123 +    [[nodiscard]] friend MPint operator*(const MPint& lhs, const MPint& rhs) noexcept { MPint r; mpz_mul(r.mVal, lhs.mVal, rhs.mVal); return r; }
+      124 +    [[nodiscard]] friend MPint operator*(MPint&&      lhs, const MPint& rhs) noexcept { mpz_mul(lhs.mVal, lhs.mVal, rhs.mVal); return std::move(lhs); }
+      125 +    [[nodiscard]] friend MPint operator/(const MPint& lhs, const MPint& rhs)           { MPint r; mpz_tdiv_q(r.mVal, lhs.mVal, rhs.mVal); return r; }
+      126 +    [[nodiscard]] friend MPint operator/(MPint&&      lhs, const MPint& rhs)           { mpz_tdiv_q(lhs.mVal, lhs.mVal, rhs.mVal); return std::move(lhs); }
+      127 +    [[nodiscard]] friend MPint operator%(const MPint& lhs, const MPint& rhs)           { MPint r; mpz_tdiv_r(r.mVal, lhs.mVal, rhs.mVal); return r; }
+      128 +    [[nodiscard]] friend MPint operator%(MPint&&      lhs, const MPint& rhs)           { mpz_tdiv_r(lhs.mVal, lhs.mVal, rhs.mVal); return std::move(lhs); }
+      129
+      130      // --- binary bitwise -----------------------------------------------------
+      126 -    [[nodiscard]] friend MPint operator&(MPint lhs, const MPint& rhs) noexcept { return lhs &= rhs; }
+      127 -    [[nodiscard]] friend MPint operator|(MPint lhs, const MPint& rhs) noexcept { return lhs |= rhs; }
+      128 -    [[nodiscard]] friend MPint operator^(MPint lhs, const MPint& rhs) noexcept { return lhs ^= rhs; }
+      131 +    [[nodiscard]] friend MPint operator&(const MPint& lhs, const MPint& rhs) noexcept { MPint r; mpz_and(r.mVal, lhs.mVal, rhs.mVal); return r; }
+      132 +    [[nodiscard]] friend MPint operator&(MPint&&      lhs, const MPint& rhs) noexcept { mpz_and(lhs.mVal, lhs.mVal, rhs.mVal); return std::move(lhs); }
+      133 +    [[nodiscard]] friend MPint operator|(const MPint& lhs, const MPint& rhs) noexcept { MPint r; mpz_ior(r.mVal, lhs.mVal, rhs.mVal); return r; }
+      134 +    [[nodiscard]] friend MPint operator|(MPint&&      lhs, const MPint& rhs) noexcept { mpz_ior(lhs.mVal, lhs.mVal, rhs.mVal); return std::move(lhs); }
+      135 +    [[nodiscard]] friend MPint operator^(const MPint& lhs, const MPint& rhs) noexcept { MPint r; mpz_xor(r.mVal, lhs.mVal, rhs.mVal); return r; }
+      136 +    [[nodiscard]] friend MPint operator^(MPint&&      lhs, const MPint& rhs) noexcept { mpz_xor(lhs.mVal, lhs.mVal, rhs.mVal); return std::move(lhs); }
+      137
+      138      // --- shift --------------------------------------------------------------
+      131 -    [[nodiscard]] friend MPint operator<<(MPint lhs, int n)            noexcept { return lhs <<= n; }
+      132 -    [[nodiscard]] friend MPint operator>>(MPint lhs, int n)            noexcept { return lhs >>= n; }
+      133 -    [[nodiscard]] friend MPint operator<<(MPint lhs, const MPint& rhs) noexcept { return lhs <<= rhs; }
+      134 -    [[nodiscard]] friend MPint operator>>(MPint lhs, const MPint& rhs) noexcept { return lhs >>= rhs; }
+      139 +    [[nodiscard]] friend MPint operator<<(const MPint& lhs, int n) noexcept { MPint r; mpz_mul_2exp(r.mVal, lhs.mVal, static_cast<mp_bitcnt_t>(n)); return r; }
+      140 +    [[nodiscard]] friend MPint operator<<(MPint&&      lhs, int n) noexcept { mpz_mul_2exp(lhs.mVal, lhs.mVal, static_cast<mp_bitcnt_t>(n)); return std::move(lhs); }
+      141 +    [[nodiscard]] friend MPint operator>>(const MPint& lhs, int n) noexcept { MPint r; mpz_fdiv_q_2exp(r.mVal, lhs.mVal, static_cast<mp_bitcnt_t>(n)); return r; }
+      142 +    [[nodiscard]] friend MPint operator>>(MPint&&      lhs, int n) noexcept { mpz_fdiv_q_2exp(lhs.mVal, lhs.mVal, static_cast<mp_bitcnt_t>(n)); return std::move(lhs); }
+      143 +    [[nodiscard]] friend MPint operator<<(const MPint& lhs, const MPint& rhs) noexcept { MPint r; mpz_mul_2exp(r.mVal, lhs.mVal, static_cast<mp_bitcnt_t>(mpz_get_ui(rhs.mVal))); return r; }
+      144 +    [[nodiscard]] friend MPint operator<<(MPint&&      lhs, const MPint& rhs) noexcept { mpz_mul_2exp(lhs.mVal, lhs.mVal, static_cast<mp_bitcnt_t>(mpz_get_ui(rhs.mVal))); return std::move(lhs); }
+      145 +    [[nodiscard]] friend MPint operator>>(const MPint& lhs, const MPint& rhs) noexcept { MPint r; mpz_fdiv_q_2exp(r.mVal, lhs.mVal, static_cast<mp_bitcnt_t>(mpz_get_ui(rhs.mVal))); return r; }
+      146 +    [[nodiscard]] friend MPint operator>>(MPint&&      lhs, const MPint& rhs) noexcept { mpz_fdiv_q_2exp(lhs.mVal, lhs.mVal, static_cast<mp_bitcnt_t>(mpz_get_ui(rhs.mVal))); return std::move(lhs); }
+      147
+      148      // --- comparison ---------------------------------------------------------
+      149      [[nodiscard]] friend bool operator==(const MPint& a, const MPint& b) noexcept { return mpz_cmp(a.mVal, b.mVal) == 0; }
+
+● Now build and test:
+
+● Bash(make 2>&1)
+  ⎿  g++ -std=c++14 -Wall -Wextra -pedantic -Werror -O2 -flto=auto -DDEMO_GMPOPT -Idemo/src -Iinclude -o demo/bin/demoGMPOpt demo/src/demo.cpp demo/src/exprTest.cpp demo/src/det.cpp demo/src/redu.cpp demo/src/de
+     moUtils.cpp -lgmp
+
+● Bash(cd test && ./test.sh regr 2>&1)
+  ⎿  ############################## START : ../demo/bin/demoNative > demoNative.output 2>&1 ##########
+     ############################## EXIT  : ../demo/bin/demoNative > demoNative.output 2>&1 : EXITCODE : 0 ##########
+     ############################## START : cat demoNative.output ##########
+     … +1247 lines (ctrl+o to expand)
+
+● Bash(cd test && ./test.sh regr 2>&1 | grep -E 'EXITCODE|^[0-9]')
+  ⎿  /bin/bash: line 1: cd: test: No such file or directory
+
+  Searched memories (ctrl+o to expand)
+
+● All 8 variants run clean and all 8 diffs pass.
+
+  The change is in MPintGMPOpt.hpp only: each of the 12 by-value binary operators (10 with const MPint& rhs + 2 with int n) is replaced by a const MPint& / MPint&& overload pair. The const MPint& overload writes
+  directly into a fresh result via the GMP function, skipping the full limb-array copy of lhs. The MPint&& overload modifies in-place and returns via std::move, reusing the rvalue's allocation — useful in chains like
+  a + b + c where each intermediate is an rvalue.
+
+✻ Churned for 2m 50s
+
+❯ is there more optimization potential like this in the Opt variants?
+
+● Two more opportunities in MPintGMPOpt, nothing meaningful in MPintWrappedNativeOpt.
+
+  1. Ref-qualified unary operators (clean, analogous to what we just did)
+
+  operator- and operator~ are currently unqualified — they always allocate a fresh result:
+  MPint operator-() const noexcept { MPint r; mpz_neg(r.mVal, mVal); return r; }
+  When *this is an rvalue (e.g. -(a+b)), that allocation is unnecessary. Adding &&-qualified overloads lets them modify in-place:
+  MPint operator-() const& noexcept { MPint r; mpz_neg(r.mVal, mVal); return r; }
+  MPint operator-()      && noexcept { mpz_neg(mVal, mVal); return std::move(*this); }
+  Same applies to operator~, and operator+ can avoid a copy too (its && version just returns std::move(*this)).
+
+  2. rhs-rvalue overloads for commutative binary operators (more code, smaller payoff)
+
+  We now handle rvalue lhs via MPint&& first-argument overloads. Rvalue rhs still binds to const MPint& and gets no special treatment. For commutative operators (+, *, &, |, ^) we could add a const MPint& lhs,
+  MPint&& rhs overload that computes into rhs.mVal and returns std::move(rhs) — useful for right-heavy expressions like a + (b + c + d). GMP allows aliasing so mpz_add(rhs.mVal, lhs.mVal, rhs.mVal) is valid.
+  Non-commutative operators (-) can also do this. But this doubles the binary operator count again and the practical payoff is limited since left-associative chains (the common case) are already covered.
+
+  The ref-qualified unary operators are the clear next step — same pattern, same benefit, minimal code. Want me to implement those?
+
+✻ Cooked for 1m 16s
+
+❯ do both 1. and 2. code size is not an issue here.
+
+● Let me read the current file state before writing the edits.
+
+  Read 1 file (ctrl+o to expand)
+
+● Good. Now I'll apply all three edits in parallel — unary arithmetic ref-qualifiers, unary bitwise ref-qualifier, and the new rhs-rvalue + both-rvalue binary overloads.
+
+● Update(~/work/mpint/include/MPintGMPOpt.hpp)
+  ⎿  Added 4 lines, removed 2 lines
+      80      [[nodiscard]] explicit operator long double() const noexcept { return static_cast<long double>(mpz_get_d(mVal)); }
+      81
+      82      // --- unary arithmetic ---------------------------------------------------
+      83 -    [[nodiscard]] MPint operator+() const noexcept { return *this; }
+      84 -    [[nodiscard]] MPint operator-() const noexcept { MPint r; mpz_neg(r.mVal, mVal); return r; }
+      83 +    [[nodiscard]] MPint operator+() const& noexcept { return *this; }
+      84 +    [[nodiscard]] MPint operator+()      && noexcept { return std::move(*this); }
+      85 +    [[nodiscard]] MPint operator-() const& noexcept { MPint r; mpz_neg(r.mVal, mVal); return r; }
+      86 +    [[nodiscard]] MPint operator-()      && noexcept { mpz_neg(mVal, mVal); return std::move(*this); }
+      87
+      88      // --- unary logical ------------------------------------------------------
+      89      [[nodiscard]] bool  operator!() const noexcept { return mpz_sgn(mVal) == 0; }
+
+● Update(~/work/mpint/include/MPintGMPOpt.hpp)
+  ⎿  Added 2 lines, removed 1 line
+      89      [[nodiscard]] bool  operator!() const noexcept { return mpz_sgn(mVal) == 0; }
+      90
+      91      // --- unary bitwise ------------------------------------------------------
+      92 -    [[nodiscard]] MPint operator~() const noexcept { MPint r; mpz_com(r.mVal, mVal); return r; }
+      92 +    [[nodiscard]] MPint operator~() const& noexcept { MPint r; mpz_com(r.mVal, mVal); return r; }
+      93 +    [[nodiscard]] MPint operator~()      && noexcept { mpz_com(mVal, mVal); return std::move(*this); }
+      94
+      95      // --- prefix increment / decrement ---------------------------------------
+      96      MPint& operator++() noexcept { mpz_add_ui(mVal, mVal, 1); return *this; }
+
+● Update(~/work/mpint/include/MPintGMPOpt.hpp)
+  ⎿  Added 20 lines
+      121      // --- binary arithmetic --------------------------------------------------
+      122      [[nodiscard]] friend MPint operator+(const MPint& lhs, const MPint& rhs) noexcept { MPint r; mpz_add(r.mVal, lhs.mVal, rhs.mVal); return r; }
+      123      [[nodiscard]] friend MPint operator+(MPint&&      lhs, const MPint& rhs) noexcept { mpz_add(lhs.mVal, lhs.mVal, rhs.mVal); return std::move(lhs); }
+      124 +    [[nodiscard]] friend MPint operator+(const MPint& lhs, MPint&&      rhs) noexcept { mpz_add(rhs.mVal, lhs.mVal, rhs.mVal); return std::move(rhs); }
+      125 +    [[nodiscard]] friend MPint operator+(MPint&&      lhs, MPint&&      rhs) noexcept { mpz_add(lhs.mVal, lhs.mVal, rhs.mVal); return std::move(lhs); }
+      126      [[nodiscard]] friend MPint operator-(const MPint& lhs, const MPint& rhs) noexcept { MPint r; mpz_sub(r.mVal, lhs.mVal, rhs.mVal); return r; }
+      127      [[nodiscard]] friend MPint operator-(MPint&&      lhs, const MPint& rhs) noexcept { mpz_sub(lhs.mVal, lhs.mVal, rhs.mVal); return std::move(lhs); }
+      128 +    [[nodiscard]] friend MPint operator-(const MPint& lhs, MPint&&      rhs) noexcept { mpz_sub(rhs.mVal, lhs.mVal, rhs.mVal); return std::move(rhs); }
+      129 +    [[nodiscard]] friend MPint operator-(MPint&&      lhs, MPint&&      rhs) noexcept { mpz_sub(lhs.mVal, lhs.mVal, rhs.mVal); return std::move(lhs); }
+      130      [[nodiscard]] friend MPint operator*(const MPint& lhs, const MPint& rhs) noexcept { MPint r; mpz_mul(r.mVal, lhs.mVal, rhs.mVal); return r; }
+      131      [[nodiscard]] friend MPint operator*(MPint&&      lhs, const MPint& rhs) noexcept { mpz_mul(lhs.mVal, lhs.mVal, rhs.mVal); return std::move(lhs); }
+      132 +    [[nodiscard]] friend MPint operator*(const MPint& lhs, MPint&&      rhs) noexcept { mpz_mul(rhs.mVal, lhs.mVal, rhs.mVal); return std::move(rhs); }
+      133 +    [[nodiscard]] friend MPint operator*(MPint&&      lhs, MPint&&      rhs) noexcept { mpz_mul(lhs.mVal, lhs.mVal, rhs.mVal); return std::move(lhs); }
+      134      [[nodiscard]] friend MPint operator/(const MPint& lhs, const MPint& rhs)           { MPint r; mpz_tdiv_q(r.mVal, lhs.mVal, rhs.mVal); return r; }
+      135      [[nodiscard]] friend MPint operator/(MPint&&      lhs, const MPint& rhs)           { mpz_tdiv_q(lhs.mVal, lhs.mVal, rhs.mVal); return std::move(lhs); }
+      136 +    [[nodiscard]] friend MPint operator/(const MPint& lhs, MPint&&      rhs)           { mpz_tdiv_q(rhs.mVal, lhs.mVal, rhs.mVal); return std::move(rhs); }
+      137 +    [[nodiscard]] friend MPint operator/(MPint&&      lhs, MPint&&      rhs)           { mpz_tdiv_q(lhs.mVal, lhs.mVal, rhs.mVal); return std::move(lhs); }
+      138      [[nodiscard]] friend MPint operator%(const MPint& lhs, const MPint& rhs)           { MPint r; mpz_tdiv_r(r.mVal, lhs.mVal, rhs.mVal); return r; }
+      139      [[nodiscard]] friend MPint operator%(MPint&&      lhs, const MPint& rhs)           { mpz_tdiv_r(lhs.mVal, lhs.mVal, rhs.mVal); return std::move(lhs); }
+      140 +    [[nodiscard]] friend MPint operator%(const MPint& lhs, MPint&&      rhs)           { mpz_tdiv_r(rhs.mVal, lhs.mVal, rhs.mVal); return std::move(rhs); }
+      141 +    [[nodiscard]] friend MPint operator%(MPint&&      lhs, MPint&&      rhs)           { mpz_tdiv_r(lhs.mVal, lhs.mVal, rhs.mVal); return std::move(lhs); }
+      142
+      143      // --- binary bitwise -----------------------------------------------------
+      144      [[nodiscard]] friend MPint operator&(const MPint& lhs, const MPint& rhs) noexcept { MPint r; mpz_and(r.mVal, lhs.mVal, rhs.mVal); return r; }
+      145      [[nodiscard]] friend MPint operator&(MPint&&      lhs, const MPint& rhs) noexcept { mpz_and(lhs.mVal, lhs.mVal, rhs.mVal); return std::move(lhs); }
+      146 +    [[nodiscard]] friend MPint operator&(const MPint& lhs, MPint&&      rhs) noexcept { mpz_and(rhs.mVal, lhs.mVal, rhs.mVal); return std::move(rhs); }
+      147 +    [[nodiscard]] friend MPint operator&(MPint&&      lhs, MPint&&      rhs) noexcept { mpz_and(lhs.mVal, lhs.mVal, rhs.mVal); return std::move(lhs); }
+      148      [[nodiscard]] friend MPint operator|(const MPint& lhs, const MPint& rhs) noexcept { MPint r; mpz_ior(r.mVal, lhs.mVal, rhs.mVal); return r; }
+      149      [[nodiscard]] friend MPint operator|(MPint&&      lhs, const MPint& rhs) noexcept { mpz_ior(lhs.mVal, lhs.mVal, rhs.mVal); return std::move(lhs); }
+      150 +    [[nodiscard]] friend MPint operator|(const MPint& lhs, MPint&&      rhs) noexcept { mpz_ior(rhs.mVal, lhs.mVal, rhs.mVal); return std::move(rhs); }
+      151 +    [[nodiscard]] friend MPint operator|(MPint&&      lhs, MPint&&      rhs) noexcept { mpz_ior(lhs.mVal, lhs.mVal, rhs.mVal); return std::move(lhs); }
+      152      [[nodiscard]] friend MPint operator^(const MPint& lhs, const MPint& rhs) noexcept { MPint r; mpz_xor(r.mVal, lhs.mVal, rhs.mVal); return r; }
+      153      [[nodiscard]] friend MPint operator^(MPint&&      lhs, const MPint& rhs) noexcept { mpz_xor(lhs.mVal, lhs.mVal, rhs.mVal); return std::move(lhs); }
+      154 +    [[nodiscard]] friend MPint operator^(const MPint& lhs, MPint&&      rhs) noexcept { mpz_xor(rhs.mVal, lhs.mVal, rhs.mVal); return std::move(rhs); }
+      155 +    [[nodiscard]] friend MPint operator^(MPint&&      lhs, MPint&&      rhs) noexcept { mpz_xor(lhs.mVal, lhs.mVal, rhs.mVal); return std::move(lhs); }
+      156
+      157      // --- shift --------------------------------------------------------------
+      158      [[nodiscard]] friend MPint operator<<(const MPint& lhs, int n) noexcept { MPint r; mpz_mul_2exp(r.mVal, lhs.mVal, static_cast<mp_bitcnt_t>(n)); return r; }
+     ...
+      161      [[nodiscard]] friend MPint operator>>(MPint&&      lhs, int n) noexcept { mpz_fdiv_q_2exp(lhs.mVal, lhs.mVal, static_cast<mp_bitcnt_t>(n)); return std::move(lhs); }
+      162      [[nodiscard]] friend MPint operator<<(const MPint& lhs, const MPint& rhs) noexcept { MPint r; mpz_mul_2exp(r.mVal, lhs.mVal, static_cast<mp_bitcnt_t>(mpz_get_ui(rhs.mVal))); return r; }
+      163      [[nodiscard]] friend MPint operator<<(MPint&&      lhs, const MPint& rhs) noexcept { mpz_mul_2exp(lhs.mVal, lhs.mVal, static_cast<mp_bitcnt_t>(mpz_get_ui(rhs.mVal))); return std::move(lhs); }
+      164 +    [[nodiscard]] friend MPint operator<<(const MPint& lhs, MPint&&      rhs) noexcept { const mp_bitcnt_t n = static_cast<mp_bitcnt_t>(mpz_get_ui(rhs.mVal)); mpz_mul_2exp(rhs.mVal, lhs.mVal, n); re
+          +turn std::move(rhs); }
+      165 +    [[nodiscard]] friend MPint operator<<(MPint&&      lhs, MPint&&      rhs) noexcept { mpz_mul_2exp(lhs.mVal, lhs.mVal, static_cast<mp_bitcnt_t>(mpz_get_ui(rhs.mVal))); return std::move(lhs); }
+      166      [[nodiscard]] friend MPint operator>>(const MPint& lhs, const MPint& rhs) noexcept { MPint r; mpz_fdiv_q_2exp(r.mVal, lhs.mVal, static_cast<mp_bitcnt_t>(mpz_get_ui(rhs.mVal))); return r; }
+      167      [[nodiscard]] friend MPint operator>>(MPint&&      lhs, const MPint& rhs) noexcept { mpz_fdiv_q_2exp(lhs.mVal, lhs.mVal, static_cast<mp_bitcnt_t>(mpz_get_ui(rhs.mVal))); return std::move(lhs); }
+      168 +    [[nodiscard]] friend MPint operator>>(const MPint& lhs, MPint&&      rhs) noexcept { const mp_bitcnt_t n = static_cast<mp_bitcnt_t>(mpz_get_ui(rhs.mVal)); mpz_fdiv_q_2exp(rhs.mVal, lhs.mVal, n);
+          + return std::move(rhs); }
+      169 +    [[nodiscard]] friend MPint operator>>(MPint&&      lhs, MPint&&      rhs) noexcept { mpz_fdiv_q_2exp(lhs.mVal, lhs.mVal, static_cast<mp_bitcnt_t>(mpz_get_ui(rhs.mVal))); return std::move(lhs); }
+      170
+      171      // --- comparison ---------------------------------------------------------
+      172      [[nodiscard]] friend bool operator==(const MPint& a, const MPint& b) noexcept { return mpz_cmp(a.mVal, b.mVal) == 0; }
+
+● Bash(cd /home/claudeuser/work/mpint && make 2>&1)
+  ⎿  g++ -std=c++14 -Wall -Wextra -pedantic -Werror -O2 -flto=auto -DDEMO_GMPOPT -Idemo/src -Iinclude -o demo/bin/demoGMPOpt demo/src/demo.cpp demo/src/exprTest.cpp demo/src/det.cpp demo/src/redu.cpp demo/src/de
+     moUtils.cpp -lgmp
+
+● Bash(cd /home/claudeuser/work/mpint/test && ./test.sh regr 2>&1 | grep 'EXITCODE')
+  ⎿  ############################## EXIT  : ../demo/bin/demoNative > demoNative.output 2>&1 : EXITCODE : 0 ##########
+     ############################## EXIT  : cat demoNative.output : EXITCODE : 0 ##########
+     ############################## EXIT  : ../demo/bin/demoGMPXX > demoGMPXX.output 2>&1 : EXITCODE : 0 ##########
+     … +21 lines (ctrl+o to expand)
+
+● All 8 variants clean. Summary of what was added to MPintGMPOpt.hpp:
+
+  Unary operators (operator+, operator-, operator~): split into const& (existing behaviour, allocates fresh result) and && (modifies in-place, returns std::move(*this)). Covers cases like -(a+b) or ~(x|y).
+
+  Binary operators (all 12): added const MPint& lhs, MPint&& rhs (computes into rhs's allocation when rhs is an rvalue, useful in right-heavy expressions like a + (b+c+d)) and MPint&& lhs, MPint&& rhs (uses lhs's
+  allocation; resolves the ambiguity that would arise if only the first two overloads existed and both arguments happened to be rvalues). The shift-with-MPint-rhs overloads extract the count into a local n first to
+  avoid the aliasing hazard before overwriting rhs.mVal.
+
+✻ Cooked for 3m 7s
+
+❯ commit this
+
+● Bash(cd /home/claudeuser/work/mpint && git status)
+  ⎿  On branch master
+     Changes not staged for commit:
+       (use "git add <file>..." to update what will be committed)
+     … +4 lines (ctrl+o to expand)
+
+● Bash(cd /home/claudeuser/work/mpint && git diff)
+  ⎿  diff --git a/include/MPintGMPOpt.hpp b/include/MPintGMPOpt.hpp
+     index dffe2ac..b9ddf52 100644
+     --- a/include/MPintGMPOpt.hpp
+     … +99 lines (ctrl+o to expand)
+
+● Bash(cd /home/claudeuser/work/mpint && git log --oneline -5)
+  ⎿  536ab1d updated *test/prof_output.txt*, *transcript.txt*, and *CLAUDE.md*
+     75ec4d6 fix variant order in test/test.sh regr and prof outputs
+     238d502 updated *CLAUDE.md* and *transcript.txt*
+     … +2 lines (ctrl+o to expand)
+
+● Bash(git add include/MPintGMPOpt.hpp && git commit -m "$(cat <<'EOF'
+      optimise MPintGMPOpt binary and unary operators to avoid unnecessary GMP limb-array copies…)
+  ⎿  [master ba3545d] optimise MPintGMPOpt binary and unary operators to avoid unnecessary GMP limb-array copies
+      1 file changed, 52 insertions(+), 16 deletions(-)
+
+● Committed as ba3545d.
+
+✻ Brewed for 21s
+
+❯ update CLAUDE.md
+
+  Read 1 file (ctrl+o to expand)
+
+● Write(CLAUDE.md)
+  ⎿  Added 17 lines, removed 24 lines
+      18
+      19
+      20  ## What Claude has done in our last conversation
+      21 -Fixed variant order in `test/test.sh`: GMP/GMPOpt had been inserted before WrappedNativePimpl
+      22 -instead of after it throughout the script. Corrected in all affected locations:
+      23 -variable declarations, `doRegression` run and diff blocks, `doProf` run commands and awk
+      24 -table header. Also removed two duplicate entries (one extra run and one extra diff for GMPPimpl)
+      25 -that were left over from the botched insertion. All 8 regression diffs pass in the correct order.
+      21 +Optimised `include/MPintGMPOpt.hpp` to avoid unnecessary GMP limb-array copies in operators.
+      22
+      27 -## What I have done since our last conversation
+      28 -updated *test/prof_output.txt*, *transcript.txt*, and *CLAUDE.md*
+      23 +Binary operators: replaced the by-value-lhs delegation pattern with a full set of
+      24 +`const MPint& / MPint&&` overload combinations per operator (lhs-lvalue, lhs-rvalue,
+      25 +rhs-rvalue, both-rvalue). The lvalue-lhs overload writes directly into a fresh result
+      26 +via the GMP function, skipping the copy of lhs. The rvalue overloads modify in place
+      27 +and return via `std::move`. The both-rvalue overload resolves the overload ambiguity
+      28 +that would otherwise arise. The shift-with-MPint-rhs rvalue overloads extract the
+      29 +shift count into a local before overwriting `rhs.mVal`.
+      30
+      30 -## What I want Claude to do in the upcoming conversation
+      31 -Now, in the Opt implementation variants the ten binary operators
+      31 +Unary operators: added `&&`-qualified overloads for `operator+`, `operator-`,
+      32 +`operator~` that modify `*this` in place (via `mpz_neg`/`mpz_com`) and return
+      33 +`std::move(*this)`, avoiding a fresh allocation when the operand is a temporary.
+      34
+      33 -    [[nodiscard]] friend MPint operator+(MPint lhs, const MPint& rhs) noexcept { return lhs += rhs; }
+      34 -    [[nodiscard]] friend MPint operator-(MPint lhs, const MPint& rhs) noexcept { return lhs -= rhs; }
+      35 -    [[nodiscard]] friend MPint operator*(MPint lhs, const MPint& rhs) noexcept { return lhs *= rhs; }
+      36 -    [[nodiscard]] friend MPint operator/(MPint lhs, const MPint& rhs)           { return lhs /= rhs; }
+      37 -    [[nodiscard]] friend MPint operator%(MPint lhs, const MPint& rhs)           { return lhs %= rhs; }
+      38 -    [[nodiscard]] friend MPint operator&(MPint lhs, const MPint& rhs) noexcept { return lhs &= rhs; }
+      39 -    [[nodiscard]] friend MPint operator|(MPint lhs, const MPint& rhs) noexcept { return lhs |= rhs; }
+      40 -    [[nodiscard]] friend MPint operator^(MPint lhs, const MPint& rhs) noexcept { return lhs ^= rhs; }
+      41 -    [[nodiscard]] friend MPint operator<<(MPint lhs, const MPint& rhs) noexcept { return lhs <<= rhs; }
+      42 -    [[nodiscard]] friend MPint operator>>(MPint lhs, const MPint& rhs) noexcept { return lhs >>= rhs; }
+      35 +Added `#include <utility>` for `std::move`. All 8 regression diffs pass.
+      36
+      44 -are delegated to their respective compound assignments. to make this work, their *MPint lhs* arguments are always copied.
+      45 -Since this is a non-pimpl implementation, can the copy operation be avoided in some use cases, e.g. when *lhs" comes from
+      46 -an rvalue? Or perhaps
+      47 -*mpz_add, mpz_sub, mpz_mul, mpz_tdiv_q, mpz_tdiv_r, mpz_and, mpz_ior, mpz_xor, mpz_mul_2exp, mpz_fdiv_q_2exp*
+      48 -might be used directly instead of delegating?
+      37 +## What I have done since our last conversation
+      38 +(to be filled in by user)
+      39 +
+      40 +## What I want Claude to do in the upcoming conversation
+      41 +(to be filled in by user)
+
+● CLAUDE.md updated.
+
+✻ Cooked for 28s
+
+❯ commit this
+
+● Bash(git add CLAUDE.md && git commit -m "updated CLAUDE.md")
+  ⎿  [master b2b0496] updated CLAUDE.md
+      1 file changed, 17 insertions(+), 24 deletions(-)
+
+● Done — committed as b2b0496.
+
+✻ Cooked for 10s
+
+❯ /status
+  ⎿  Settings dialog dismissed
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ /exit
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+#############################################################################################################################################################################################################
+

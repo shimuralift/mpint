@@ -35,7 +35,10 @@ Unary operators: added `&&`-qualified overloads for `operator+`, `operator-`,
 Added `#include <utility>` for `std::move`. All 8 regression diffs pass.
 
 ## What I have done since our last conversation
-(to be filled in by user)
+updated *test/prof_output.txt*, *transcript.txt*, and *CLAUDE.md*
 
 ## What I want Claude to do in the upcoming conversation
-(to be filled in by user)
+Now i need regression tests for the optimisations in Opt in the last conversation.
+Full coverage, and to be checked by an oracle. Implement them in *demo/exprTest.cpp*
+in a function *operatorOpt()*. in *demo/demo.cpp* and *test/test.sh*, including
+its output for *regr* and the *prof* table, it should go between *injTest* and *detTest*.
