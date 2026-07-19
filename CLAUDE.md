@@ -31,7 +31,7 @@ Changes across the repo (committed as one commit):
 - `.gitignore.example` — two new `.output` entries added and entry order aligned with variant order
 
 ## What I have done since our last conversation
-(to be filled in by user)
+updated *CLAUDE.md* and *transcript.txt*
 
 ## What I want Claude to do in the upcoming conversation
-(to be filled in by user)
+The abovementioned order of variants is not kept in the output of both *test/test.sh regr* and *test/test.sh prof*. Fix it.
