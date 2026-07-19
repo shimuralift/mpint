@@ -9,10 +9,15 @@
     #define DEMO_ARBPREC
 #elif defined DEMO_WRAPPEDNATIVE
     #include "MPintWrappedNative.hpp"
+#elif defined DEMO_WRAPPEDNATIVEOPT
+    #include "MPintWrappedNativeOpt.hpp"
 #elif defined DEMO_WRAPPEDNATIVEPIMPL
     #include "MPintPimpl.hpp"
 #elif defined DEMO_GMP
     #include "MPintGMP.hpp"
+    #define DEMO_ARBPREC
+#elif defined DEMO_GMPOPT
+    #include "MPintGMPOpt.hpp"
     #define DEMO_ARBPREC
 #elif defined DEMO_GMPPIMPL
     #include "MPintPimpl.hpp"
