@@ -16,14 +16,14 @@ OUTFILEWRAPPEDNATIVE="demoWrappedNative.output"
 EXECUTABLEWRAPPEDNATIVEOPT="../demo/bin/demoWrappedNativeOpt"
 OUTFILEWRAPPEDNATIVEOPT="demoWrappedNativeOpt.output"
 
+EXECUTABLEWRAPPEDNATIVEPIMPL="../demo/bin/demoWrappedNativePimpl"
+OUTFILEWRAPPEDNATIVEPIMPL="demoWrappedNativePimpl.output"
+
 EXECUTABLEGMP="../demo/bin/demoGMP"
 OUTFILEGMP="demoGMP.output"
 
 EXECUTABLEGMPOPT="../demo/bin/demoGMPOpt"
 OUTFILEGMPOPT="demoGMPOpt.output"
-
-EXECUTABLEWRAPPEDNATIVEPIMPL="../demo/bin/demoWrappedNativePimpl"
-OUTFILEWRAPPEDNATIVEPIMPL="demoWrappedNativePimpl.output"
 
 EXECUTABLEGMPPIMPL="../demo/bin/demoGMPPimpl"
 OUTFILEGMPPIMPL="demoGMPPimpl.output"
@@ -32,9 +32,9 @@ REFFILENATIVE="demoNative.output.ref"
 REFFILEGMPXX="demoGMPXX.output.ref"
 REFFILEWRAPPEDNATIVE="demoWrappedNative.output.ref"
 REFFILEWRAPPEDNATIVEOPT="demoWrappedNativeOpt.output.ref"
+REFFILEWRAPPEDNATIVEPIMPL="demoWrappedNativePimpl.output.ref"
 REFFILEGMP="demoGMP.output.ref"
 REFFILEGMPOPT="demoGMPOpt.output.ref"
-REFFILEWRAPPEDNATIVEPIMPL="demoWrappedNativePimpl.output.ref"
 REFFILEGMPPIMPL="demoGMPPimpl.output.ref"
 
 DIFFCMD="diff"
@@ -105,6 +105,12 @@ doRegression () {
         return ${retval}
     fi
 
+    runExecutable ${EXECUTABLEWRAPPEDNATIVEPIMPL} ${OUTFILEWRAPPEDNATIVEPIMPL}
+    retval=$?
+    if [ "${retval}" -ne 0 ]; then
+        return ${retval}
+    fi
+
     runExecutable ${EXECUTABLEGMP} ${OUTFILEGMP}
     retval=$?
     if [ "${retval}" -ne 0 ]; then
@@ -112,12 +118,6 @@ doRegression () {
     fi
 
     runExecutable ${EXECUTABLEGMPOPT} ${OUTFILEGMPOPT}
-    retval=$?
-    if [ "${retval}" -ne 0 ]; then
-        return ${retval}
-    fi
-
-    runExecutable ${EXECUTABLEWRAPPEDNATIVEPIMPL} ${OUTFILEWRAPPEDNATIVEPIMPL}
     retval=$?
     if [ "${retval}" -ne 0 ]; then
         return ${retval}
@@ -154,6 +154,12 @@ doRegression () {
         retval=${diffretval}
     fi
 
+    doDiff "${OUTFILEWRAPPEDNATIVEPIMPL}" "${REFFILEWRAPPEDNATIVEPIMPL}"
+    diffretval=$?
+    if [ "${diffretval}" -ne 0 ]; then
+        retval=${diffretval}
+    fi
+
     doDiff "${OUTFILEGMP}" "${REFFILEGMP}"
     diffretval=$?
     if [ "${diffretval}" -ne 0 ]; then
@@ -161,12 +167,6 @@ doRegression () {
     fi
 
     doDiff "${OUTFILEGMPOPT}" "${REFFILEGMPOPT}"
-    diffretval=$?
-    if [ "${diffretval}" -ne 0 ]; then
-        retval=${diffretval}
-    fi
-
-    doDiff "${OUTFILEWRAPPEDNATIVEPIMPL}" "${REFFILEWRAPPEDNATIVEPIMPL}"
     diffretval=$?
     if [ "${diffretval}" -ne 0 ]; then
         retval=${diffretval}
@@ -193,9 +193,9 @@ doProf () {
     runCmd "${EXECUTABLEGMPXX} -prof > ${tmp2} 2>&1"
     runCmd "${EXECUTABLEWRAPPEDNATIVE} -prof > ${tmp3} 2>&1"
     runCmd "${EXECUTABLEWRAPPEDNATIVEOPT} -prof > ${tmp4} 2>&1"
-    runCmd "${EXECUTABLEGMP} -prof > ${tmp5} 2>&1"
-    runCmd "${EXECUTABLEGMPOPT} -prof > ${tmp6} 2>&1"
-    runCmd "${EXECUTABLEWRAPPEDNATIVEPIMPL} -prof > ${tmp7} 2>&1"
+    runCmd "${EXECUTABLEWRAPPEDNATIVEPIMPL} -prof > ${tmp5} 2>&1"
+    runCmd "${EXECUTABLEGMP} -prof > ${tmp6} 2>&1"
+    runCmd "${EXECUTABLEGMPOPT} -prof > ${tmp7} 2>&1"
     runCmd "${EXECUTABLEGMPPIMPL} -prof > ${tmp8} 2>&1"
 
     if [ "${DRYPARAM}" == "dry" ]; then
@@ -226,8 +226,8 @@ doProf () {
         printf "%-14s  %20s  %20s  %22s  %26s  %26s  %20s  %20s  %20s\n",
                "function", "demoNative", "demoGMPXX",
                "demoWrappedNative", "demoWrappedNativeOpt",
-               "demoGMP", "demoGMPOpt",
-               "demoWrappedNativePimpl", "demoGMPPimpl"
+               "demoWrappedNativePimpl", "demoGMP",
+               "demoGMPOpt", "demoGMPPimpl"
         printf "%-14s  %20s  %20s  %22s  %26s  %26s  %20s  %20s  %20s\n",
                "--------------",
                "--------------------", "--------------------",
