@@ -18,33 +18,20 @@ which implements an integer with arbitrary precision.
 
 
 ## What Claude has done in our last conversation
-Analysed the `reduTest` profiling regression for `demoGMP` and `demoGMPXX`.
+Introduced two new variants *MPintWrappedNativeOpt* and *MPintGMPOpt* as exact copies of their
+non-Opt counterparts, ready for performance optimisation experiments.
 
-**Observation:** `reduTest` cycles increased significantly after commit `32ec7eb`:
-- demoGMPXX: 2,224,750 → 7,041,859 (+216%)
-- demoGMP: 3,194,445 → 6,536,646 (+105%)
-- All other variants: essentially unchanged.
-
-**Root cause:** The signed/unsigned bug fix changed entry generation in `PosDefState`.
-Before the fix, inline-GMP variants (`mpz_init_set_ui`) stored `2^64 − v` (a huge positive) instead of `−v`.
-The resulting Gram matrix `L * L^T` had entries on the order of `2^130`, so the minimum lattice vector
-norm was astronomically larger than the `shortvecs` bound of 1000. `shortvecs` found no vectors and
-returned immediately — giving falsely fast `reduTest` times.
-
-After the fix, entries are correctly small and signed. The Gram matrices are legitimate positive-definite
-matrices; `shortvecs` enumerates hundreds of real short vectors per run (as oracle-verified: 13–234 norms
-per theta series). This is the correct, intended computation — the increased times reflect real work.
-
-The native/wrapped-native variants were unaffected: their `signed long int` storage had been wrapping
-`2^64 − v` back to `−v` in two's complement all along, accidentally producing correct small entries
-even before the fix.
+Changes across the repo (committed as one commit):
+- `include/MPintWrappedNativeOpt.hpp` — copy of `MPintWrappedNative.hpp`
+- `include/MPintGMPOpt.hpp` — copy of `MPintGMP.hpp`
+- `demo/src/demoTypedef.hpp` — two new `#elif` branches in variant order: WrappedNative, **WrappedNativeOpt**, WrappedNativePimpl, GMP, **GMPOpt**, GMPPimpl
+- `Makefile` — two new header vars, targets, test-output vars, and build rules in the same order
+- `test/test.sh` — 8-variant regression (run + diff) and 8-column profiling table, same order
+- `test/demoWrappedNativeOpt.output.ref` and `test/demoGMPOpt.output.ref` — generated; outputs identical to the corresponding non-Opt refs; all 8 regression diffs pass
+- `.gitignore.example` — two new `.output` entries added and entry order aligned with variant order
 
 ## What I have done since our last conversation
-I've renamed *include/MPint.hpp* to *MPintPimpl.hpp*, updated transcript.txt, CLAUDE.md.
-Also updated *README.md* and *AGENTS.md*.
+(to be filled in by user)
 
 ## What I want Claude to do in the upcoming conversation
-Since we now have the non-pimpl inline Implementations *MPintWrappedNative* and *MPintGMP*, there
-might be some more performance optimisations possible. As prerequisite, I want you to introduce
-two new variants *MPintWrappedNativeOpt* and *MPintGMPOpt* starting out as copies. Do the usual
-Makefile and test (both regression and profiling) and gitignore (etc, etc) integration of it also.
+(to be filled in by user)
