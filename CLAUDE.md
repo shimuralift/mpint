@@ -18,27 +18,27 @@ which implements an integer with arbitrary precision.
 
 
 ## What Claude has done in our last conversation
-Optimised `include/MPintGMPOpt.hpp` to avoid unnecessary GMP limb-array copies in operators.
+Added `operatorOpt()` regression tests for the rvalue-ref overloads in `include/MPintGMPOpt.hpp`.
 
-Binary operators: replaced the by-value-lhs delegation pattern with a full set of
-`const MPint& / MPint&&` overload combinations per operator (lhs-lvalue, lhs-rvalue,
-rhs-rvalue, both-rvalue). The lvalue-lhs overload writes directly into a fresh result
-via the GMP function, skipping the copy of lhs. The rvalue overloads modify in place
-and return via `std::move`. The both-rvalue overload resolves the overload ambiguity
-that would otherwise arise. The shift-with-MPint-rhs rvalue overloads extract the
-shift count into a local before overwriting `rhs.mVal`.
+Oracle-based approach: each test block computes the expected result via the lvalue+lvalue
+path, then verifies one or both operands forced to rvalue (via `std::move`) gives an
+identical result.
 
-Unary operators: added `&&`-qualified overloads for `operator+`, `operator-`,
-`operator~` that modify `*this` in place (via `mpz_neg`/`mpz_com`) and return
-`std::move(*this)`, avoiding a fresh allocation when the operand is a temporary.
+Coverage in `demo/src/exprTest.cpp`:
+- All 8 binary operators (`+`, `-`, `*`, `/`, `%`, `&`, `|`, `^`) in all three
+  rvalue-operand combinations: rv-lhs, rv-rhs, both-rv.
+- Int-rhs shifts (`<<`/`>>`) with rv-lhs.
+- MPint-rhs shifts in all three value-category combinations, guarded by
+  `#ifndef DEMO_GMPXX` (mpz_class does not accept mpz_class shift counts).
+- `&&`-qualified unary `+`, `-`, `~` via `MPint(17)` temporaries.
+- Left- and right-associative chained expressions.
 
-Added `#include <utility>` for `std::move`. All 8 regression diffs pass.
+Wired into `demo/src/demo.cpp` between injTest and detTest at `total[8]`;
+detTest/reduTest shifted to `total[9]`/`total[10]`; `names[11]` updated.
+All 8 regression diffs pass.
 
 ## What I have done since our last conversation
-updated *test/prof_output.txt*, *transcript.txt*, and *CLAUDE.md*
+(nothing yet)
 
 ## What I want Claude to do in the upcoming conversation
-Now i need regression tests for the optimisations in Opt in the last conversation.
-Full coverage, and to be checked by an oracle. Implement them in *demo/exprTest.cpp*
-in a function *operatorOpt()*. in *demo/demo.cpp* and *test/test.sh*, including
-its output for *regr* and the *prof* table, it should go between *injTest* and *detTest*.
+(nothing specified yet)
