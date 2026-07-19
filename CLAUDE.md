@@ -18,20 +18,31 @@ which implements an integer with arbitrary precision.
 
 
 ## What Claude has done in our last conversation
-Introduced two new variants *MPintWrappedNativeOpt* and *MPintGMPOpt* as exact copies of their
-non-Opt counterparts, ready for performance optimisation experiments.
-
-Changes across the repo (committed as one commit):
-- `include/MPintWrappedNativeOpt.hpp` — copy of `MPintWrappedNative.hpp`
-- `include/MPintGMPOpt.hpp` — copy of `MPintGMP.hpp`
-- `demo/src/demoTypedef.hpp` — two new `#elif` branches in variant order: WrappedNative, **WrappedNativeOpt**, WrappedNativePimpl, GMP, **GMPOpt**, GMPPimpl
-- `Makefile` — two new header vars, targets, test-output vars, and build rules in the same order
-- `test/test.sh` — 8-variant regression (run + diff) and 8-column profiling table, same order
-- `test/demoWrappedNativeOpt.output.ref` and `test/demoGMPOpt.output.ref` — generated; outputs identical to the corresponding non-Opt refs; all 8 regression diffs pass
-- `.gitignore.example` — two new `.output` entries added and entry order aligned with variant order
+Fixed variant order in `test/test.sh`: GMP/GMPOpt had been inserted before WrappedNativePimpl
+instead of after it throughout the script. Corrected in all affected locations:
+variable declarations, `doRegression` run and diff blocks, `doProf` run commands and awk
+table header. Also removed two duplicate entries (one extra run and one extra diff for GMPPimpl)
+that were left over from the botched insertion. All 8 regression diffs pass in the correct order.
 
 ## What I have done since our last conversation
-updated *CLAUDE.md* and *transcript.txt*
+updated *test/prof_output.txt*, *transcript.txt*, and *CLAUDE.md*
 
 ## What I want Claude to do in the upcoming conversation
-The abovementioned order of variants is not kept in the output of both *test/test.sh regr* and *test/test.sh prof*. Fix it.
+Now, in the Opt implementation variants the ten binary operators
+
+    [[nodiscard]] friend MPint operator+(MPint lhs, const MPint& rhs) noexcept { return lhs += rhs; }
+    [[nodiscard]] friend MPint operator-(MPint lhs, const MPint& rhs) noexcept { return lhs -= rhs; }
+    [[nodiscard]] friend MPint operator*(MPint lhs, const MPint& rhs) noexcept { return lhs *= rhs; }
+    [[nodiscard]] friend MPint operator/(MPint lhs, const MPint& rhs)           { return lhs /= rhs; }
+    [[nodiscard]] friend MPint operator%(MPint lhs, const MPint& rhs)           { return lhs %= rhs; }
+    [[nodiscard]] friend MPint operator&(MPint lhs, const MPint& rhs) noexcept { return lhs &= rhs; }
+    [[nodiscard]] friend MPint operator|(MPint lhs, const MPint& rhs) noexcept { return lhs |= rhs; }
+    [[nodiscard]] friend MPint operator^(MPint lhs, const MPint& rhs) noexcept { return lhs ^= rhs; }
+    [[nodiscard]] friend MPint operator<<(MPint lhs, const MPint& rhs) noexcept { return lhs <<= rhs; }
+    [[nodiscard]] friend MPint operator>>(MPint lhs, const MPint& rhs) noexcept { return lhs >>= rhs; }
+
+are delegated to their respective compound assignments. to make this work, their *MPint lhs* arguments are always copied.
+Since this is a non-pimpl implementation, can the copy operation be avoided in some use cases, e.g. when *lhs" comes from
+an rvalue? Or perhaps 
+*mpz_add, mpz_sub, mpz_mul, mpz_tdiv_q, mpz_tdiv_r, mpz_and, mpz_ior, mpz_xor, mpz_mul_2exp, mpz_fdiv_q_2exp*
+might be used directly instead of delegating?
