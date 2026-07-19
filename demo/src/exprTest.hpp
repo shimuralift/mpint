@@ -8,3 +8,4 @@ int strconstr();
 int floatconv();
 int missingexpr();
 int injTest();
+int operatorOpt();

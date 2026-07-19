@@ -980,3 +980,81 @@ int missingexpr() {
 
   return 0;
 }
+
+int operatorOpt() {
+  // Oracle: lvalue op lvalue.  Each block below forces one or both operands to
+  // be rvalues via std::move, exercising the &&-qualified overloads added to
+  // the Opt variants.  The same expressions work on all backends (for
+  // non-class MPint, std::move on a scalar is a copy, so the result is
+  // identical to the lvalue path).
+  const MPint a = 17, b = 5;
+
+  std::cout << "--- binary op: rvalue lhs ---" << std::endl;
+  { MPint x=a; assert(std::move(x)+b == a+b); std::cout << "  +(rv,lv) = " << a+b << " ok" << std::endl; }
+  { MPint x=a; assert(std::move(x)-b == a-b); std::cout << "  -(rv,lv) = " << a-b << " ok" << std::endl; }
+  { MPint x=a; assert(std::move(x)*b == a*b); std::cout << "  *(rv,lv) = " << a*b << " ok" << std::endl; }
+  { MPint x=a; assert(std::move(x)/b == a/b); std::cout << "  /(rv,lv) = " << a/b << " ok" << std::endl; }
+  { MPint x=a; assert(std::move(x)%b == a%b); std::cout << "  %(rv,lv) = " << a%b << " ok" << std::endl; }
+  { MPint x=a; assert((std::move(x)&b) == (a&b)); std::cout << "  &(rv,lv) = " << (a&b) << " ok" << std::endl; }
+  { MPint x=a; assert((std::move(x)|b) == (a|b)); std::cout << "  |(rv,lv) = " << (a|b) << " ok" << std::endl; }
+  { MPint x=a; assert((std::move(x)^b) == (a^b)); std::cout << "  ^(rv,lv) = " << (a^b) << " ok" << std::endl; }
+  { MPint x=a; assert((std::move(x)<<3) == (a<<3)); std::cout << " <<(rv,int) = " << (a<<3) << " ok" << std::endl; }
+  { MPint x=a; assert((std::move(x)>>3) == (a>>3)); std::cout << " >>(rv,int) = " << (a>>3) << " ok" << std::endl; }
+
+  std::cout << "--- binary op: rvalue rhs ---" << std::endl;
+  { MPint y=b; assert(a+std::move(y) == a+b); std::cout << "  +(lv,rv) = " << a+b << " ok" << std::endl; }
+  { MPint y=b; assert(a-std::move(y) == a-b); std::cout << "  -(lv,rv) = " << a-b << " ok" << std::endl; }
+  { MPint y=b; assert(a*std::move(y) == a*b); std::cout << "  *(lv,rv) = " << a*b << " ok" << std::endl; }
+  { MPint y=b; assert(a/std::move(y) == a/b); std::cout << "  /(lv,rv) = " << a/b << " ok" << std::endl; }
+  { MPint y=b; assert(a%std::move(y) == a%b); std::cout << "  %(lv,rv) = " << a%b << " ok" << std::endl; }
+  { MPint y=b; assert((a&std::move(y)) == (a&b)); std::cout << "  &(lv,rv) = " << (a&b) << " ok" << std::endl; }
+  { MPint y=b; assert((a|std::move(y)) == (a|b)); std::cout << "  |(lv,rv) = " << (a|b) << " ok" << std::endl; }
+  { MPint y=b; assert((a^std::move(y)) == (a^b)); std::cout << "  ^(lv,rv) = " << (a^b) << " ok" << std::endl; }
+
+  std::cout << "--- binary op: both rvalue ---" << std::endl;
+  { MPint x=a,y=b; assert(std::move(x)+std::move(y) == a+b); std::cout << "  +(rv,rv) = " << a+b << " ok" << std::endl; }
+  { MPint x=a,y=b; assert(std::move(x)-std::move(y) == a-b); std::cout << "  -(rv,rv) = " << a-b << " ok" << std::endl; }
+  { MPint x=a,y=b; assert(std::move(x)*std::move(y) == a*b); std::cout << "  *(rv,rv) = " << a*b << " ok" << std::endl; }
+  { MPint x=a,y=b; assert(std::move(x)/std::move(y) == a/b); std::cout << "  /(rv,rv) = " << a/b << " ok" << std::endl; }
+  { MPint x=a,y=b; assert(std::move(x)%std::move(y) == a%b); std::cout << "  %(rv,rv) = " << a%b << " ok" << std::endl; }
+  { MPint x=a,y=b; assert((std::move(x)&std::move(y)) == (a&b)); std::cout << "  &(rv,rv) = " << (a&b) << " ok" << std::endl; }
+  { MPint x=a,y=b; assert((std::move(x)|std::move(y)) == (a|b)); std::cout << "  |(rv,rv) = " << (a|b) << " ok" << std::endl; }
+  { MPint x=a,y=b; assert((std::move(x)^std::move(y)) == (a^b)); std::cout << "  ^(rv,rv) = " << (a^b) << " ok" << std::endl; }
+
+#ifndef DEMO_GMPXX
+  // mpz_class shift operators do not accept an mpz_class shift count,
+  // so these overloads are not available for GMPXX.
+  std::cout << "--- shift: MPint rhs, all value-category combinations ---" << std::endl;
+  {
+    const MPint sh = 17, cnt = 3;
+    const MPint oracle_l = sh << cnt;  // 136
+    { MPint x=sh;        assert(std::move(x) << cnt          == oracle_l); std::cout << " <<(rv,lv) = " << oracle_l << " ok" << std::endl; }
+    { MPint y=cnt;       assert(sh            << std::move(y) == oracle_l); std::cout << " <<(lv,rv) = " << oracle_l << " ok" << std::endl; }
+    { MPint x=sh, y=cnt; assert(std::move(x) << std::move(y) == oracle_l); std::cout << " <<(rv,rv) = " << oracle_l << " ok" << std::endl; }
+  }
+  {
+    const MPint sh = 136, cnt = 3;
+    const MPint oracle_r = sh >> cnt;  // 17
+    { MPint x=sh;        assert(std::move(x) >> cnt          == oracle_r); std::cout << " >>(rv,lv) = " << oracle_r << " ok" << std::endl; }
+    { MPint y=cnt;       assert(sh            >> std::move(y) == oracle_r); std::cout << " >>(lv,rv) = " << oracle_r << " ok" << std::endl; }
+    { MPint x=sh, y=cnt; assert(std::move(x) >> std::move(y) == oracle_r); std::cout << " >>(rv,rv) = " << oracle_r << " ok" << std::endl; }
+  }
+#endif
+
+  std::cout << "--- unary: rvalue *this ---" << std::endl;
+  { const MPint p=17; assert(-MPint(17)==-p); std::cout << "  -(rv) = " << -p << " ok" << std::endl; }
+  { const MPint p=17; assert(~MPint(17)==~p); std::cout << "  ~(rv) = " << ~p << " ok" << std::endl; }
+  { const MPint p=17; assert(+MPint(17)==+p); std::cout << "  +(rv) = " << +p << " ok" << std::endl; }
+
+  // left-assoc chain: (a+b) gives rvalue, then rvalue+c exercises rv-lhs
+  // right-assoc chain: (b+c) gives rvalue, then a+rvalue exercises lv-rv-rhs
+  std::cout << "--- chained expressions ---" << std::endl;
+  {
+    const MPint c1=10, c2=20, c3=30;
+    assert(c1+c2+c3   == MPint(60)); std::cout << "  a+b+c (left-assoc)   = " << c1+c2+c3   << " ok" << std::endl;
+    assert(c1+(c2+c3) == MPint(60)); std::cout << "  a+(b+c) (right-assoc) = " << c1+(c2+c3) << " ok" << std::endl;
+  }
+
+  std::cout << "all checks passed." << std::endl;
+  return 0;
+}

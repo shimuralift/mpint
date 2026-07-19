@@ -38,7 +38,7 @@ int main(int argc, char* argv[]) {
   }
 
   const int PROF_RUNS = 100000;
-  uint64_t total[10] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+  uint64_t total[11] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
   uint64_t t0, t1;
 
   NullBuf nullbuf;
@@ -76,28 +76,32 @@ int main(int argc, char* argv[]) {
   for (int r = 0; r < (prof ? PROF_RUNS : 1); ++r)
     { t0 = rdtsc_read(); injTest();      t1 = rdtsc_read(); total[7] += t1 - t0; }
 
+  std::cout << std::endl << "MPint: operator optimisation tests" << std::endl << std::endl;
+  for (int r = 0; r < (prof ? PROF_RUNS : 1); ++r)
+    { t0 = rdtsc_read(); operatorOpt();  t1 = rdtsc_read(); total[8] += t1 - t0; }
+
   std::cout << std::endl << "MPint: determinant example" << std::endl << std::endl;
   for (int r = 0; r < (prof ? PROF_RUNS : 1); ++r)
-    { t0 = rdtsc_read(); detTest();     t1 = rdtsc_read(); total[8] += t1 - t0; }
+    { t0 = rdtsc_read(); detTest();     t1 = rdtsc_read(); total[9] += t1 - t0; }
 
   std::cout << std::endl << "MPint: integral lattice example" << std::endl << std::endl;
   for (int r = 0; r < (prof ? PROF_RUNS : 1); ++r)
-    { t0 = rdtsc_read(); reduTest();     t1 = rdtsc_read(); total[9] += t1 - t0; }
+    { t0 = rdtsc_read(); reduTest();     t1 = rdtsc_read(); total[10] += t1 - t0; }
 
   if (prof) {
     std::cout.rdbuf(orig);
-    static const char* const names[10] = {
-      "expr", "basicexpr", "moreexpr", "extraexpr", "strconstr", "floatconv", "missingexpr", "injTest", "detTest", "reduTest"
+    static const char* const names[11] = {
+      "expr", "basicexpr", "moreexpr", "extraexpr", "strconstr", "floatconv", "missingexpr", "injTest", "operatorOpt", "detTest", "reduTest"
     };
-    std::string formatted[10];
+    std::string formatted[11];
     std::string::size_type maxcycles = 0, maxname = 0;
-    for (int i = 0; i < 10; ++i) {
+    for (int i = 0; i < 11; ++i) {
       formatted[i] = format_cycles(total[i] / PROF_RUNS);
       if (formatted[i].size() > maxcycles) maxcycles = formatted[i].size();
       if (std::strlen(names[i]) > maxname) maxname = std::strlen(names[i]);
     }
     std::cout << "=== profiling report (rdtsc cpu cycles, avg of " << PROF_RUNS << " runs) ===" << std::endl;
-    for (int i = 0; i < 10; ++i) {
+    for (int i = 0; i < 11; ++i) {
       std::cout << "  " << std::setw(static_cast<int>(maxname)) << std::left  << names[i]
                 << ": " << std::setw(static_cast<int>(maxcycles)) << std::right << formatted[i]
                 << " cycles" << std::endl;

@@ -382,6 +382,53 @@ MPint("0xGG") threw ok
 stream("abc") >> MPint : failbit set ok
 stream("abc") >> MPint : value unchanged ok
 
+MPint: operator optimisation tests
+
+--- binary op: rvalue lhs ---
+  +(rv,lv) = 22 ok
+  -(rv,lv) = 12 ok
+  *(rv,lv) = 85 ok
+  /(rv,lv) = 3 ok
+  %(rv,lv) = 2 ok
+  &(rv,lv) = 1 ok
+  |(rv,lv) = 21 ok
+  ^(rv,lv) = 20 ok
+ <<(rv,int) = 136 ok
+ >>(rv,int) = 2 ok
+--- binary op: rvalue rhs ---
+  +(lv,rv) = 22 ok
+  -(lv,rv) = 12 ok
+  *(lv,rv) = 85 ok
+  /(lv,rv) = 3 ok
+  %(lv,rv) = 2 ok
+  &(lv,rv) = 1 ok
+  |(lv,rv) = 21 ok
+  ^(lv,rv) = 20 ok
+--- binary op: both rvalue ---
+  +(rv,rv) = 22 ok
+  -(rv,rv) = 12 ok
+  *(rv,rv) = 85 ok
+  /(rv,rv) = 3 ok
+  %(rv,rv) = 2 ok
+  &(rv,rv) = 1 ok
+  |(rv,rv) = 21 ok
+  ^(rv,rv) = 20 ok
+--- shift: MPint rhs, all value-category combinations ---
+ <<(rv,lv) = 136 ok
+ <<(lv,rv) = 136 ok
+ <<(rv,rv) = 136 ok
+ >>(rv,lv) = 17 ok
+ >>(lv,rv) = 17 ok
+ >>(rv,rv) = 17 ok
+--- unary: rvalue *this ---
+  -(rv) = -17 ok
+  ~(rv) = -18 ok
+  +(rv) = 17 ok
+--- chained expressions ---
+  a+b+c (left-assoc)   = 60 ok
+  a+(b+c) (right-assoc) = 60 ok
+all checks passed.
+
 MPint: determinant example
 
  number of cases  ==  dimensions x sparsities:
