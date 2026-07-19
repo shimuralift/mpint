@@ -41,6 +41,10 @@ even before the fix.
 
 ## What I have done since our last conversation
 I've renamed *include/MPint.hpp* to *MPintPimpl.hpp*, updated transcript.txt, CLAUDE.md.
+Also updated *README.md* and *AGENTS.md*.
 
 ## What I want Claude to do in the upcoming conversation
-(to be filled in by user)
+Since we now have the non-pimpl inline Implementations *MPintWrappedNative* and *MPintGMP*, there
+might be some more performance optimisations possible. As prerequisite, I want you to introduce
+two new variants *MPintWrappedNativeOpt* and *MPintGMPOpt* starting out as copies. Do the usual
+Makefile and test (both regression and profiling) and gitignore (etc, etc) integration of it also.
