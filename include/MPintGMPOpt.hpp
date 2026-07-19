@@ -6,6 +6,7 @@
 #include <iostream>
 #include <stdexcept>
 #include <string>
+#include <utility>
 
 #include <gmp.h>
 
@@ -79,14 +80,17 @@ public:
     [[nodiscard]] explicit operator long double() const noexcept { return static_cast<long double>(mpz_get_d(mVal)); }
 
     // --- unary arithmetic ---------------------------------------------------
-    [[nodiscard]] MPint operator+() const noexcept { return *this; }
-    [[nodiscard]] MPint operator-() const noexcept { MPint r; mpz_neg(r.mVal, mVal); return r; }
+    [[nodiscard]] MPint operator+() const& noexcept { return *this; }
+    [[nodiscard]] MPint operator+()      && noexcept { return std::move(*this); }
+    [[nodiscard]] MPint operator-() const& noexcept { MPint r; mpz_neg(r.mVal, mVal); return r; }
+    [[nodiscard]] MPint operator-()      && noexcept { mpz_neg(mVal, mVal); return std::move(*this); }
 
     // --- unary logical ------------------------------------------------------
     [[nodiscard]] bool  operator!() const noexcept { return mpz_sgn(mVal) == 0; }
 
     // --- unary bitwise ------------------------------------------------------
-    [[nodiscard]] MPint operator~() const noexcept { MPint r; mpz_com(r.mVal, mVal); return r; }
+    [[nodiscard]] MPint operator~() const& noexcept { MPint r; mpz_com(r.mVal, mVal); return r; }
+    [[nodiscard]] MPint operator~()      && noexcept { mpz_com(mVal, mVal); return std::move(*this); }
 
     // --- prefix increment / decrement ---------------------------------------
     MPint& operator++() noexcept { mpz_add_ui(mVal, mVal, 1); return *this; }
@@ -114,23 +118,55 @@ public:
     MPint& operator<<=(const MPint& rhs) noexcept { mpz_mul_2exp(mVal, mVal, static_cast<mp_bitcnt_t>(mpz_get_ui(rhs.mVal)));    return *this; }
     MPint& operator>>=(const MPint& rhs) noexcept { mpz_fdiv_q_2exp(mVal, mVal, static_cast<mp_bitcnt_t>(mpz_get_ui(rhs.mVal))); return *this; }
 
-    // --- binary arithmetic (inline, delegate to compound assignment) --------
-    [[nodiscard]] friend MPint operator+(MPint lhs, const MPint& rhs) noexcept { return lhs += rhs; }
-    [[nodiscard]] friend MPint operator-(MPint lhs, const MPint& rhs) noexcept { return lhs -= rhs; }
-    [[nodiscard]] friend MPint operator*(MPint lhs, const MPint& rhs) noexcept { return lhs *= rhs; }
-    [[nodiscard]] friend MPint operator/(MPint lhs, const MPint& rhs)           { return lhs /= rhs; }
-    [[nodiscard]] friend MPint operator%(MPint lhs, const MPint& rhs)           { return lhs %= rhs; }
+    // --- binary arithmetic --------------------------------------------------
+    [[nodiscard]] friend MPint operator+(const MPint& lhs, const MPint& rhs) noexcept { MPint r; mpz_add(r.mVal, lhs.mVal, rhs.mVal); return r; }
+    [[nodiscard]] friend MPint operator+(MPint&&      lhs, const MPint& rhs) noexcept { mpz_add(lhs.mVal, lhs.mVal, rhs.mVal); return std::move(lhs); }
+    [[nodiscard]] friend MPint operator+(const MPint& lhs, MPint&&      rhs) noexcept { mpz_add(rhs.mVal, lhs.mVal, rhs.mVal); return std::move(rhs); }
+    [[nodiscard]] friend MPint operator+(MPint&&      lhs, MPint&&      rhs) noexcept { mpz_add(lhs.mVal, lhs.mVal, rhs.mVal); return std::move(lhs); }
+    [[nodiscard]] friend MPint operator-(const MPint& lhs, const MPint& rhs) noexcept { MPint r; mpz_sub(r.mVal, lhs.mVal, rhs.mVal); return r; }
+    [[nodiscard]] friend MPint operator-(MPint&&      lhs, const MPint& rhs) noexcept { mpz_sub(lhs.mVal, lhs.mVal, rhs.mVal); return std::move(lhs); }
+    [[nodiscard]] friend MPint operator-(const MPint& lhs, MPint&&      rhs) noexcept { mpz_sub(rhs.mVal, lhs.mVal, rhs.mVal); return std::move(rhs); }
+    [[nodiscard]] friend MPint operator-(MPint&&      lhs, MPint&&      rhs) noexcept { mpz_sub(lhs.mVal, lhs.mVal, rhs.mVal); return std::move(lhs); }
+    [[nodiscard]] friend MPint operator*(const MPint& lhs, const MPint& rhs) noexcept { MPint r; mpz_mul(r.mVal, lhs.mVal, rhs.mVal); return r; }
+    [[nodiscard]] friend MPint operator*(MPint&&      lhs, const MPint& rhs) noexcept { mpz_mul(lhs.mVal, lhs.mVal, rhs.mVal); return std::move(lhs); }
+    [[nodiscard]] friend MPint operator*(const MPint& lhs, MPint&&      rhs) noexcept { mpz_mul(rhs.mVal, lhs.mVal, rhs.mVal); return std::move(rhs); }
+    [[nodiscard]] friend MPint operator*(MPint&&      lhs, MPint&&      rhs) noexcept { mpz_mul(lhs.mVal, lhs.mVal, rhs.mVal); return std::move(lhs); }
+    [[nodiscard]] friend MPint operator/(const MPint& lhs, const MPint& rhs)           { MPint r; mpz_tdiv_q(r.mVal, lhs.mVal, rhs.mVal); return r; }
+    [[nodiscard]] friend MPint operator/(MPint&&      lhs, const MPint& rhs)           { mpz_tdiv_q(lhs.mVal, lhs.mVal, rhs.mVal); return std::move(lhs); }
+    [[nodiscard]] friend MPint operator/(const MPint& lhs, MPint&&      rhs)           { mpz_tdiv_q(rhs.mVal, lhs.mVal, rhs.mVal); return std::move(rhs); }
+    [[nodiscard]] friend MPint operator/(MPint&&      lhs, MPint&&      rhs)           { mpz_tdiv_q(lhs.mVal, lhs.mVal, rhs.mVal); return std::move(lhs); }
+    [[nodiscard]] friend MPint operator%(const MPint& lhs, const MPint& rhs)           { MPint r; mpz_tdiv_r(r.mVal, lhs.mVal, rhs.mVal); return r; }
+    [[nodiscard]] friend MPint operator%(MPint&&      lhs, const MPint& rhs)           { mpz_tdiv_r(lhs.mVal, lhs.mVal, rhs.mVal); return std::move(lhs); }
+    [[nodiscard]] friend MPint operator%(const MPint& lhs, MPint&&      rhs)           { mpz_tdiv_r(rhs.mVal, lhs.mVal, rhs.mVal); return std::move(rhs); }
+    [[nodiscard]] friend MPint operator%(MPint&&      lhs, MPint&&      rhs)           { mpz_tdiv_r(lhs.mVal, lhs.mVal, rhs.mVal); return std::move(lhs); }
 
     // --- binary bitwise -----------------------------------------------------
-    [[nodiscard]] friend MPint operator&(MPint lhs, const MPint& rhs) noexcept { return lhs &= rhs; }
-    [[nodiscard]] friend MPint operator|(MPint lhs, const MPint& rhs) noexcept { return lhs |= rhs; }
-    [[nodiscard]] friend MPint operator^(MPint lhs, const MPint& rhs) noexcept { return lhs ^= rhs; }
+    [[nodiscard]] friend MPint operator&(const MPint& lhs, const MPint& rhs) noexcept { MPint r; mpz_and(r.mVal, lhs.mVal, rhs.mVal); return r; }
+    [[nodiscard]] friend MPint operator&(MPint&&      lhs, const MPint& rhs) noexcept { mpz_and(lhs.mVal, lhs.mVal, rhs.mVal); return std::move(lhs); }
+    [[nodiscard]] friend MPint operator&(const MPint& lhs, MPint&&      rhs) noexcept { mpz_and(rhs.mVal, lhs.mVal, rhs.mVal); return std::move(rhs); }
+    [[nodiscard]] friend MPint operator&(MPint&&      lhs, MPint&&      rhs) noexcept { mpz_and(lhs.mVal, lhs.mVal, rhs.mVal); return std::move(lhs); }
+    [[nodiscard]] friend MPint operator|(const MPint& lhs, const MPint& rhs) noexcept { MPint r; mpz_ior(r.mVal, lhs.mVal, rhs.mVal); return r; }
+    [[nodiscard]] friend MPint operator|(MPint&&      lhs, const MPint& rhs) noexcept { mpz_ior(lhs.mVal, lhs.mVal, rhs.mVal); return std::move(lhs); }
+    [[nodiscard]] friend MPint operator|(const MPint& lhs, MPint&&      rhs) noexcept { mpz_ior(rhs.mVal, lhs.mVal, rhs.mVal); return std::move(rhs); }
+    [[nodiscard]] friend MPint operator|(MPint&&      lhs, MPint&&      rhs) noexcept { mpz_ior(lhs.mVal, lhs.mVal, rhs.mVal); return std::move(lhs); }
+    [[nodiscard]] friend MPint operator^(const MPint& lhs, const MPint& rhs) noexcept { MPint r; mpz_xor(r.mVal, lhs.mVal, rhs.mVal); return r; }
+    [[nodiscard]] friend MPint operator^(MPint&&      lhs, const MPint& rhs) noexcept { mpz_xor(lhs.mVal, lhs.mVal, rhs.mVal); return std::move(lhs); }
+    [[nodiscard]] friend MPint operator^(const MPint& lhs, MPint&&      rhs) noexcept { mpz_xor(rhs.mVal, lhs.mVal, rhs.mVal); return std::move(rhs); }
+    [[nodiscard]] friend MPint operator^(MPint&&      lhs, MPint&&      rhs) noexcept { mpz_xor(lhs.mVal, lhs.mVal, rhs.mVal); return std::move(lhs); }
 
     // --- shift --------------------------------------------------------------
-    [[nodiscard]] friend MPint operator<<(MPint lhs, int n)            noexcept { return lhs <<= n; }
-    [[nodiscard]] friend MPint operator>>(MPint lhs, int n)            noexcept { return lhs >>= n; }
-    [[nodiscard]] friend MPint operator<<(MPint lhs, const MPint& rhs) noexcept { return lhs <<= rhs; }
-    [[nodiscard]] friend MPint operator>>(MPint lhs, const MPint& rhs) noexcept { return lhs >>= rhs; }
+    [[nodiscard]] friend MPint operator<<(const MPint& lhs, int n) noexcept { MPint r; mpz_mul_2exp(r.mVal, lhs.mVal, static_cast<mp_bitcnt_t>(n)); return r; }
+    [[nodiscard]] friend MPint operator<<(MPint&&      lhs, int n) noexcept { mpz_mul_2exp(lhs.mVal, lhs.mVal, static_cast<mp_bitcnt_t>(n)); return std::move(lhs); }
+    [[nodiscard]] friend MPint operator>>(const MPint& lhs, int n) noexcept { MPint r; mpz_fdiv_q_2exp(r.mVal, lhs.mVal, static_cast<mp_bitcnt_t>(n)); return r; }
+    [[nodiscard]] friend MPint operator>>(MPint&&      lhs, int n) noexcept { mpz_fdiv_q_2exp(lhs.mVal, lhs.mVal, static_cast<mp_bitcnt_t>(n)); return std::move(lhs); }
+    [[nodiscard]] friend MPint operator<<(const MPint& lhs, const MPint& rhs) noexcept { MPint r; mpz_mul_2exp(r.mVal, lhs.mVal, static_cast<mp_bitcnt_t>(mpz_get_ui(rhs.mVal))); return r; }
+    [[nodiscard]] friend MPint operator<<(MPint&&      lhs, const MPint& rhs) noexcept { mpz_mul_2exp(lhs.mVal, lhs.mVal, static_cast<mp_bitcnt_t>(mpz_get_ui(rhs.mVal))); return std::move(lhs); }
+    [[nodiscard]] friend MPint operator<<(const MPint& lhs, MPint&&      rhs) noexcept { const mp_bitcnt_t n = static_cast<mp_bitcnt_t>(mpz_get_ui(rhs.mVal)); mpz_mul_2exp(rhs.mVal, lhs.mVal, n); return std::move(rhs); }
+    [[nodiscard]] friend MPint operator<<(MPint&&      lhs, MPint&&      rhs) noexcept { mpz_mul_2exp(lhs.mVal, lhs.mVal, static_cast<mp_bitcnt_t>(mpz_get_ui(rhs.mVal))); return std::move(lhs); }
+    [[nodiscard]] friend MPint operator>>(const MPint& lhs, const MPint& rhs) noexcept { MPint r; mpz_fdiv_q_2exp(r.mVal, lhs.mVal, static_cast<mp_bitcnt_t>(mpz_get_ui(rhs.mVal))); return r; }
+    [[nodiscard]] friend MPint operator>>(MPint&&      lhs, const MPint& rhs) noexcept { mpz_fdiv_q_2exp(lhs.mVal, lhs.mVal, static_cast<mp_bitcnt_t>(mpz_get_ui(rhs.mVal))); return std::move(lhs); }
+    [[nodiscard]] friend MPint operator>>(const MPint& lhs, MPint&&      rhs) noexcept { const mp_bitcnt_t n = static_cast<mp_bitcnt_t>(mpz_get_ui(rhs.mVal)); mpz_fdiv_q_2exp(rhs.mVal, lhs.mVal, n); return std::move(rhs); }
+    [[nodiscard]] friend MPint operator>>(MPint&&      lhs, MPint&&      rhs) noexcept { mpz_fdiv_q_2exp(lhs.mVal, lhs.mVal, static_cast<mp_bitcnt_t>(mpz_get_ui(rhs.mVal))); return std::move(lhs); }
 
     // --- comparison ---------------------------------------------------------
     [[nodiscard]] friend bool operator==(const MPint& a, const MPint& b) noexcept { return mpz_cmp(a.mVal, b.mVal) == 0; }
