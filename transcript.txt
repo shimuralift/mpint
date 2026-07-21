@@ -17432,3 +17432,351 @@ Sharing transcript…
 
 #############################################################################################################################################################################################################
 
+❯ hi
+
+● Hi! I can see the task: regression tests for the MPintGMPOpt optimisations, in a new operatorOpt() function placed between injTest and detTest. Let me read the existing test structure first.
+
+  Read 3 files (ctrl+o to expand)
+
+● Now let me check the reference files and the existing ref file structure.
+
+  Searched for 1 pattern, listed 1 directory (ctrl+o to expand)
+
+● Now I have a full picture. Let me implement everything:
+
+  1. operatorOpt() in exprTest.cpp + declaration in exprTest.hpp
+  2. Insert the call between injTest and detTest in demo.cpp, expanding total/names from 10 → 11
+  3. Build, capture output, update all 8 .output.ref files
+
+● Update(demo/src/exprTest.hpp)
+  ⎿  Added 1 line
+       8  int floatconv();
+       9  int missingexpr();
+      10  int injTest();
+      11 +int operatorOpt();
+
+● Now add operatorOpt() at the end of exprTest.cpp:
+
+  Read 1 file (ctrl+o to expand)
+
+● Update(demo/src/exprTest.cpp)
+  ⎿  Error editing file
+
+  Read 1 file (ctrl+o to expand)
+
+● Update(demo/src/exprTest.cpp)
+  ⎿  Added 78 lines
+       980
+       981    return 0;
+       982  }
+       983 +
+       984 +int operatorOpt() {
+       985 +  // Oracle: lvalue op lvalue.  Each block below forces one or both operands to
+       986 +  // be rvalues via std::move, exercising the &&-qualified overloads added to
+       987 +  // the Opt variants.  The same expressions work on all backends (for
+       988 +  // non-class MPint, std::move on a scalar is a copy, so the result is
+       989 +  // identical to the lvalue path).
+       990 +  const MPint a = 17, b = 5;
+       991 +
+       992 +  std::cout << "--- binary op: rvalue lhs ---" << std::endl;
+       993 +  { MPint x=a; assert(std::move(x)+b == a+b); std::cout << "  +(rv,lv) = " << a+b << " ok" << std::endl; }
+       994 +  { MPint x=a; assert(std::move(x)-b == a-b); std::cout << "  -(rv,lv) = " << a-b << " ok" << std::endl; }
+       995 +  { MPint x=a; assert(std::move(x)*b == a*b); std::cout << "  *(rv,lv) = " << a*b << " ok" << std::endl; }
+       996 +  { MPint x=a; assert(std::move(x)/b == a/b); std::cout << "  /(rv,lv) = " << a/b << " ok" << std::endl; }
+       997 +  { MPint x=a; assert(std::move(x)%b == a%b); std::cout << "  %(rv,lv) = " << a%b << " ok" << std::endl; }
+       998 +  { MPint x=a; assert((std::move(x)&b) == (a&b)); std::cout << "  &(rv,lv) = " << (a&b) << " ok" << std::endl; }
+       999 +  { MPint x=a; assert((std::move(x)|b) == (a|b)); std::cout << "  |(rv,lv) = " << (a|b) << " ok" << std::endl; }
+      1000 +  { MPint x=a; assert((std::move(x)^b) == (a^b)); std::cout << "  ^(rv,lv) = " << (a^b) << " ok" << std::endl; }
+      1001 +  { MPint x=a; assert((std::move(x)<<3) == (a<<3)); std::cout << " <<(rv,int) = " << (a<<3) << " ok" << std::endl; }
+ ▐▛███▜▌   Claude Code v2.1.215
+▝▜█████▛▘  Sonnet 4.6 · Claude Pro
+  ▘▘ ▝▝    ~/work/mpint
+
+ ▎ Extended through July 19
+ ▐▛███▜▌   Claude Code v2.1.215
+▝▜█████▛▘  Sonnet 4.6 · Claude Pro
+  ▘▘ ▝▝    ~/work/mpint
+
+ ▎ Extended through July 19
+ ▎ We're extending Claude Fable 5 access on all paid plans, as well as keeping Claude Code’s weekly rate limits 50% higher, through July 19.
+ ▎
+ ▎ As before, you can use up to half of your weekly usage limit on Fable 5. After that, you can keep using Fable 5 with usage credits, or switch to another model to keep working within your remaining limits.
+▝▜█████▛▘  Sonnet 4.6 · Claude Pro
+  ▘▘ ▝▝    ~/work/mpint
+
+ ▎ Extended through July 19
+ ▎ We're extending Claude Fable 5 access on all paid plans, as well as keeping Claude Code’s weekly rate limits 50% higher, through July 19.
+ ▎
+ ▎ As before, you can use up to half of your weekly usage limit on Fable 5. After that, you can keep using Fable 5 with usage credits, or switch to another model to keep working within your remaining limits.
+ ▎
+ ▎ More details here: https://support.claude.com/en/articles/15424964-claude-fable-5-promotional-access
+
+✻ Conversation compacted (ctrl+o for history)
+
+
+● Update(demo/src/demo.cpp)
+  ⎿  Added 6 lines, removed 2 lines
+      76    for (int r = 0; r < (prof ? PROF_RUNS : 1); ++r)
+      77      { t0 = rdtsc_read(); injTest();      t1 = rdtsc_read(); total[7] += t1 - t0; }
+      78
+      79 +  std::cout << std::endl << "MPint: operator optimisation tests" << std::endl << std::endl;
+      80 +  for (int r = 0; r < (prof ? PROF_RUNS : 1); ++r)
+      81 +    { t0 = rdtsc_read(); operatorOpt();  t1 = rdtsc_read(); total[8] += t1 - t0; }
+      82 +
+      83    std::cout << std::endl << "MPint: determinant example" << std::endl << std::endl;
+      84    for (int r = 0; r < (prof ? PROF_RUNS : 1); ++r)
+      81 -    { t0 = rdtsc_read(); detTest();     t1 = rdtsc_read(); total[8] += t1 - t0; }
+      85 +    { t0 = rdtsc_read(); detTest();     t1 = rdtsc_read(); total[9] += t1 - t0; }
+      86
+      87    std::cout << std::endl << "MPint: integral lattice example" << std::endl << std::endl;
+      88    for (int r = 0; r < (prof ? PROF_RUNS : 1); ++r)
+      85 -    { t0 = rdtsc_read(); reduTest();     t1 = rdtsc_read(); total[9] += t1 - t0; }
+      89 +    { t0 = rdtsc_read(); reduTest();     t1 = rdtsc_read(); total[10] += t1 - t0; }
+      90
+      91    if (prof) {
+      92      std::cout.rdbuf(orig);
+  ⎿  Read demo/src/demo.cpp (113 lines)
+  ⎿  Referenced file demo/src/exprTest.cpp
+  ⎿  Read demo/src/exprTest.hpp (12 lines)
+  ⎿  Referenced file include/MPintGMPOpt.hpp
+  ⎿  Read include/MPintWrappedNativeOpt.hpp (164 lines)
+
+● Now fix the names array and loop counts in the prof block:
+
+● Update(demo/src/demo.cpp)
+  ⎿  Added 5 lines, removed 5 lines
+       90
+       91    if (prof) {
+       92      std::cout.rdbuf(orig);
+       93 -    static const char* const names[10] = {
+       94 -      "expr", "basicexpr", "moreexpr", "extraexpr", "strconstr", "floatconv", "missingexpr", "injTest", "detTest", "reduTest"
+       93 +    static const char* const names[11] = {
+       94 +      "expr", "basicexpr", "moreexpr", "extraexpr", "strconstr", "floatconv", "missingexpr", "injTest", "operatorOpt", "detTest", "reduTest"
+       95      };
+       96 -    std::string formatted[10];
+       96 +    std::string formatted[11];
+       97      std::string::size_type maxcycles = 0, maxname = 0;
+       98 -    for (int i = 0; i < 10; ++i) {
+       98 +    for (int i = 0; i < 11; ++i) {
+       99        formatted[i] = format_cycles(total[i] / PROF_RUNS);
+      100        if (formatted[i].size() > maxcycles) maxcycles = formatted[i].size();
+      101        if (std::strlen(names[i]) > maxname) maxname = std::strlen(names[i]);
+      102      }
+      103      std::cout << "=== profiling report (rdtsc cpu cycles, avg of " << PROF_RUNS << " runs) ===" << std::endl;
+      104 -    for (int i = 0; i < 10; ++i) {
+      104 +    for (int i = 0; i < 11; ++i) {
+      105        std::cout << "  " << std::setw(static_cast<int>(maxname)) << std::left  << names[i]
+      106                  << ": " << std::setw(static_cast<int>(maxcycles)) << std::right << formatted[i]
+      107                  << " cycles" << std::endl;
+
+● Now build:
+
+● Bash(make 2>&1)
+  ⎿  g++ -std=c++14 -Wall -Wextra -pedantic -Werror -O2 -flto=auto -DDEMO_NATIVE -Idemo/src -o demo/bin/demoNative demo/src/demo.cpp demo/src/exprTest.cpp demo/src/det.cpp demo/src/redu.cpp demo/src/demoUtils.cp
+     p
+     g++ -std=c++14 -Wall -Wextra -pedantic -Werror -O2 -flto=auto -DDEMO_GMPXX -Idemo/src -o demo/bin/demoGMPXX demo/src/demo.cpp demo/src/exprTest.cpp demo/src/det.cpp demo/src/redu.cpp demo/src/demoUtils.cpp
+     … +13 lines (ctrl+o to expand)
+  ⎿  (timeout 2m)
+  ⎿  Found 1 new diagnostic issue in 1 file (ctrl+o to expand)
+
+● All 8 targets built cleanly. The clangd warning is the known false positive. Now capture fresh reference outputs:
+
+● Bash(for bin in demoNative demoGMPXX demoWrappedNative demoWrappedNativeOpt demoWrappedNativePimpl demoGMP demoGMPOpt demoGMPPimpl; do
+        demo/bin/$bin > test/$bin.ou…)
+  ⎿  captured demoNative
+     captured demoGMPXX
+     captured demoWrappedNative
+     … +5 lines (ctrl+o to expand)
+
+● Bash(cd test && ./test.sh regr 2>&1)
+  ⎿  ############################## START : ../demo/bin/demoNative > demoNative.output 2>&1 ##########
+     ############################## EXIT  : ../demo/bin/demoNative > demoNative.output 2>&1 : EXITCODE : 0 ##########
+     ############################## START : cat demoNative.output ##########
+     … +1259 lines (ctrl+o to expand)
+
+● Bash(cd test && ./test.sh regr 2>&1 | grep -E "PASS|FAIL|DIFF|diff")
+  ⎿  /bin/bash: line 1: cd: test: No such file or directory
+
+● Bash(./test.sh regr 2>&1 | grep -E "PASS|FAIL|DIFF|^diff")
+  ⎿  No matches found
+
+● Bash(cd /home/claudeuser/work/mpint && bash test/test.sh regr 2>&1 | tail -50)
+  ⎿  ############################## START : ../demo/bin/demoNative > demoNative.output 2>&1 ##########
+     ############################## EXIT  : ../demo/bin/demoNative > demoNative.output 2>&1 : EXITCODE : 127 ##########
+     ############################## START : cat demoNative.output ##########
+     … +2 lines (ctrl+o to expand)
+
+● The test script must run from the test/ directory:
+
+● Bash(cd /home/claudeuser/work/mpint/test && bash test.sh regr 2>&1 | grep -E "(EXITCODE|diff )" | head -30)
+  ⎿  ############################## EXIT  : ../demo/bin/demoNative > demoNative.output 2>&1 : EXITCODE : 0 ##########
+     ############################## EXIT  : cat demoNative.output : EXITCODE : 0 ##########
+     ############################## EXIT  : ../demo/bin/demoGMPXX > demoGMPXX.output 2>&1 : EXITCODE : 0 ##########
+     … +27 lines (ctrl+o to expand)
+
+● Bash(bash test.sh regr 2>&1 | grep "EXITCODE" | grep -v ": 0 ##")
+  ⎿  No matches found
+
+● All 8 diffs pass with exit code 0. Let me confirm the new section is present in the reference output:
+
+  Searched for 3 patterns (ctrl+o to expand)
+
+● And verify demoGMPXX correctly skips the MPint-rhs shift section:
+
+  Searched for 2 patterns (ctrl+o to expand)
+
+● Everything is correct. Now let me also verify the prof output picks up the new operatorOpt row:
+
+● Bash(cd /home/claudeuser/work/mpint && bash test/test.sh prof 2>&1 | grep "operatorOpt")
+  ⎿  No matches found
+
+● Bash(bash test.sh prof 2>&1 | grep "operatorOpt")
+  ⎿  Running in the background (↓ to manage)
+
+  Read 1 file (ctrl+o to expand)
+
+● The prof run is in progress (100k iterations takes time). The regression tests are what matters — all 8 diffs passed with exit code 0. The prof table will work correctly since the names array now has 11 entries
+  including operatorOpt, and the awk script in test.sh handles variable row counts automatically.
+
+  Here's a summary of all changes made:
+
+  - demo/src/exprTest.hpp — added int operatorOpt(); declaration
+  - demo/src/exprTest.cpp — added operatorOpt() function with oracle-checked tests covering: rvalue-lhs, rvalue-rhs, and both-rvalue for all 8 binary operators; MPint-rhs shifts in all 3 value-category combinations
+  (guarded by #ifndef DEMO_GMPXX); rvalue-qualified unary +, -, ~; and left/right-associative chained expression tests
+  - demo/src/demo.cpp — inserted operatorOpt call block at total[8] between injTest and detTest; shifted detTest to total[9], reduTest to total[10]; updated names[11] with "operatorOpt" inserted at position 8;
+  updated loop bounds to < 11
+  - test/*.output.ref — all 8 reference files updated; all 8 regression diffs pass
+
+✻ Churned for 14m 23s · 1 shell still running
+
+※ recap: All regression tests for the rvalue operator optimisations are implemented and passing across all 8 variants. The prof run is still executing in the background; once it finishes, update test/prof_output.txt
+  and CLAUDE.md before committing. (disable recaps in /config)
+
+❯ commit this
+
+● Bash(git status)
+  ⎿  On branch master
+     Changes not staged for commit:
+       (use "git add <file>..." to update what will be committed)
+     … +18 lines (ctrl+o to expand)
+
+● Bash(git diff)
+  ⎿  diff --git a/demo/src/demo.cpp b/demo/src/demo.cpp
+     index 02367d4..7609339 100644
+     --- a/demo/src/demo.cpp
+     … +602 lines (ctrl+o to expand)
+
+● Bash(git log --oneline -5)
+  ⎿  b42d4bc updated transcript.txt, CLAUDE.md, and test/prof_output.txt
+     b2b0496 updated CLAUDE.md
+     ba3545d optimise MPintGMPOpt binary and unary operators to avoid unnecessary GMP limb-array copies
+     … +2 lines (ctrl+o to expand)
+
+● The untracked demoNative.output is a leftover temp file from the test run — I'll leave it unstaged.
+
+● Bash(git add demo/src/demo.cpp demo/src/exprTest.cpp demo/src/exprTest.hpp \
+              test/demoNative.output.ref test/demoGMPXX.output.ref \…)
+  ⎿  Error: Exit code 1
+     fatal: pathspec 'demo/src/demo.cpp' did not match any files
+     On branch master
+     Changes not staged for commit:
+       (use "git add <file>..." to update what will be committed)
+       (use "git restore <file>..." to discard changes in working directory)
+        modified:   ../demo/src/demo.cpp
+        modified:   ../demo/src/exprTest.cpp
+        modified:   ../demo/src/exprTest.hpp
+        modified:   demoGMP.output.ref
+     … +13 lines (ctrl+o to expand)
+
+● Bash(cd /home/claudeuser/work/mpint && git add demo/src/demo.cpp demo/src/exprTest.cpp demo/src/exprTest.hpp \
+              test/demoNative.output.ref test/demoGMPXX.outp…)
+  ⎿  [master e54487d] add operatorOpt() regression tests for MPintGMPOpt rvalue-ref overloads
+      11 files changed, 460 insertions(+), 8 deletions(-)
+
+● Committed as e54487d. 11 files changed: the three source files and all 8 .output.ref files.
+
+✻ Churned for 29s · 1 shell still running
+
+❯ update CLAUDE.md
+
+  Read 1 file (ctrl+o to expand)
+
+● Update(CLAUDE.md)
+  ⎿  Added 17 lines, removed 17 lines
+      18
+      19
+      20  ## What Claude has done in our last conversation
+      21 -Optimised `include/MPintGMPOpt.hpp` to avoid unnecessary GMP limb-array copies in operators.
+      21 +Added `operatorOpt()` regression tests for the rvalue-ref overloads in `include/MPintGMPOpt.hpp`.
+      22
+      23 -Binary operators: replaced the by-value-lhs delegation pattern with a full set of
+      24 -`const MPint& / MPint&&` overload combinations per operator (lhs-lvalue, lhs-rvalue,
+      25 -rhs-rvalue, both-rvalue). The lvalue-lhs overload writes directly into a fresh result
+      26 -via the GMP function, skipping the copy of lhs. The rvalue overloads modify in place
+      27 -and return via `std::move`. The both-rvalue overload resolves the overload ambiguity
+      28 -that would otherwise arise. The shift-with-MPint-rhs rvalue overloads extract the
+      29 -shift count into a local before overwriting `rhs.mVal`.
+      23 +Oracle-based approach: each test block computes the expected result via the lvalue+lvalue
+      24 +path, then verifies one or both operands forced to rvalue (via `std::move`) gives an
+      25 +identical result.
+      26
+      31 -Unary operators: added `&&`-qualified overloads for `operator+`, `operator-`,
+      32 -`operator~` that modify `*this` in place (via `mpz_neg`/`mpz_com`) and return
+      33 -`std::move(*this)`, avoiding a fresh allocation when the operand is a temporary.
+      27 +Coverage in `demo/src/exprTest.cpp`:
+      28 +- All 8 binary operators (`+`, `-`, `*`, `/`, `%`, `&`, `|`, `^`) in all three
+      29 +  rvalue-operand combinations: rv-lhs, rv-rhs, both-rv.
+      30 +- Int-rhs shifts (`<<`/`>>`) with rv-lhs.
+      31 +- MPint-rhs shifts in all three value-category combinations, guarded by
+      32 +  `#ifndef DEMO_GMPXX` (mpz_class does not accept mpz_class shift counts).
+      33 +- `&&`-qualified unary `+`, `-`, `~` via `MPint(17)` temporaries.
+      34 +- Left- and right-associative chained expressions.
+      35
+      35 -Added `#include <utility>` for `std::move`. All 8 regression diffs pass.
+      36 +Wired into `demo/src/demo.cpp` between injTest and detTest at `total[8]`;
+      37 +detTest/reduTest shifted to `total[9]`/`total[10]`; `names[11]` updated.
+      38 +All 8 regression diffs pass.
+      39
+      40  ## What I have done since our last conversation
+      38 -updated *test/prof_output.txt*, *transcript.txt*, and *CLAUDE.md*
+      41 +(nothing yet)
+      42
+      43  ## What I want Claude to do in the upcoming conversation
+      41 -Now i need regression tests for the optimisations in Opt in the last conversation.
+      42 -Full coverage, and to be checked by an oracle. Implement them in *demo/exprTest.cpp*
+      43 -in a function *operatorOpt()*. in *demo/demo.cpp* and *test/test.sh*, including
+      44 -its output for *regr* and the *prof* table, it should go between *injTest* and *detTest*.
+      44 +(nothing specified yet)
+
+● Done. CLAUDE.md updated — ready for you to commit separately when you like.
+
+✻ Cogitated for 21s · 1 shell still running
+
+❯ updated CLAUDE.md, commit this
+
+● Bash(git add CLAUDE.md && git commit -m "updated CLAUDE.md")
+  ⎿  [master 4bfaef4] updated CLAUDE.md
+      1 file changed, 17 insertions(+), 17 deletions(-)
+
+● Committed as 4bfaef4.
+
+✻ Brewed for 8s · 1 shell still running
+
+● Background command "Run prof from test dir and check operatorOpt row" completed (exit code 0)
+
+  Searched for 1 pattern (ctrl+o to expand)
+
+● The prof run completed — operatorOpt appears as a row in the table with cycle counts across all 8 variants. Everything is working as expected.
+
+✻ Cooked for 6s
+
+※ recap: Added oracle-based regression tests for the MPintGMPOpt rvalue-ref operator overloads, wired them into demo.cpp and the test suite, and committed everything. No pending tasks. (disable recaps in /config)
+
+❯ /status
+  ⎿  Settings dialog dismissed
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ /exit
+
+#############################################################################################################################################################################################################
+
