@@ -4,10 +4,7 @@ Derived from `transcript.txt`. Code diffs stripped — use `git log` / `gitk` to
 
 
 
----
-
 ## Session 1
-
 
 **>** refactor everything
 
@@ -68,10 +65,7 @@ Derived from `transcript.txt`. Code diffs stripped — use `git log` / `gitk` to
 ---
 
 
----
-
 ## Session 2
-
 
 **>** see instructions at the end of CLAUDE.md
 
@@ -267,10 +261,7 @@ Derived from `transcript.txt`. Code diffs stripped — use `git log` / `gitk` to
 ---
 
 
----
-
 ## Session 3
-
 
 **>** this is a new claude code session on project 'mpint'.
 
@@ -371,21 +362,16 @@ Derived from `transcript.txt`. Code diffs stripped — use `git log` / `gitk` to
 
 *[Yes. The auto-memory is per-project directory. The current one lives at:]*
 
----
-
-## Session 4
-
   If you start Claude Code in, say, ~/work/otherthing/, it would use a separate memory directory:
-
-
----
-
-## Session 5
 
   So each project gets its own isolated memory — no cross-contamination. The CLAUDE.md in each project root works the same way, scoped to that directory.
 
   The combination of project-scoped CLAUDE.md (you control) + project-scoped auto-memory (I maintain) should keep things tidy across multiple projects.
 
+---
+
+
+## Session 4
 
 **>** After having that ('CAUDE.md', auto-memory, transcript) put to work according to your recommendations, I wonder whether there is any additional advantage left in using 'claude --continue' or 'claude --resume <id>'.
 
@@ -415,6 +401,8 @@ Derived from `transcript.txt`. Code diffs stripped — use `git log` / `gitk` to
 ---
 
 
+## Session 5
+
 **>** See CLAUDE.md for instructions.
 
 *[Read 1 file]*
@@ -442,6 +430,8 @@ Derived from `transcript.txt`. Code diffs stripped — use `git log` / `gitk` to
 
 ---
 
+
+## Session 6
 
 **>** See 'CLAUDE.md" for instructions.
 
@@ -529,6 +519,8 @@ Derived from `transcript.txt`. Code diffs stripped — use `git log` / `gitk` to
 ---
 
 
+## Session 7
+
 **>** Is there a way to suppress repetition of previous output when using the '--continue' or '--resume <id>' options?
 
 *[claude-code-guide(Claude Code resume display options)]*
@@ -543,6 +535,8 @@ Derived from `transcript.txt`. Code diffs stripped — use `git log` / `gitk` to
 
 ---
 
+
+## Session 8
 
 **>** The claude log approach does not work. Period. I'll not go down that rabbit hole. Another question: is there a way to put a comment as a prompt, like one could enter '########...' in a bash shell?
 
@@ -561,6 +555,8 @@ Derived from `transcript.txt`. Code diffs stripped — use `git log` / `gitk` to
 
 ---
 
+
+## Session 9
 
 **>** What are "lint errors"?
 
@@ -588,6 +584,8 @@ Derived from `transcript.txt`. Code diffs stripped — use `git log` / `gitk` to
 
 ---
 
+
+## Session 10
 
 **>** see CLAUDE.md for instructions
 
@@ -643,6 +641,8 @@ Derived from `transcript.txt`. Code diffs stripped — use `git log` / `gitk` to
 
 ---
 
+
+## Session 11
 
 **>** see CLAUDE.md for instructions, as usual.
 
@@ -718,6 +718,8 @@ Derived from `transcript.txt`. Code diffs stripped — use `git log` / `gitk` to
 ---
 
 
+## Session 12
+
 **>** Let's come back to the pimpl approach you mentioned. (I'd rather call that 'using handles'.) When that gets used, we would have to rewrite the legacy code, all these numerical expressions and algorithms quite invasively, right. But
    mpint is an exercise in operator overloading.
 
@@ -792,10 +794,7 @@ Derived from `transcript.txt`. Code diffs stripped — use `git log` / `gitk` to
 ---
 
 
----
-
-## Session 6
-
+## Session 13
 
 **>** see CLAUDE.md for instructions
 
@@ -844,6 +843,8 @@ Derived from `transcript.txt`. Code diffs stripped — use `git log` / `gitk` to
 ---
 
 
+## Session 14
+
 **>** see CLAUDE.md for instructions.
 
 *[Let me read the current source files to understand the structure before implementing profiling.]*
@@ -884,6 +885,8 @@ Derived from `transcript.txt`. Code diffs stripped — use `git log` / `gitk` to
 
 ---
 
+
+## Session 15
 
 **>** please commit everything, also the changes i made to transcript.txt
 
@@ -1125,19 +1128,16 @@ any fractional parts of the averages so that the report retains the same readabi
 
 *[Done.]*
 
----
-
-
----
-
-## Session 7
-
   → Referenced file src/demo.cpp
   → Read test/test.sh (161 lines)
   → Read src/MPintGMP.cpp (162 lines)
   → Read Makefile (75 lines)
   → Read src/MPint.cpp (133 lines)
 
+---
+
+
+## Session 16
 
 **>** I need MPint (and its variants MPintMyOwn and MPintGMP) to support integer literals of arbitrary length. These should be enclosed in double quotes, so they are syntactically string literals. Inside the quoutes the
 usual integer literal syntax shall be allowed, for decimal, octal, hex and binary representation. single quotes should be allowed but are ignored. no suffixes like ul or similar of course. So i need the respective
@@ -1267,6 +1267,8 @@ constructors.
 ---
 
 
+## Session 17
+
 **>** Add some comprehensive testing of construction/conversion of MPint from strings to the regression tests in src/demo.cpp.
 
   Read 1 file
@@ -1394,6 +1396,8 @@ constructors.
 ---
 
 
+## Session 18
+
 **>** see CLAUDE.md for instructions
 
   Read 1 file
@@ -1463,6 +1467,8 @@ constructors.
 
 ---
 
+
+## Session 19
 
 **>** for instructions see CLAUDE.md
 
@@ -1543,10 +1549,6 @@ constructors.
   I'll fix these minimally in demoGMPXX.cpp and detGMPXX.cpp now.
   Read 1 file
 *[Update(src/demoGMPXX.cpp)]*
-
----
-
-## Session 8
 
   → Read src/MPintGMPXX.hpp (77 lines)
   → Read Makefile (69 lines)
@@ -1670,8 +1672,6 @@ constructors.
 *[Everything is in order. The implementation is complete — src/MPintGMPXX.hpp, src/demoGMPXX.cpp, src/detGMPXX.cpp are all in place, the Makefile builds bin/demoGMPXX, test/test.sh all runs all three variants and]*
   diffs against their references (all pass), and test/test.sh prof shows a three-column comparison table.
 
----
-
 [claudeuser@gondwana:test]$ ./test.sh prof
 profiling ../bin/demo ...
 profiling ../bin/demoGMP ...
@@ -1730,6 +1730,8 @@ strconstr                     17 731                32 362                36 679
 ---
 
 
+## Session 20
+
 **>** see CLAUDE.md for instructions
 
   Read 1 file
@@ -1784,6 +1786,8 @@ strconstr                     17 731                32 362                36 679
 
 ---
 
+
+## Session 21
 
 **>** see CLAUDE.md for instructions. If unsure what to do or how, please ask me.
 
@@ -2050,19 +2054,16 @@ strconstr                     17 731                32 362                36 679
 Resume this session with:
 claude --resume e9dd3c6f-7b6b-47f3-a3f2-6fc301b9ae37
 
----
-
-
----
-
-## Session 9
-
   → Read Makefile (67 lines)
   → Referenced file src/demo.cpp
   → Read src/MPintGMP.cpp (207 lines)
   → Read src/MPint.cpp (178 lines)
   → Read src/MPint.hpp (126 lines)
 
+---
+
+
+## Session 22
 
 **>** see CLAUDE.md for instructions
 
@@ -2304,19 +2305,16 @@ claude --resume e9dd3c6f-7b6b-47f3-a3f2-6fc301b9ae37
 
 *[You're welcome. Goodbye!]*
 
----
-
-
----
-
-## Session 10
-
   → Read src/MPint.cpp (181 lines)
   → Read src/MPintGMP.cpp (207 lines)
   → Read src/MPint.hpp (126 lines)
   → Referenced file src/redu.cpp
   → Referenced file src/demo.cpp
 
+---
+
+
+## Session 23
 
 **>** see CLAUDE.md for instructions
 
@@ -2517,6 +2515,8 @@ claude --resume e9dd3c6f-7b6b-47f3-a3f2-6fc301b9ae37
 
 ---
 
+
+## Session 24
 
 **>** with my most recent commit I've integrated redu_test() from redu.hpp into the demo program. in redu.cpp there's a lot of 1990ies old C stuff now. malloc() and free() all over the place, but in a way that they could
    be replaced with new[] and delete[]. could you do that for me?
@@ -2719,13 +2719,6 @@ claude --resume e9dd3c6f-7b6b-47f3-a3f2-6fc301b9ae37
 
 *[The references are already up to date — the new shell output code adds nothing to the test output (all shortvec_numb are 0 with current parameters), so the ref files are identical to what was already committed.]*
 
----
-
-
----
-
-## Session 11
-
    Opus 4.8 is now available! · /model to switch
 
   → Referenced file src/redu.cpp
@@ -2734,6 +2727,10 @@ claude --resume e9dd3c6f-7b6b-47f3-a3f2-6fc301b9ae37
   → Read src/det.cpp (217 lines)
   → Read src/det.hpp (11 lines)
 
+---
+
+
+## Session 25
 
 **>** see CLAUDE.md for instructions
 
@@ -3018,10 +3015,7 @@ claude --resume e9dd3c6f-7b6b-47f3-a3f2-6fc301b9ae37
 ---
 
 
----
-
-## Session 12
-
+## Session 26
 
 **>** see instructions in CLAUDE.md
 
@@ -3164,6 +3158,8 @@ claude --resume e9dd3c6f-7b6b-47f3-a3f2-6fc301b9ae37
 
 ---
 
+
+## Session 27
 
 **>** see CLAUDE.md
 
@@ -3496,6 +3492,8 @@ Done — committed as eadd232.
 
 ---
 
+
+## Session 28
 
 **>** see CLAUDE.md for instructions.
 
@@ -4568,6 +4566,8 @@ Committed as 7c7a135.
 ---
 
 
+## Session 29
+
 **>** make produces lto warnings now: lto-wrapper: warning: using serial compilation of 2 LTRANS jobs. I know that these can be safely ignored, but I dont like that noise in the make output. What can be done? Instead of just suppressing the warning, I'd prefer to adress it more properly.
 
   Read 1 file, ran 1 shell command
@@ -4598,10 +4598,12 @@ All diffs pass (exit code 0). Fixed by changing -flto to -flto=auto in the CXXFL
 
 Committed as 3ebd1b3.
 
----
-
 Read Makefile (69 lines)
 
+---
+
+
+## Session 30
 
 **>** see instructions in CLAUDE.md
 
@@ -4918,14 +4920,16 @@ Let me know when you'd like this committed.
 
 Committed as 13846b4 (.gitignore.example + CLAUDE.md). Note: .gitignore itself isn't tracked by git on this branch (it ignores itself, by design), so it has no commit — but I already updated it on disk to match .gitignore.example.
 
----
-
 Read .gitignore.example (29 lines)
 Read ../../.claude/projects/-home-claudeuser-work-mpint/memory/feedback_multiprecoperators_terminology.md (15 lines)
 Read ../../.claude/projects/-home-claudeuser-work-mpint/memory/feedback_no_include_guards.md (15 lines)
 Read .gitignore (29 lines)
 Read test/test.sh (226 lines)
 
+---
+
+
+## Session 31
 
 **>** see CLAUDE.md for instructions
 
@@ -5156,13 +5160,6 @@ I'll commit only the files related to this task (redu.cpp and the three .output.
 
 Committed as 0257a20. CLAUDE.md, transcript.txt, and .claude/settings.local.json remain uncommitted — those are pre-existing changes unrelated to this task.
 
----
-
-
----
-
-## Session 13
-
 Those were stray background gp processes from earlier experimentation (testing line-continuation syntax) — already dead ends I'd worked around at the time, no action needed.
 
 Read ../../../../tmp/claude-500/-home-claudeuser-work-mpint/4ea49a3a-13d2-4e0c-9ba4-4a7d13e600d3/scratchpad/verify_redu.py (49 lines)
@@ -5171,6 +5168,10 @@ Read ../../.claude/projects/-home-claudeuser-work-mpint/memory/feedback_theta_se
 Read ../../../../tmp/claude-500/-home-claudeuser-work-mpint/4ea49a3a-13d2-4e0c-9ba4-4a7d13e600d3/scratchpad/verify_det.py (64 lines)
 Read demo/src/demoUtils.hpp (38 lines)
 
+---
+
+
+## Session 32
 
 **>** see CLAUDE.md for instructions.
 
@@ -5347,9 +5348,7 @@ Committed as 512453a.
 ---
 
 
-**>** /login
-  → Login successful
-
+## Session 33
 
 **>** See CLAUDE.md for instructions
 
@@ -5364,21 +5363,12 @@ Committed as 512453a.
 
 *[Bash(git show --stat 2be3304 && echo "---" && git show --stat 61c31f0 && echo "---" && git show --stat 0dbfb92 && echo "---" && git show --stat 0073a2c)]*
 
----
-
-## Session 14
-
 *[No remote is configured — there's nowhere to push to. You'd need to add one first (e.g. git remote add origin <url>).]*
   → Read README.md (39 lines)
   → Read AGENTS.md (129 lines)
   → Referenced file ../../../../tmp/claude-500/-home-claudeuser-work-mpint/4ea49a3a-13d2-4e0c-9ba4-4a7d13e600d3/scratchpad/verify2/oracle.py
   → Read ../../../../tmp/claude-500/-home-claudeuser-work-mpint/4ea49a3a-13d2-4e0c-9ba4-4a7d13e600d3/scratchpad/verify2/wn_basic.txt (360 lines)
   → Read ../../../../tmp/claude-500/-home-claudeuser-work-mpint/4ea49a3a-13d2-4e0c-9ba4-4a7d13e600d3/scratchpad/verify2/oracle2.py (238 lines)
-
-
----
-
-## Session 15
 
   Switched back to the classic renderer
 
@@ -5390,8 +5380,6 @@ Committed as 512453a.
   → Read ../../../../tmp/claude-500/-home-claudeuser-work-mpint/4ea49a3a-13d2-4e0c-9ba4-4a7d13e600d3/scratchpad/verify2/wn_basic.txt (360 lines)
 
   ? for shortcuts · ← for agents
-
----
 
 See what i did in the meantime, and what instructions i have for you in CLAUDE.md. I want you to do that automatically at the start of a new session from now on.
 
@@ -5465,6 +5453,11 @@ See what i did in the meantime, and what instructions i have for you in CLAUDE.m
   and printing a summarizing table on stdout>
   .claude/settings.local.json: Added a SessionStart hook that reads CLAUDE.md and injects it as additionalContext, so future sessions will surface your instructions automatically.
 
+---
+
+
+## Session 34
+
 **>** Great. I also want you, before comitting at the end of a session, to automatically update the "What Claude has done (...)" paragraph in CLAUDE.md from now on.
 
 *[That's a behavioral instruction for me to follow — no hook needed, just a memory. Let me save it.]*
@@ -5497,6 +5490,8 @@ See what i did in the meantime, and what instructions i have for you in CLAUDE.m
 
 ---
 
+
+## Session 35
 
 **>** and? I assume that you now look for instructions in CLAUDE.md automatically when we start a session.
 
@@ -5542,19 +5537,11 @@ See what i did in the meantime, and what instructions i have for you in CLAUDE.m
 *[Update(demo/src/exprTest.cpp)]*
   → Added 42 lines
 
----
-
-## Session 16
-
 *[Clean build across all three targets. Now run all three binaries to verify the new section, then update the ref files:]*
 *[Bash(cd /home/claudeuser/work/mpint/test && ../demo/bin/demoNative 2>&1 | grep -A 20 "MPint: input safety")]*
   → MPint: input safety tests
 
      --- operator>> with invalid input ---
-
----
-
-## Session 17
 
 *[Clean build across all three targets. Now run all three binaries to verify the new section, then update the ref files:]*
 *[Bash(cd /home/claudeuser/work/mpint/test && ../demo/bin/demoNative 2>&1 | grep -A 20 "MPint: input safety")]*
@@ -5643,6 +5630,10 @@ See what i did in the meantime, and what instructions i have for you in CLAUDE.m
   Read 1 file
 *[Update(~/work/mpint/CLAUDE.md)]*
 
+---
+
+
+## Session 36
 
 **>** What do we have to do here with "clangd diagnostics" and "IDE false positives" which you mentioned above?
 
@@ -5678,6 +5669,8 @@ See what i did in the meantime, and what instructions i have for you in CLAUDE.m
 
 ---
 
+
+## Session 37
 
 **>** hi
 
@@ -5873,15 +5866,7 @@ See what i did in the meantime, and what instructions i have for you in CLAUDE.m
 *[Update(demo/src/exprTest.cpp)]*
   → Added 1 line, removed 1 line
 
----
-
-## Session 18
-
 *[Many single-quote strings and "+..." prefixes fail for mpz_class. I'll guard each problematic construction in strconstr(). Starting with the decimal section:]*
-
----
-
-## Session 19
 
 *[Many single-quote strings and "+..." prefixes fail for mpz_class. I'll guard each problematic construction in strconstr(). Starting with the decimal section:]*
 *[Update(demo/src/exprTest.cpp)]*
@@ -6035,6 +6020,11 @@ See what i did in the meantime, and what instructions i have for you in CLAUDE.m
   test/test.sh — Added GMPXX to doAll() in position 2; expanded doProf() to a 4-column table.
   test/demoGMPXX.output.ref — Generated. All four ./test/test.sh all diffs pass.
 
+---
+
+
+## Session 38
+
 **>** I've seen the phrase "Contains brace with quote character (expansion obfuscation)" scroll by in this session a few times.. What it's about?
 
 *[That's a message from a security-scanning hook you have configured in your Claude Code settings. It fires when a Bash command I'm about to run contains a pattern the hook considers suspicious —]*
@@ -6107,18 +6097,15 @@ See what i did in the meantime, and what instructions i have for you in CLAUDE.m
 
 Sharing transcript…
 
----
-
-
----
-
-## Session 20
-
   → Read ../../.claude/projects/-home-claudeuser-work-mpint/memory/feedback_transcript_txt.md (15 lines)
   → Read test/test.sh (249 lines)
   → Read Makefile (62 lines)
   → Referenced file demo/src/exprTest.cpp
 
+---
+
+
+## Session 39
 
 **>** hi
 
@@ -6308,6 +6295,10 @@ Sharing transcript…
 
 *[Done. CLAUDE.md committed separately as 1aed6ba.]*
 
+---
+
+
+## Session 40
 
 **>** hi
 
@@ -6404,6 +6395,8 @@ Sharing transcript…
 
 ---
 
+
+## Session 41
 
 **>** hi
 
@@ -7267,13 +7260,7 @@ Sharing transcript…
 
 *[Done. Committed as e5f8769.]*
 
----
-
 [claudeuser@gondwana:mpint]$ claude --continue
-
----
-
-## Session 21
 
   → Read .gitignore.example (23 lines)
   → Read test/test.sh (282 lines)
@@ -7281,6 +7268,10 @@ Sharing transcript…
   → Read demo/src/demoTypedef.hpp (38 lines)
   → Read include/MPintGMP.hpp (164 lines)
 
+---
+
+
+## Session 42
 
 **>** hi
 
@@ -7293,18 +7284,13 @@ Sharing transcript…
 
 *[Bash(cd test && diff demoGMP.output demoGMPPimpl.output)]*
 
----
-
-## Session 22
-
-
----
-
-## Session 23
-
   → Referenced file demo/src/exprTest.cpp
   → Read demo/src/demo.cpp (109 lines)
 
+---
+
+
+## Session 43
 
 **>** hi
 
@@ -7367,6 +7353,8 @@ Sharing transcript…
 
 ---
 
+
+## Session 44
 
 **>** hi
 
@@ -7496,6 +7484,8 @@ Sharing transcript…
 ---
 
 
+## Session 45
+
 **>** hi
 
 *[Reading the relevant lines in exprTest.cpp.]*
@@ -7588,6 +7578,8 @@ Sharing transcript…
 
 ---
 
+
+## Session 46
 
 **>** hi
 
@@ -7931,8 +7923,6 @@ Sharing transcript…
 
 *[Done.]*
 
----
-
  hi
 
 *[Reading the profiling output and checking what changed since the reference commit.]*
@@ -7966,6 +7956,8 @@ Sharing transcript…
 
 ---
 
+
+## Session 47
 
 **>** hi
 
@@ -8174,6 +8166,8 @@ Sharing transcript…
 ---
 
 
+## Session 48
+
 **>** hi
   → 1 skill available
 
@@ -8269,32 +8263,29 @@ Sharing transcript…
 
 *[Done.]*
 
----
-
-
----
-
-## Session 24
-
   → Read test/test.sh (322 lines)
   → Read .gitignore (25 lines)
   → Read Makefile (89 lines)
   → Read demo/src/demoTypedef.hpp (43 lines)
   → Read include/MPintGMP.hpp (164 lines)
 
+---
+
+
+## Session 49
 
 **>** hi
 
----
-
-## Session 25
-
   → Read test/test.sh (322 lines)
   → Read .gitignore (25 lines)
   → Read Makefile (89 lines)
   → Read demo/src/demoTypedef.hpp (43 lines)
   → Read include/MPintGMP.hpp (164 lines)
 
+---
+
+
+## Session 50
 
 **>** hi
 
@@ -8436,6 +8427,8 @@ Sharing transcript…
 ---
 
 
+## Session 51
+
 **>** hi
 
 *[Hi! I can see the task: regression tests for the MPintGMPOpt optimisations, in a new operatorOpt() function placed between injTest and detTest. Let me read the existing test structure first.]*
@@ -8456,20 +8449,6 @@ Sharing transcript…
 
 *[Update(demo/src/exprTest.cpp)]*
   → Added 78 lines
-
----
-
-## Session 26
-
-
----
-
-## Session 27
-
-
----
-
-## Session 28
 
 *[Update(demo/src/demo.cpp)]*
   → Added 6 lines, removed 2 lines
@@ -8604,6 +8583,4 @@ Sharing transcript…
 *[Background command "Run prof from test dir and check operatorOpt row" completed (exit code 0)]*
   Searched for 1 pattern
 *[The prof run completed — operatorOpt appears as a row in the table with cycle counts across all 8 variants. Everything is working as expected.]*
-
----
 
