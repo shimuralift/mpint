@@ -18,21 +18,19 @@ with arbitrary precision.
 
 
 ## What Claude has done in our last conversation
-(nothing yet)
+Rewrote the transcript processing script (scratchpad/process_transcript.py) with major formatting changes:
+- User prompts now right-aligned starting at column 100, wrapped before column 200 with two-space line breaks
+- Claude responses wrapped at column 99 with two-space line breaks
+- Commit lines formatted as **[branch sha]** message on their own line
+- No italics, no tool headers, no compiler/git output, no trivial file-op lines
+- Added IN_OLD_CODE state to handle old-format (non-indented) tool output from sessions 25-30
+- Extended look-ahead in IN_CODE/IN_BASH to skip timing and separator lines, preventing premature state exit
+- Expanded RE_FILEOP_LINE and RE_FILE_OP to catch more tool-summary patterns
+- Result: transcript.md 51 sessions, 3430 lines, 0 lines over 200 chars
+- Regenerated transcript.md and transcript_remaining.md
 
 ## What I have done since our last conversation
-I've updated *transcript_remaining.txt* and *CLAUDE.md*. I've introduced *transcript_sample.txt*
+(nothing yet)
 
 ## What I want Claude to do in the upcoming conversation
-transcript.md still is not easy to read. Some  rework is needed:
-- no italics anywhere.
-- no compiler or git command lines or output. as far I can see, you summarized all that quite nicely anyway.
-- no lines about trivial file operations, like "Read/Updated/Wrote SomeFile"
-- *transcript.md*, i.e. the source code of it for simplicity, should have a maximal width of 200 characters.
-- my prompts should start at column 100 in verbatim style, hence should be broken into multi line before column 200.
-- your responses should start at column 1 and are broken up before column 100
-- for the necessary line breaks use two blanks at the end of the line.
-- where you've made a commit, just format it on its own line in bold, like  
-**[somebranch a99b4711]** this is the first line of the commit message
-
-I've made up a sample of what I want to have: *transcript_sample.md*.
+(nothing yet)
