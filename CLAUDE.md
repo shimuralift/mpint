@@ -18,21 +18,21 @@ with arbitrary precision.
 
 
 ## What Claude has done in our last conversation
-Reworked session detection in the transcript processing script and created *transcript_remaining.md*.
-
-Session boundaries now use user-defined markers instead of the Claude Code logo:
-- End markers: `/exit` slash command, standalone `#{20,}` hash lines, or banner art.
-- Session header is deferred to the first real user prompt after an end marker.
-- Fixed banner art embedded inside Write/Edit tool blocks (mid-session reconnects) being
-  mistaken for session boundaries.
-
-The script is now parameterised (`process_transcript.py [input [output]]`) so the same
-script handles both *transcript.txt* and *transcript_remaining.txt*.
-
-Results: *transcript.md* — 51 sessions, 8586 lines; *transcript_remaining.md* — 1 session, 170 lines.
-
-## What I have done since our last conversation
 (nothing yet)
 
+## What I have done since our last conversation
+I've updated *transcript_remaining.txt* and *CLAUDE.md*. I've introduced *transcript_sample.txt*
+
 ## What I want Claude to do in the upcoming conversation
-(nothing specified yet)
+transcript.md still is not easy to read. Some  rework is needed:
+- no italics anywhere.
+- no compiler or git command lines or output. as far I can see, you summarized all that quite nicely anyway.
+- no lines about trivial file operations, like "Read/Updated/Wrote SomeFile"
+- *transcript.md*, i.e. the source code of it for simplicity, should have a maximal width of 200 characters.
+- my prompts should start at column 100 in verbatim style, hence should be broken into multi line before column 200.
+- your responses should start at column 1 and are broken up before column 100
+- for the necessary line breaks use two blanks at the end of the line.
+- where you've made a commit, just format it on its own line in bold, like  
+**[somebranch a99b4711]** this is the first line of the commit message
+
+I've made up a sample of what I want to have: *transcript_sample.md*.
