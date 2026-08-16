@@ -1,6 +1,6 @@
 # transcript.md
 
-Derived from a text file into which I pasted clude code agent sessions from the shell  
+Derived from a text file into which I pasted claude code agent sessions from the shell  
 these were running in. Its format is somewhat of an abuse of the Markdown language:  
 The code agent part is on the right, my responses and prompts are at the left in monospace  
 literal mode. It should resemble how conversations are displayed in SMS/text message  
@@ -3163,9 +3163,9 @@ First, updating CLAUDE.md's session summary before committing.
                                                                                                    The MPint(...) implementations have ctors from various other types, from the native integers,  
                                                                                                    and from strings. Make sure that they don't enable injection attacks using maliciously crafted  
                                                                                                    arguments.  
-                                                                                                   Also review *operator>>* with respect to that.  
-                                                                                                   Add a new section/function to *demo/src/exprtest.cpp* and *.hpp*, to the *test/test.sh* script,  
-                                                                                                   and update the regression test reference files in *test*.
+                                                                                                   Also review operator>> with respect to that.  
+                                                                                                   Add a new section/function to demo/src/exprtest.cpp and .hpp, to the test/test.sh script,  
+                                                                                                   and update the regression test reference files in test.
                                                                                                    
                                                                                                    and? I assume that you now look for instructions in CLAUDE.md automatically when we start a  
                                                                                                    session.
@@ -3280,11 +3280,11 @@ correctness. They're purely an IDE nuisance.
                                                                                                    
                                                                                                    [CLAUDE.md]  
                                                                                                    The GMP installation on this machine provides a C++ interface, with overloaded operators, given  
-                                                                                                   by header file *gmpxx.h*. I want you to create a new variant of the demo executable,  
-                                                                                                   demo/bin/demoGMPXX, where *class MPint* is not used at all.  
-                                                                                                   In the current sequence of *MPint* variants, it should be inserted after the first variant Native,  
-                                                                                                   in the *Makefile*, *demo/src/demoTypedef.hpp*, and in the profiling table generated  
-                                                                                                   by *test/test.sh*.
+                                                                                                   by header file gmpxx.h. I want you to create a new variant of the demo executable,  
+                                                                                                   demo/bin/demoGMPXX, where class MPint is not used at all.  
+                                                                                                   In the current sequence of MPint variants, it should be inserted after the first variant Native,  
+                                                                                                   in the Makefile, demo/src/demoTypedef.hpp, and in the profiling table generated  
+                                                                                                   by test/test.sh.
                                                                                                    
                                                                                                    hi
 
