@@ -6,7 +6,8 @@ The code agent part is on the right, my responses and prompts are at the left in
 literal mode. It should resemble how conversations are displayed in SMS/text message  
 renditions on smartphones. I had the code agent unclutter and format most of the original  
 .txt transcript based on pattern matching via a python script it has created for that purpose.  
-I did some manual reformatting to actually make it human readable, though.
+I did some manual reformatting to actually make it more - but not perfectly -  
+human readable, though.
 
 All commits and commit messages (first line only) are contained in - mostly - chronological  
 order, like *[master affc7f4] minor changes only*, both at the left (agent's commits) and right  
