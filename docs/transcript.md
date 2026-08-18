@@ -437,37 +437,18 @@ convention for exactly this purpose.
 
   Now for the transcript question. You found two problems with script -a:
 
-  1. --continue redisplays the whole conversation history on startup  
+  1. `--continue` redisplays the whole conversation history on startup  
   2. script captures raw terminal output including all ANSI escape codes and control characters
 
   The cleanest solutions:  
 
-  Option A — Strip control chars after the fact with  
-  col -b script -a -c "claude" mpint-raw.txt col -b < mpint-raw.txt >> mpint-transcript.txt  
-  col -b is a standard Unix tool specifically designed to strip backspace sequences and control  
-  characters from terminal output. Run it after each session to append clean text. The downside:  
-  two files to manage, and you have to remember to run it.
-
+  Option A — Strip control chars after the fact  
   Option B — tmux with pipe-pane (cleanest ongoing approach)  
-  tmux new-session -s mpint  
-  # inside tmux, start claude normally  
-  claude  
-  # in another tmux window/pane, or with a key binding:  
-  tmux pipe-pane -t mpint -o 'sed "s/\x1b\[[0-9;]*m//g" >> ~/work/mpint/transcript.txt'  
   pipe-pane tees tmux's output to a command. The sed strips ANSI colour codes. Starts and stops  
-  cleanly with the session.
-
-  Option C — Accept the redisplay issue, strip control chars automatically
-
-  A small wrapper script that handles both problems:  
-  #!/bin/bash  
-  # ~/bin/claude-log  
-  TRANSCRIPT=~/work/mpint/transcript.txt  
-  TMP=$(mktemp)  
-  script -q -c "claude $*" "$TMP"  
-  col -b < "$TMP" >> "$TRANSCRIPT"  
-  rm "$TMP"  
-  Then just run claude-log or claude-log --continue instead of claude. The --continue redisplay is  
+  cleanly with the session.  
+  Option C — Accept the redisplay issue, strip control chars automatically  
+  with a small wrapper script that handles both problems.  
+  Then just run claude-log or claude-log --continue instead of claude. The `--continue` redisplay is  
   harmless in the file — just some repeated history at the top of each session's chunk.
 
   My recommendation: Option C — it's a one-time setup, fully automatic, no tmux required, and works  
@@ -483,14 +464,14 @@ You're right, and I hadn't suggested committing it — just creating it. Let me 
 Done. A couple of notes:
 
   - The TRANSCRIPT path is hardcoded to ~/work/mpint/transcript.txt — fine for this project, but if  
-  you work on multiple projects later you'd want to make it dynamic (e.g. based on $PWD)
-  - ~/bin needs to be in your $PATH for it to work as a plain claude-log command — it likely  
-  already is on most distros, but worth checking with echo $PATH
+  you work on multiple projects later you'd want to make it dynamic (e.g. based on $PWD)  
+  - `~/bin` needs to be in your `$PATH` for it to work as a plain claude-log command.  
+  It likely already is on most distros, but worth checking with echo `$PATH`
 
 
                                                                                                    commit this
 
-Only the Makefile is in the repo — ~/bin/claude-log is outside, as you noted, so only the Makefile  
+Only the Makefile is in the repo. `~/bin/claude-log` is outside, as you noted, so only the Makefile  
 gets committed.
 
 **[master fe38e82]** fix make clean to not fail when bin/demo is absent
@@ -1257,7 +1238,7 @@ Now write MPintGMPXX.hpp (identical class declaration to MPintGMP.hpp):
 
 Understood completely. MPintGMPXX.hpp is just:
 
-  #include <gmpxx.h>
+  `#include <gmpxx.h>`  
   using MPint = mpz_class;
 
   No wrapper, no redone operators. We test directly whether mpz_class is the claimed drop-in. The  
@@ -3736,12 +3717,12 @@ Proposed changes
     - Copy: mpz_init_set; move: mpz_init then mpz_swap; copy-assign: mpz_set; move-assign: mpz_swap
     - All operators inline in the header
 3. demo/src/demoTypedef.hpp  
-  Add two new #elif branches (after DEMO_GMPXX, before DEMO_WRAPPEDNATIVEPIMPL):  
-  #elif defined DEMO_WRAPPEDNATIVE  
-      #include "MPintWrappedNative.hpp"  
-  #elif defined DEMO_GMP  
-      #include "MPintGMP.hpp"  
-      #define DEMO_ARBPREC  
+  Add two new `#elif` branches (after DEMO_GMPXX, before DEMO_WRAPPEDNATIVEPIMPL):  
+  `#elif defined DEMO_WRAPPEDNATIVE`  
+      `#include "MPintWrappedNative.hpp"`  
+  `#elif defined DEMO_GMP`  
+      `#include "MPintGMP.hpp"`  
+      `#define DEMO_ARBPREC`  
 4. Makefile  
   Add TARGET_WRAPPEDNATIVE and TARGET_GMP in the same slot (after GMPXX, before  
   the Pimpl variants), with build rules:  
@@ -3873,7 +3854,7 @@ demoGMPXX    │ mpz_class from unsigned                           │ 184467440
   MPintGMP.hpp and MPintGMPPimpl.cpp both have a custom set_mpint_str supporting ' digit  
   separators, + prefix for non-decimal bases, and float/double overflow detection. mpz_class  
   (GMPXX) supports none of these. The demo guards these tests with  
-  #ifndef DEMO_GMPXX and #if defined(DEMO_ARBPREC) && !defined(DEMO_GMPXX).
+  `#ifndef DEMO_GMPXX` and `#if defined(DEMO_ARBPREC) && !defined(DEMO_GMPXX)`.
 
 ---
 
@@ -3882,10 +3863,10 @@ demoGMPXX    │ mpz_class from unsigned                           │ 184467440
   demoNative is typedef signed long int MPint — no class, so DEMO_NATIVE is defined and two  
   conditional blocks are skipped:
 
-  1. injTest() #ifndef DEMO_NATIVE — valid/invalid string constructor tests + "value unchanged ok"  
+  1. injTest() `#ifndef DEMO_NATIVE` — valid/invalid string constructor tests + "value unchanged ok"  
   for operator>>. Native has no string constructor or value-preserving stream input.
-  2. missingexpr() #if !defined(DEMO_NATIVE) && !defined(DEMO_GMPXX) — + prefix non-decimal string  
-  tests ("+0b101", "+0xff", etc.).
+  2. missingexpr() `#if !defined(DEMO_NATIVE) && !defined(DEMO_GMPXX)` 
+   — + prefix non-decimal string tests ("+0b101", "+0xff", etc.).
 
   demoWrappedNative is class MPint wrapping signed long int but without DEMO_ARBPREC, so it runs  
   both of those blocks but not the float/double overflow tests.
