@@ -2,7 +2,7 @@
 
 Derived from a text file into which I pasted claude code agent sessions from the shell  
 these were running in. Its format is somewhat of an abuse of the Markdown language:  
-The code agent part is on the right, my responses and prompts are at the left in monospace  
+The code agent part is on the left, my responses and prompts are at the right in monospace  
 literal mode. It should resemble how conversations are displayed in SMS/text message  
 renditions on smartphones. I had the code agent unclutter and format most of the original  
 .txt transcript based on pattern matching via a python script it has created for that purpose.  
